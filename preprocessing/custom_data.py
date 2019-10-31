@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
-from rpy2.robjects import numpy2ri
+from rpy2.robjects import numpy2ri, pandas2ri
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
@@ -17,6 +17,7 @@ r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 r_limma_remove_ba_fit = robjects.globalenv['limma_remove_ba_fit']
 r_limma_remove_ba_transform = robjects.globalenv['limma_remove_ba_transform']
 numpy2ri.activate()
+pandas2ri.activate()
 
 
 def deseq2_vst_fit(X, y, sample_meta, blind, fit_type, model_batch):
