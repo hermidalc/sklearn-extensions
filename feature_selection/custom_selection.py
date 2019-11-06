@@ -4,7 +4,6 @@ import numpy as np
 import rpy2.robjects as robjects
 from rpy2.rinterface import RRuntimeWarning
 from rpy2.robjects.packages import importr
-from rpy2.robjects import numpy2ri, pandas2ri
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
@@ -24,8 +23,6 @@ r_limma_feature_score = robjects.globalenv['limma_feature_score']
 r_cfs_feature_idxs = robjects.globalenv['cfs_feature_idxs']
 r_fcbf_feature_idxs = robjects.globalenv['fcbf_feature_idxs']
 r_relieff_feature_score = robjects.globalenv['relieff_feature_score']
-numpy2ri.activate()
-pandas2ri.activate()
 
 
 def deseq2_vst_transform(X, geo_means, size_factors, disp_func, fit_type):
