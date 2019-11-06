@@ -2,6 +2,7 @@ import sys
 import warnings
 import numpy as np
 import rpy2.robjects as robjects
+from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.rinterface import RRuntimeWarning
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
@@ -9,6 +10,11 @@ from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
 from .base import SelectorMixin
 from .univariate_selection import BaseScorer
+
+numpy2ri.deactivate()
+pandas2ri.deactivate()
+numpy2ri.activate()
+pandas2ri.activate()
 
 r_base = importr('base')
 r_base.source(sys.path[0] + '/lib/R/functions.R')
