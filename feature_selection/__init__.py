@@ -6,14 +6,17 @@ recursive feature elimination algorithm.
 
 from sklearn.feature_selection.mutual_info_ import (
     mutual_info_regression, mutual_info_classif)
+from .cached import (
+    CachedANOVAFScorerClassification, CachedChi2Scorer,
+    CachedMutualInfoScorerClassification, CachedLimmaScorerClassification)
 from .custom_selection import (
     CFS, ColumnSelector, DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr, FCBF,
     LimmaScorerClassification, LimmaVoom, ReliefF)
 from .from_model import SelectFromModel
 from .rfe import RFE, RFECV
 from .univariate_selection import (
-    chi2, f_classif, f_oneway, f_regression, SelectPercentile,
-    SelectKBest, SelectFpr, SelectFdr, SelectFwe, GenericUnivariateSelect,
+    chi2, f_classif, f_oneway, f_regression, SelectPercentile, SelectKBest,
+    SelectFpr, SelectFdr, SelectFwe, GenericUnivariateSelect,
     ANOVAFScorerClassification, ANOVAFScorerRegression, Chi2Scorer,
     MutualInfoScorerClassification, MutualInfoScorerRegression)
 from .variance_threshold import VarianceThreshold
@@ -37,9 +40,13 @@ __all__ = ['chi2',
            'VarianceThreshold',
            'ANOVAFScorerClassification',
            'ANOVAFScorerRegression',
+           'CachedANOVAFScorerClassification',
+           'CachedChi2Scorer',
+           'CachedMutualInfoScorerClassification',
            'Chi2Scorer',
            'MutualInfoScorerClassification',
            'MutualInfoScorerRegression',
+           'CachedLimmaScorerClassification',
            'CFS',
            'ColumnSelector',
            'DESeq2',
