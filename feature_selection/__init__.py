@@ -4,8 +4,6 @@ algorithms. It currently includes univariate filter selection methods and the
 recursive feature elimination algorithm.
 """
 
-from sklearn.feature_selection.mutual_info_ import (
-    mutual_info_regression, mutual_info_classif)
 from .cached import (
     CachedANOVAFScorerClassification, CachedChi2Scorer,
     CachedMutualInfoScorerClassification, CachedLimmaScorerClassification)
@@ -15,45 +13,39 @@ from .custom_selection import (
 from .from_model import SelectFromModel
 from .rfe import RFE, RFECV
 from .univariate_selection import (
-    chi2, f_classif, f_oneway, f_regression, SelectPercentile, SelectKBest,
-    SelectFpr, SelectFdr, SelectFwe, GenericUnivariateSelect,
     ANOVAFScorerClassification, ANOVAFScorerRegression, Chi2Scorer,
-    MutualInfoScorerClassification, MutualInfoScorerRegression)
+    GenericUnivariateSelect, MutualInfoScorerClassification,
+    MutualInfoScorerRegression, SelectFdr, SelectFpr, SelectFwe, SelectKBest,
+    SelectPercentile)
 from .variance_threshold import VarianceThreshold
 
 
-__all__ = ['chi2',
-           'f_classif',
-           'f_oneway',
-           'f_regression',
-           'mutual_info_classif',
-           'mutual_info_regression',
-           'SelectFdr',
-           'SelectFpr',
-           'SelectFwe',
-           'SelectKBest',
-           'SelectFromModel',
-           'SelectPercentile',
-           'GenericUnivariateSelect',
-           'RFE',
-           'RFECV',
-           'VarianceThreshold',
-           'ANOVAFScorerClassification',
+__all__ = ['ANOVAFScorerClassification',
            'ANOVAFScorerRegression',
            'CachedANOVAFScorerClassification',
            'CachedChi2Scorer',
-           'CachedMutualInfoScorerClassification',
-           'Chi2Scorer',
-           'MutualInfoScorerClassification',
-           'MutualInfoScorerRegression',
            'CachedLimmaScorerClassification',
+           'CachedMutualInfoScorerClassification',
            'CFS',
+           'Chi2Scorer',
            'ColumnSelector',
            'DESeq2',
            'DreamVoom',
            'EdgeR',
            'EdgeRFilterByExpr',
            'FCBF',
+           'GenericUnivariateSelect',
            'LimmaScorerClassification',
            'LimmaVoom',
-           'ReliefF']
+           'MutualInfoScorerClassification',
+           'MutualInfoScorerRegression',
+           'RFE',
+           'RFECV',
+           'SelectFdr',
+           'SelectFpr',
+           'SelectFromModel',
+           'SelectFwe',
+           'SelectKBest',
+           'SelectPercentile',
+           'ReliefF',
+           'VarianceThreshold']
