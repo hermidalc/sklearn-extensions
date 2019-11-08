@@ -6,7 +6,7 @@ class CachedFitMixin:
 
     def __init__(self, memory, *args, **kwargs):
         self.memory = memory
-        super().init(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def fit(self, *args, **kwargs):
         memory = check_memory(self.memory)
