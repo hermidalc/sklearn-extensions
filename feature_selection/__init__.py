@@ -7,10 +7,11 @@ recursive feature elimination algorithm.
 from .cached import (
     CachedANOVAFScorerClassification, CachedChi2Scorer,
     CachedMutualInfoScorerClassification, CachedLimmaScorerClassification)
-from .custom_selection import (
-    CFS, ColumnSelector, DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr, FCBF,
-    LimmaScorerClassification, LimmaVoom, ReliefF)
+from .column import ColumnSelector
 from .from_model import SelectFromModel
+from .multivariate import CFS, FCBF, ReliefF
+from .rna_seq import (DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr,
+                      LimmaScorerClassification, LimmaVoom)
 from .rfe import RFE, RFECV
 from .univariate_selection import (
     ANOVAFScorerClassification, ANOVAFScorerRegression, Chi2Scorer,

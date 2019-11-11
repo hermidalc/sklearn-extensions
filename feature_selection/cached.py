@@ -1,6 +1,6 @@
 from .univariate_selection import (
     ANOVAFScorerClassification, Chi2Scorer, MutualInfoScorerClassification)
-from .custom_selection import LimmaScorerClassification
+from .rna_seq import LimmaScorerClassification
 from ..cached import CachedFitMixin
 
 
