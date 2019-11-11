@@ -1034,7 +1034,7 @@ class CFS(BaseEstimator, SelectorMixin):
         X, y = check_X_y(X, y, dtype=None)
         self._n_features = X.shape[1]
         warnings.filterwarnings('ignore', category=RRuntimeWarning,
-                                message="^Rjava\.init\.warning")
+                                message='^Rjava\.init\.warning')
         self.selected_idxs_ = np.array(r_cfs_feature_idxs(X, y), dtype=int)
         warnings.filterwarnings('always', category=RRuntimeWarning)
         return self
@@ -1100,7 +1100,7 @@ class FCBF(BaseEstimator, SelectorMixin):
         self._n_features = X.shape[1]
         if self.k == 'all' or self.k > 0:
             warnings.filterwarnings('ignore', category=RRuntimeWarning,
-                                    message="^Rjava\.init\.warning")
+                                    message='^Rjava\.init\.warning')
             feature_idxs, scores = memory.cache(fcbf_feature_idxs)(
                 X, y, threshold=self.threshold)
             warnings.filterwarnings('always', category=RRuntimeWarning)
@@ -1179,7 +1179,7 @@ class ReliefF(BaseEstimator, SelectorMixin):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         warnings.filterwarnings('ignore', category=RRuntimeWarning,
-                                message="^Rjava\.init\.warning")
+                                message='^Rjava\.init\.warning')
         self.scores_ = memory.cache(relieff_feature_score)(X, y)
         warnings.filterwarnings('always', category=RRuntimeWarning)
         return self
