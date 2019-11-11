@@ -1,4 +1,4 @@
-import sys
+import os
 import warnings
 import numpy as np
 import rpy2.robjects as robjects
@@ -17,7 +17,7 @@ pandas2ri.activate()
 
 if 'cfs_feature_idxs' not in robjects.globalenv:
     r_base = importr('base')
-    r_base.source(sys.path[0] + '/lib/R/multivariate.R')
+    r_base.source(os.path.dirname(__file__) + '/multivariate.R')
 r_cfs_feature_idxs = robjects.globalenv['cfs_feature_idxs']
 r_fcbf_feature_idxs = robjects.globalenv['fcbf_feature_idxs']
 r_relieff_feature_score = robjects.globalenv['relieff_feature_score']
