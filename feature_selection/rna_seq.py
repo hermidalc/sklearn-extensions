@@ -29,7 +29,6 @@ r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
 
-
 def deseq2_feature_score(X, y, sample_meta, lfc, blind, fit_type, model_batch,
                          n_threads):
     sv, xt, gm, sf, df = r_deseq2_feature_score(
