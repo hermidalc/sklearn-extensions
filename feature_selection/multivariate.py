@@ -15,8 +15,9 @@ pandas2ri.deactivate()
 numpy2ri.activate()
 pandas2ri.activate()
 
-r_base = importr('base')
-r_base.source(sys.path[0] + '/lib/R/functions.R')
+if 'cfs_feature_idxs' not in robjects.globalenv:
+    r_base = importr('base')
+    r_base.source(sys.path[0] + '/lib/R/multivariate.R')
 r_cfs_feature_idxs = robjects.globalenv['cfs_feature_idxs']
 r_fcbf_feature_idxs = robjects.globalenv['fcbf_feature_idxs']
 r_relieff_feature_score = robjects.globalenv['relieff_feature_score']

@@ -14,8 +14,9 @@ pandas2ri.deactivate()
 numpy2ri.activate()
 pandas2ri.activate()
 
-r_base = importr('base')
-r_base.source(sys.path[0] + '/lib/R/functions.R')
+if 'deseq2_vst_transform' not in robjects.globalenv:
+    r_base = importr('base')
+    r_base.source(sys.path[0] + '/lib/R/rna_seq.R')
 r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
 r_deseq2_feature_score = robjects.globalenv['deseq2_feature_score']
 r_edger_filterbyexpr_mask = robjects.globalenv['edger_filterbyexpr_mask']
