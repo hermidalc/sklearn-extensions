@@ -20,8 +20,6 @@ r_deseq2_vst_fit = robjects.globalenv['deseq2_vst_fit']
 r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
 r_edger_tmm_logcpm_fit = robjects.globalenv['edger_tmm_logcpm_fit']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
-r_limma_remove_ba_fit = robjects.globalenv['limma_remove_ba_fit']
-r_limma_remove_ba_transform = robjects.globalenv['limma_remove_ba_transform']
 
 
 def deseq2_vst_fit(X, y, sample_meta, blind, fit_type, model_batch):
@@ -186,7 +184,7 @@ class EdgeRTMMLogCPM(BaseEstimator, TransformerMixin):
         self.prior_count = prior_count
         self.memory = memory
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, sample_meta=None):
         """
         Parameters
         ----------
@@ -194,6 +192,8 @@ class EdgeRTMMLogCPM(BaseEstimator, TransformerMixin):
             Input counts data matrix.
 
         y : ignored
+
+        sample_meta: ignored
         """
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
@@ -201,12 +201,14 @@ class EdgeRTMMLogCPM(BaseEstimator, TransformerMixin):
             X, prior_count=self.prior_count)
         return self
 
-    def transform(self, X):
+    def transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Input counts data matrix.
+
+        sample_meta : ignored
 
         Returns
         -------
@@ -224,89 +226,14 @@ class EdgeRTMMLogCPM(BaseEstimator, TransformerMixin):
             self._train_done = True
         return X
 
-    def inverse_transform(self, X):
+    def inverse_transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Input transformed data matrix.
 
-        Returns
-        -------
-        Xr : array of shape (n_samples, n_original_features)
-        """
-        raise NotImplementedError("inverse_transform not implemented.")
-
-
-class LimmaRemoveBatchEffect(BaseEstimator, TransformerMixin):
-    """limma removeBatchEffect transformer for log-transformed expression data
-
-    Parameters
-    ----------
-    preserve_design : bool (default = True)
-        Whether batch effect correction should protect target design from
-        being removed.
-
-    Attributes
-    ----------
-    beta_ : array, shape (n_features, n_batches - 1)
-        removeBatchEffect linear model coefficents
-    """
-
-    def __init__(self, preserve_design=True):
-        self.preserve_design = preserve_design
-
-    def fit(self, X, y, sample_meta):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input log-transformed data matrix.
-
-        y : ignored
-
-        sample_meta : pandas.DataFrame, pandas.Series \
-            shape = (n_samples, n_metadata)
-            Training sample metadata.
-        """
-        X = check_array(X)
-        if sample_meta is None:
-            sample_meta = robjects.NULL
-            self.batch_ = None
-        self.beta_ = np.array(r_limma_remove_ba_fit(
-            X, sample_meta, preserve_design=self.preserve_design), dtype=float)
-        return self
-
-    def transform(self, X, sample_meta):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input log-transformed data matrix.
-
-        sample_meta : pandas.DataFrame, pandas.Series \
-            shape = (n_samples, n_metadata)
-            Sample metadata.
-
-        Returns
-        -------
-        Xt : array of shape (n_samples, n_features)
-            Batched corrected log-transformed input data matrix.
-        """
-        check_is_fitted(self, 'beta_')
-        X = check_array(X)
-        X = np.array(r_limma_remove_ba_transform(
-            X, sample_meta, beta=self.beta_), dtype=float)
-        return X
-
-    def inverse_transform(self, X, sample_meta):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input batched corrected log-transformed data matrix.
-
-        sample_meta : Ignored.
+        sample_meta: ignored
 
         Returns
         -------
