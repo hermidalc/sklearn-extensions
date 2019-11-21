@@ -13,7 +13,7 @@ cfs_feature_idxs <- function(X, y) {
 }
 
 fcbf_feature_idxs <- function(X, y, threshold=0) {
-    results <- Biocomb::select.fast.filter(
+    results <- select.fast.filter(
         cbind(X, as.factor(y)), disc.method="MDL", threshold=threshold
     )
     results <- results[order(results$NumberFeature), , drop=FALSE]

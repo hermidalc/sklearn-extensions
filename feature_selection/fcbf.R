@@ -1,5 +1,7 @@
-# adapted from Biocomb source code to use FSelectorRcpp
-select.fast.filter <- function(matrix, disc.method, threshold, attrs.nominal) {
+# adapted from Biocomb source code to also use FSelectorRcpp
+select.fast.filter <- function(
+    matrix, disc.method, threshold, attrs.nominal, use.fselector.rcpp=FALSE
+) {
 
     CalcGain <- function(m1, m2, symm) {
         dd <- length(m1)
@@ -34,9 +36,16 @@ select.fast.filter <- function(matrix, disc.method, threshold, attrs.nominal) {
         matrix <- data.frame(matrix)
         matrix[, dd[2]] <- as.factor(matrix[, dd[2]])
         if (disc.method == "MDL") {
-            m3 <- FSelectorRcpp::discretize(
-                as.formula(paste(names(matrix)[dd[2]], "~.")), matrix
-            )
+            if (use.fselector.rcpp) {
+                m3 <- FSelectorRcpp::discretize(
+                    as.formula(paste(names(matrix)[dd[2]], "~.")), matrix
+                )
+            } else {
+                m3 <- RWeka::Discretize(
+                    as.formula(paste(names(matrix)[dd[2]], "~.")),
+                    data = matrix
+                )
+            }
             # m3<-mdlp(matrix)$Disc.data
         }
         if (disc.method == "equal frequency") {
