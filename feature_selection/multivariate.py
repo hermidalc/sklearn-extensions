@@ -144,7 +144,7 @@ class FCBF(BaseEstimator, SelectorMixin):
         return self
 
     def _check_params(self, X, y):
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features."
@@ -216,7 +216,7 @@ class ReliefF(BaseEstimator, SelectorMixin):
         return self
 
     def _check_params(self, X, y):
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features."

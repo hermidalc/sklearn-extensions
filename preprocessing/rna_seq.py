@@ -156,7 +156,7 @@ class DESeq2RLEVST(BaseEstimator, TransformerMixin):
         -------
         Xr : array of shape (n_samples, n_original_features)
         """
-        raise NotImplementedError("inverse_transform not implemented.")
+        raise NotImplementedError('inverse_transform not implemented.')
 
 
 class EdgeRTMMLogCPM(BaseEstimator, TransformerMixin):
@@ -239,4 +239,4 @@ class EdgeRTMMLogCPM(BaseEstimator, TransformerMixin):
         -------
         Xr : array of shape (n_samples, n_original_features)
         """
-        raise NotImplementedError("inverse_transform not implemented.")
+        raise NotImplementedError('inverse_transform not implemented.')

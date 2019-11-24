@@ -102,21 +102,21 @@ class ColumnSelector(BaseEstimator, SelectorMixin):
         if self.cols is not None:
             types = {type(i) for i in self.cols}
             if len(types) > 1:
-                raise ValueError("cols should be all names or indices.")
+                raise ValueError('cols should be all names or indices.')
             if isinstance(self.cols[0], str):
                 if feature_meta is None:
-                    raise ValueError("feature_meta must be passed if cols are "
-                                     "names")
+                    raise ValueError('feature_meta must be passed if cols are '
+                                     'names')
                 for col in self.cols:
                     if col not in feature_meta.index:
-                        warnings.warn("%s does not exist." % col,
+                        warnings.warn('%s does not exist.' % col,
                                       ColumnSelectorWarning)
             else:
                 for col in self.cols:
                     if not 0 <= col <= X.shape[1]:
                         raise ValueError(
-                            "cols should be 0 <= col <= n_features; got %r."
-                            "Use cols=None to return all features."
+                            'cols should be 0 <= col <= n_features; got %r.'
+                            'Use cols=None to return all features.'
                             % col)
 
     def _get_support_mask(self):

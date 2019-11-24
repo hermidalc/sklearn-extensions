@@ -84,8 +84,15 @@ class DESeq2(BaseEstimator, SelectorMixin):
     Parameters
     ----------
     k : int or "all" (default = "all")
-        Number of top features to select. The "all" option bypasses selection,
-        for use in a parameter search.
+        Number of top features to select. Specifying k = "all" and sv = 1.0
+        bypasses selection, for use in a parameter search. When sv is also
+        specified then returns the intersection of both parameter results.
+
+    sv : float (default = 1.0)
+        Select top features below an adjusted s-value threshold. Specifying
+        k = "all" and sv = 1.0 bypasses selection, for use in a parameter
+        search. When k is also specified returns the intersection of both
+        parameter results.
 
     fc : float (default = 1.0)
         lfcShrink absolute fold change minimum threshold.
@@ -126,9 +133,10 @@ class DESeq2(BaseEstimator, SelectorMixin):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, k='all', fc=1, blind=False, fit_type='local',
+    def __init__(self, k='all', sv=1, fc=1, blind=False, fit_type='local',
                  model_batch=False, n_threads=1, memory=None):
         self.k = k
+        self.sv = sv
         self.fc = fc
         self.blind = blind
         self.fit_type = fit_type
@@ -219,23 +227,31 @@ class DESeq2(BaseEstimator, SelectorMixin):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError("inverse_transform not implemented.")
+        raise NotImplementedError('inverse_transform not implemented.')
 
     def _check_params(self, X, y):
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features."
-                % self.k)
+                "Use k='all' to return all features." % self.k)
+        if not 0 <= self.sv <= 1:
+            raise ValueError('sv should be 0 <= sv <= 1; got %r.' % self.sv)
         if self.fc < 1:
             raise ValueError(
-                "fold change threshold should be >= 1; got %r." % self.fc)
+                'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
         check_is_fitted(self, 'svals_')
         mask = np.zeros_like(self.svals_, dtype=bool)
-        if self.k == 'all':
+        if self.k == 'all' and self.sv == 1:
             mask = np.ones_like(self.svals_, dtype=bool)
+        elif self.sv > 0 and self.k > 0:
+            sval_idxs = np.where(self.svals_ < self.sv)[0]
+            mask[sval_idxs
+                 [np.argsort(self.svals_[sval_idxs], kind='mergesort')]
+                 [:min(sval_idxs.size, self.k)]] = True
+        elif self.sv > 0:
+            mask[self.svals_ < self.sv] = True
         elif self.k > 0:
             mask[np.argsort(self.svals_, kind='mergesort')[:self.k]] = True
         return mask
@@ -248,11 +264,18 @@ class EdgeR(BaseEstimator, SelectorMixin):
     Parameters
     ----------
     k : int or "all" (default = "all")
-        Number of top features to select. The "all" option bypasses selection,
-        for use in a parameter search.
+        Number of top features to select. Specifying k = "all" and pv = 1.0
+        bypasses selection, for use in a parameter search. When pv is also
+        specified then returns the intersection of both parameter results.
+
+    pv : float (default = 1.0)
+        Select top features below an adjusted s-value threshold. Specifying
+        k = "all" and pv = 1.0 bypasses selection, for use in a parameter
+        search. When k is also specified returns the intersection of both
+        parameter results.
 
     fc : float (default = 1.0)
-        glmTreat absolute fold change minimum threshold.  Default value of 1.0
+        glmTreat absolute fold change minimum threshold. Default value of 1.0
         gives glmQLFTest results.
 
     robust : bool (default = True)
@@ -284,9 +307,10 @@ class EdgeR(BaseEstimator, SelectorMixin):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', fc=1, robust=True, prior_count=1,
+    def __init__(self, k='all', pv=1, fc=1, robust=True, prior_count=1,
                  model_batch=False, memory=None):
         self.k = k
+        self.pv = pv
         self.fc = fc
         self.robust = robust
         self.prior_count = prior_count
@@ -375,23 +399,31 @@ class EdgeR(BaseEstimator, SelectorMixin):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError("inverse_transform not implemented.")
+        raise NotImplementedError('inverse_transform not implemented.')
 
     def _check_params(self, X, y):
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features."
-                % self.k)
+                "Use k='all' to return all features." % self.k)
+        if not 0 <= self.pv <= 1:
+            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
         if self.fc < 1:
             raise ValueError(
-                "fold change threshold should be >= 1; got %r." % self.fc)
+                'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
         check_is_fitted(self, 'pvals_')
         mask = np.zeros_like(self.pvals_, dtype=bool)
-        if self.k == 'all':
+        if self.k == 'all' and self.pv == 1:
             mask = np.ones_like(self.pvals_, dtype=bool)
+        elif self.pv > 0 and self.k > 0:
+            pval_idxs = np.where(self.pvals_ < self.pv)[0]
+            mask[pval_idxs
+                 [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
+                 [:min(pval_idxs.size, self.k)]] = True
+        elif self.pv > 0:
+            mask[self.pvals_ < self.pv] = True
         elif self.k > 0:
             mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
         return mask
@@ -480,7 +512,7 @@ class EdgeRFilterByExpr(BaseEstimator, SelectorMixin):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError("inverse_transform not implemented.")
+        raise NotImplementedError('inverse_transform not implemented.')
 
     def _get_support_mask(self):
         check_is_fitted(self, '_mask')
@@ -494,11 +526,18 @@ class LimmaVoom(BaseEstimator, SelectorMixin):
     Parameters
     ----------
     k : int or "all" (default = "all")
-        Number of top features to select. The "all" option bypasses selection,
-        for use in a parameter search.
+        Number of top features to select. Specifying k = "all" and pv = 1.0
+        bypasses selection, for use in a parameter search. When pv is also
+        specified then returns the intersection of both parameter results.
+
+    pv : float (default = 1.0)
+        Select top features below an adjusted s-value threshold. Specifying
+        k = "all" and pv = 1.0 bypasses selection, for use in a parameter
+        search. When k is also specified returns the intersection of both
+        parameter results.
 
     fc : float (default = 1.0)
-        treat absolute fold change minimum threshold.  Default value of 1.0
+        treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
     robust : bool (default = True)
@@ -534,9 +573,10 @@ class LimmaVoom(BaseEstimator, SelectorMixin):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', fc=1, robust=True, prior_count=1,
+    def __init__(self, k='all', pv=1, fc=1, robust=True, prior_count=1,
                  model_batch=False, model_dupcor=False, memory=None):
         self.k = k
+        self.pv = pv
         self.fc = fc
         self.robust = robust
         self.prior_count = prior_count
@@ -626,23 +666,31 @@ class LimmaVoom(BaseEstimator, SelectorMixin):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError("inverse_transform not implemented.")
+        raise NotImplementedError('inverse_transform not implemented.')
 
     def _check_params(self, X, y):
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features."
-                % self.k)
+                "Use k='all' to return all features." % self.k)
+        if not 0 <= self.pv <= 1:
+            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
         if self.fc < 1:
             raise ValueError(
-                "fold change threshold should be >= 1; got %r." % self.fc)
+                'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
         check_is_fitted(self, 'pvals_')
         mask = np.zeros_like(self.pvals_, dtype=bool)
-        if self.k == 'all':
+        if self.k == 'all' and self.pv == 1:
             mask = np.ones_like(self.pvals_, dtype=bool)
+        elif self.pv > 0 and self.k > 0:
+            pval_idxs = np.where(self.pvals_ < self.pv)[0]
+            mask[pval_idxs
+                 [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
+                 [:min(pval_idxs.size, self.k)]] = True
+        elif self.pv > 0:
+            mask[self.pvals_ < self.pv] = True
         elif self.k > 0:
             mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
         return mask
@@ -655,8 +703,15 @@ class DreamVoom(BaseEstimator, SelectorMixin):
     Parameters
     ----------
     k : int or "all" (default = "all")
-        Number of top features to select. The "all" option bypasses selection,
-        for use in a parameter search.
+        Number of top features to select. Specifying k = "all" and pv = 1.0
+        bypasses selection, for use in a parameter search. When pv is also
+        specified then returns the intersection of both parameter results.
+
+    pv : float (default = 1.0)
+        Select top features below an adjusted s-value threshold. Specifying
+        k = "all" and pv = 1.0 bypasses selection, for use in a parameter
+        search. When k is also specified returns the intersection of both
+        parameter results.
 
     fc : float (default = 1.0)
         Absolute fold-change minimum threshold.
@@ -692,9 +747,10 @@ class DreamVoom(BaseEstimator, SelectorMixin):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', fc=1, prior_count=1, model_batch=False,
+    def __init__(self, k='all', pv=1, fc=1, prior_count=1, model_batch=False,
                  n_threads=1, memory=None):
         self.k = k
+        self.pv = pv
         self.fc = fc
         self.prior_count = prior_count
         self.model_batch = model_batch
@@ -781,23 +837,31 @@ class DreamVoom(BaseEstimator, SelectorMixin):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError("inverse_transform not implemented.")
+        raise NotImplementedError('inverse_transform not implemented.')
 
     def _check_params(self, X, y):
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features."
-                % self.k)
+                "Use k='all' to return all features." % self.k)
+        if not 0 <= self.pv <= 1:
+            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
         if self.fc < 1:
             raise ValueError(
-                "fold change threshold should be >= 1; got %r." % self.fc)
+                'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
         check_is_fitted(self, 'pvals_')
         mask = np.zeros_like(self.pvals_, dtype=bool)
-        if self.k == 'all':
+        if self.k == 'all' and self.pv == 1:
             mask = np.ones_like(self.pvals_, dtype=bool)
+        elif self.pv > 0 and self.k > 0:
+            pval_idxs = np.where(self.pvals_ < self.pv)[0]
+            mask[pval_idxs
+                 [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
+                 [:min(pval_idxs.size, self.k)]] = True
+        elif self.pv > 0:
+            mask[self.pvals_ < self.pv] = True
         elif self.k > 0:
             mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
         return mask
@@ -809,7 +873,7 @@ class LimmaScorerClassification(BaseScorer):
     Parameters
     ----------
     fc : float (default = 1.0)
-        treat absolute fold change minimum threshold.  Default value of 1.0
+        treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
     robust : bool (default = False)
@@ -869,4 +933,4 @@ class LimmaScorerClassification(BaseScorer):
     def _check_params(self, X, y):
         if self.fc < 1:
             raise ValueError(
-                "fold change threshold should be >= 1; got %r." % self.fc)
+                'fold change threshold should be >= 1; got %r.' % self.fc)
