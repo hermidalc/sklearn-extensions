@@ -58,7 +58,7 @@ class ColumnSelector(BaseEstimator, SelectorMixin):
         elif isinstance(self.cols[0], str):
             if self.meta_col:
                 mask = feature_meta.isin(
-                    {self.meta_col: self.cols})[self.meta_col].values
+                    {self.meta_col: self.cols})[self.meta_col].to_numpy()
             else:
                 mask = feature_meta.index.isin(self.cols)
         else:
