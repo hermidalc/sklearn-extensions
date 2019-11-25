@@ -77,6 +77,13 @@ def dream_voom_feature_score(X, y, sample_meta, lfc, prior_count, model_batch,
             np.array(xt, dtype=float), np.array(rs, dtype=float))
 
 
+def limma_feature_score(X, y, sample_meta, lfc, robust, trend, model_batch):
+    pv, pa = r_limma_feature_score(
+        X, y, sample_meta=sample_meta, lfc=lfc, robust=robust,
+        trend=trend, model_batch=model_batch)
+    return (np.array(pv, dtype=float), np.array(pa, dtype=float))
+
+
 class DESeq2(BaseEstimator, SelectorMixin):
     """DESeq2 differential expression feature selector and
     normalizer/transformer for RNA-seq count data
@@ -867,70 +874,156 @@ class DreamVoom(BaseEstimator, SelectorMixin):
         return mask
 
 
-class LimmaScorerClassification(BaseScorer):
-    """limma differential expression feature scorer for classification tasks
+class Limma(BaseEstimator, SelectorMixin):
+    """limma differential expression feature selector for gene expression data
 
     Parameters
     ----------
+    k : int or "all" (default = "all")
+        Number of top features to select. Specifying k = "all" and pv = 1.0
+        bypasses selection, for use in a parameter search. When pv is also
+        specified then returns the intersection of both parameter results.
+
+    pv : float (default = 1.0)
+        Select top features below an adjusted p-value threshold. Specifying
+        k = "all" and pv = 1.0 bypasses selection, for use in a parameter
+        search. When k is also specified returns the intersection of both
+        parameter results.
+
     fc : float (default = 1.0)
         treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
     robust : bool (default = False)
-        limma treat/eBayes robust option
+        limma treat/eBayes robust option.
 
     trend : bool (default = False)
-        limma treat/eBayes trend option
+        limma treat/eBayes trend option.
 
     model_batch : bool (default = False)
-        Model batch effect if sample_meta passed to fit and Batch column exists
+        Model batch effect if sample_meta passed to fit and Batch column
+        exists.
+
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
 
     Attributes
     ----------
-    scores_ : array, shape (n_features,)
-        Feature F values.
+    pvals_ : array, shape (n_features,)
+        Feature raw p-values.
 
-    pvalues_ : array, shape (n_features,)
+    padjs_ : array, shape (n_features,)
         Feature adjusted p-values.
     """
 
-    def __init__(self, fc=1, robust=False, trend=False, model_batch=False):
+    def __init__(self, k='all', pv=1, fc=1, robust=False, trend=False,
+                 model_batch=False, memory=None):
+        self.k = k
+        self.pv = pv
         self.fc = fc
         self.robust = robust
         self.trend = trend
         self.model_batch = model_batch
+        self.memory = memory
 
-    def fit(self, X, y, sample_meta=None):
+    def fit(self, X, y, sample_meta=None, feature_meta=None):
         """
         Parameters
         ----------
-        X : array_like, shape (n_samples, n_features)
-            Training feature data matrix.
+        X : array-like, shape = (n_samples, n_features)
+            Training gene expression data matrix.
 
-        y : array_like, shape (n_samples,)
+        y : array-like, shape = (n_samples,)
             Training sample class labels.
 
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
-            Target sample metadata.
+            Training sample metadata.
+
+        feature_meta : Ignored.
 
         Returns
         -------
         self : object
             Returns self.
         """
+        X, y = check_X_y(X, y)
         self._check_params(X, y)
+        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        pv, pa = r_limma_feature_score(
+        self.pvals_, self.padjs_ = memory.cache(limma_feature_score)(
             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
             robust=self.robust, trend=self.trend, model_batch=self.model_batch)
-        # convert to scores for sklearn Select* feature selectors
-        self.scores_ = np.reciprocal(np.array(pv, dtype=float))
-        self.pvalues_ = np.array(pa, dtype=float)
         return self
 
+    def transform(self, X, sample_meta=None, feature_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Gene expression data matrix.
+
+        sample_meta : Ignored.
+
+        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
+            shape = (n_features, n_metadata)
+            Feature metadata.
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_selected_features)
+            Gene expression data matrix with only the selected features.
+        """
+        check_is_fitted(self, 'pvals_')
+        return super().transform(X, feature_meta)
+
+    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input transformed data matrix.
+
+        sample_meta : Ignored.
+
+        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
+            shape = (n_features, n_metadata)
+            Feature metadata.
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_original_features)
+            `X` with columns of zeros inserted where features would have
+            been removed by :meth:`transform`.
+        """
+        raise NotImplementedError('inverse_transform not implemented.')
+
     def _check_params(self, X, y):
+        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+            raise ValueError(
+                "k should be 0 <= k <= n_features; got %r."
+                "Use k='all' to return all features." % self.k)
+        if not 0 <= self.pv <= 1:
+            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
         if self.fc < 1:
             raise ValueError(
                 'fold change threshold should be >= 1; got %r.' % self.fc)
+
+    def _get_support_mask(self):
+        check_is_fitted(self, 'pvals_')
+        mask = np.zeros_like(self.pvals_, dtype=bool)
+        if self.k == 'all' and self.pv == 1:
+            mask = np.ones_like(self.pvals_, dtype=bool)
+        elif self.pv > 0 and self.k > 0:
+            pval_idxs = np.where(self.pvals_ < self.pv)[0]
+            mask[pval_idxs
+                 [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
+                 [:min(pval_idxs.size, self.k)]] = True
+        elif self.pv > 0:
+            mask[self.pvals_ < self.pv] = True
+        elif self.k > 0:
+            mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+        return mask
