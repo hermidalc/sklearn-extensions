@@ -254,9 +254,9 @@ class DESeq2(BaseEstimator, SelectorMixin):
             mask = np.ones_like(self.svals_, dtype=bool)
         elif self.k == 'all' and self.sv > 0:
             mask[self.svals_ < self.sv] = True
-        elif type(self.k, int) and self.k > 0 and self.sv == 1:
+        elif isinstance(self.k, int) and self.k > 0 and self.sv == 1:
             mask[np.argsort(self.svals_, kind='mergesort')[:self.k]] = True
-        elif type(self.k, int) and self.k > 0 and self.sv > 0:
+        elif isinstance(self.k, int) and self.k > 0 and self.sv > 0:
             sval_idxs = np.where(self.svals_ < self.sv)[0]
             mask[sval_idxs
                  [np.argsort(self.svals_[sval_idxs], kind='mergesort')]
@@ -426,9 +426,9 @@ class EdgeR(BaseEstimator, SelectorMixin):
             mask = np.ones_like(self.pvals_, dtype=bool)
         elif self.k == 'all' and self.pv > 0:
             mask[self.pvals_ < self.pv] = True
-        elif type(self.k, int) and self.k > 0 and self.pv == 1:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv == 1:
             mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
-        elif type(self.k, int) and self.k > 0 and self.pv > 0:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv > 0:
             pval_idxs = np.where(self.pvals_ < self.pv)[0]
             mask[pval_idxs
                  [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
@@ -693,9 +693,9 @@ class LimmaVoom(BaseEstimator, SelectorMixin):
             mask = np.ones_like(self.pvals_, dtype=bool)
         elif self.k == 'all' and self.pv > 0:
             mask[self.pvals_ < self.pv] = True
-        elif type(self.k, int) and self.k > 0 and self.pv == 1:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv == 1:
             mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
-        elif type(self.k, int) and self.k > 0 and self.pv > 0:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv > 0:
             pval_idxs = np.where(self.pvals_ < self.pv)[0]
             mask[pval_idxs
                  [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
@@ -864,9 +864,9 @@ class DreamVoom(BaseEstimator, SelectorMixin):
             mask = np.ones_like(self.pvals_, dtype=bool)
         elif self.k == 'all' and self.pv > 0:
             mask[self.pvals_ < self.pv] = True
-        elif type(self.k, int) and self.k > 0 and self.pv == 1:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv == 1:
             mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
-        elif type(self.k, int) and self.k > 0 and self.pv > 0:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv > 0:
             pval_idxs = np.where(self.pvals_ < self.pv)[0]
             mask[pval_idxs
                  [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
@@ -1019,9 +1019,9 @@ class Limma(BaseEstimator, SelectorMixin):
             mask = np.ones_like(self.pvals_, dtype=bool)
         elif self.k == 'all' and self.pv > 0:
             mask[self.pvals_ < self.pv] = True
-        elif type(self.k, int) and self.k > 0 and self.pv == 1:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv == 1:
             mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
-        elif type(self.k, int) and self.k > 0 and self.pv > 0:
+        elif isinstance(self.k, int) and self.k > 0 and self.pv > 0:
             pval_idxs = np.where(self.pvals_ < self.pv)[0]
             mask[pval_idxs
                  [np.argsort(self.pvals_[pval_idxs], kind='mergesort')]
