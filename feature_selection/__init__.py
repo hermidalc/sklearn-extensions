@@ -6,12 +6,12 @@ recursive feature elimination algorithm.
 
 from .cached import (
     CachedANOVAFScorerClassification, CachedChi2Scorer,
-    CachedMutualInfoScorerClassification, CachedLimmaScorerClassification)
+    CachedMutualInfoScorerClassification)
 from .column import ColumnSelector
 from .from_model import SelectFromModel
 from .multivariate import CFS, FCBF, ReliefF
-from .rna_seq import (DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr,
-                      LimmaScorerClassification, LimmaVoom)
+from .rna_seq import (DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr, Limma,
+                      LimmaVoom)
 from .rfe import RFE, RFECV
 from .univariate_selection import (
     ANOVAFScorerClassification, ANOVAFScorerRegression, Chi2Scorer,
@@ -25,7 +25,6 @@ __all__ = ['ANOVAFScorerClassification',
            'ANOVAFScorerRegression',
            'CachedANOVAFScorerClassification',
            'CachedChi2Scorer',
-           'CachedLimmaScorerClassification',
            'CachedMutualInfoScorerClassification',
            'CFS',
            'Chi2Scorer',
@@ -36,7 +35,7 @@ __all__ = ['ANOVAFScorerClassification',
            'EdgeRFilterByExpr',
            'FCBF',
            'GenericUnivariateSelect',
-           'LimmaScorerClassification',
+           'Limma',
            'LimmaVoom',
            'MutualInfoScorerClassification',
            'MutualInfoScorerRegression',
