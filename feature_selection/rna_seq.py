@@ -276,7 +276,7 @@ class EdgeR(BaseEstimator, SelectorMixin):
         specified then returns the intersection of both parameter results.
 
     pv : float (default = 1.0)
-        Select top features below an adjusted s-value threshold. Specifying
+        Select top features below an adjusted p-value threshold. Specifying
         k = "all" and pv = 1.0 bypasses selection, for use in a parameter
         search. When k is also specified returns the intersection of both
         parameter results.
@@ -538,7 +538,7 @@ class LimmaVoom(BaseEstimator, SelectorMixin):
         specified then returns the intersection of both parameter results.
 
     pv : float (default = 1.0)
-        Select top features below an adjusted s-value threshold. Specifying
+        Select top features below an adjusted p-value threshold. Specifying
         k = "all" and pv = 1.0 bypasses selection, for use in a parameter
         search. When k is also specified returns the intersection of both
         parameter results.
@@ -715,7 +715,7 @@ class DreamVoom(BaseEstimator, SelectorMixin):
         specified then returns the intersection of both parameter results.
 
     pv : float (default = 1.0)
-        Select top features below an adjusted s-value threshold. Specifying
+        Select top features below an adjusted p-value threshold. Specifying
         k = "all" and pv = 1.0 bypasses selection, for use in a parameter
         search. When k is also specified returns the intersection of both
         parameter results.
