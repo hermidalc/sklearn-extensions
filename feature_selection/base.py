@@ -57,7 +57,7 @@ class SelectorMixin(TransformerMixin, metaclass=ABCMeta):
             retention.
         """
 
-    def transform(self, X, feature_meta=None):
+    def transform(self, X, feature_meta=None, **transform_params):
         """Reduce X to the selected features.
 
         Parameters
@@ -90,7 +90,7 @@ class SelectorMixin(TransformerMixin, metaclass=ABCMeta):
             return X[:, safe_mask(X, mask)], feature_meta[mask]
         return X[:, safe_mask(X, mask)]
 
-    def inverse_transform(self, X, feature_meta=None):
+    def inverse_transform(self, X, feature_meta=None, **transform_params):
         """
         Reverse the transformation operation
 
