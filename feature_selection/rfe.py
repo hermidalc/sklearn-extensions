@@ -10,7 +10,7 @@
 import numpy as np
 from sklearn.utils._joblib import Parallel, delayed, effective_n_jobs
 from sklearn.utils import check_X_y, safe_sqr
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import indexable, check_is_fitted
 from sklearn.base import BaseEstimator
 from sklearn.base import MetaEstimatorMixin
 from sklearn.base import clone
@@ -18,19 +18,30 @@ from sklearn.base import is_classifier
 from sklearn.model_selection import check_cv
 from .base import SelectorMixin
 from ..metrics.scorer import check_scoring
-from ..model_selection._validation import _score
-from ..utils.metaestimators import if_delegate_has_method, _safe_split
+from ..model_selection._validation import _index_param_value, _score
+from ..utils.metaestimators import (if_delegate_has_method, _safe_split,
+                                    check_routing)
 
 
-def _rfe_single_fit(rfe, estimator, X, y, train, test, scorer):
+def _rfe_single_fit(rfe, estimator, X, y, train, test, scorer, fit_params,
+                    score_params=None):
     """
     Return the score for a fit across one fold.
     """
+    # Subset fit_params values for train indices
+    fit_params = fit_params if fit_params is not None else {}
+    fit_params = {k: _index_param_value(X, v, train)
+                  for k, v in fit_params.items()}
+    # Subset score_params values for test indices
+    score_params = score_params if score_params is not None else {}
+    score_params = {k: _index_param_value(X, v, test)
+                    for k, v in score_params.items()}
+
     X_train, y_train = _safe_split(estimator, X, y, train)
     X_test, y_test = _safe_split(estimator, X, y, test, train)
     rfe._fit(
-        X_train, y_train, lambda estimator, features:
-        _score(estimator, X_test[:, features], y_test, scorer))
+        X_train, y_train, fit_params, lambda estimator, features:
+        _score(estimator, X_test[:, features], y_test, scorer, score_params))
     return rfe.scores_, rfe.n_remaining_feature_steps_
 
 
@@ -139,6 +150,7 @@ class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
            for cancer classification using support vector machines",
            Mach. Learn., 46(1-3), 389--422, 2002.
     """
+
     def __init__(self, estimator, n_features_to_select=None, step=1,
                  tune_step_at=None, tuning_step=1, reducing_step=False,
                  verbose=0):
@@ -158,7 +170,7 @@ class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
     def classes_(self):
         return self.estimator_.classes_
 
-    def fit(self, X, y):
+    def fit(self, X, y, **fit_params):
         """Fit the RFE model and then the underlying estimator on the selected
            features.
 
@@ -169,10 +181,13 @@ class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
 
         y : array-like, shape = [n_samples]
             The target values.
-        """
-        return self._fit(X, y)
 
-    def _fit(self, X, y, step_score=None):
+        **fit_params : dict of string -> object
+            Parameters passed to the ``fit`` method of the estimator
+        """
+        return self._fit(X, y, fit_params)
+
+    def _fit(self, X, y, fit_params, step_score=None):
         # step_score parameter controls the calculation of self.scores_.
         # step_score is not exposed to users and is only used when implementing
         # RFECV self.scores_ and will not be calculated when calling regular
@@ -230,7 +245,7 @@ class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
                 print("Fitting estimator with %d features."
                       % n_remaining_features)
 
-            estimator.fit(X[:, features], y)
+            estimator.fit(X[:, features], y, **fit_params)
 
             # Get coefs
             if hasattr(estimator, 'coef_'):
@@ -286,7 +301,7 @@ class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
         # Set final attributes
         features = np.arange(n_features)[support_]
         self.estimator_ = clone(self.estimator)
-        self.estimator_.fit(X[:, features], y)
+        self.estimator_.fit(X[:, features], y, **fit_params)
 
         # Compute step score when only n_features_to_select features left
         if step_score:
@@ -316,7 +331,7 @@ class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
         return self.estimator_.predict(self.transform(X))
 
     @if_delegate_has_method(delegate='estimator')
-    def score(self, X, y):
+    def score(self, X, y, sample_weight=None):
         """Reduce X to the selected features and then return the score of the
            underlying estimator.
 
@@ -327,9 +342,16 @@ class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
 
         y : array of shape [n_samples]
             The target values.
+
+        sample_weight : array-like, default=None
+            If not None, this argument is passed as ``sample_weight`` keyword
+            argument to the ``score`` method of the estimator.
         """
         check_is_fitted(self, 'estimator_')
-        return self.estimator_.score(self.transform(X), y)
+        score_params = {}
+        if sample_weight is not None:
+            score_params['sample_weight'] = sample_weight
+        return self.estimator_.score(self.transform(X), y, **score_params)
 
     def _get_support_mask(self):
         check_is_fitted(self, 'support_')
@@ -539,10 +561,9 @@ class RFECV(RFE, MetaEstimatorMixin):
            for cancer classification using support vector machines",
            Mach. Learn., 46(1-3), 389--422, 2002.
     """
-    def __init__(self, estimator, step=1, tune_step_at=None,
-                 tuning_step=1, reducing_step=False,
-                 min_features_to_select=1, cv='warn', scoring=None, verbose=0,
-                 n_jobs=None):
+    def __init__(self, estimator, step=1, tune_step_at=None, tuning_step=1,
+                 reducing_step=False, min_features_to_select=1, cv='warn',
+                 scoring=None, verbose=0, n_jobs=None, param_routing=None):
         self.estimator = estimator
         self.step = step
         self.tune_step_at = tune_step_at
@@ -553,8 +574,12 @@ class RFECV(RFE, MetaEstimatorMixin):
         self.verbose = verbose
         self.n_jobs = n_jobs
         self.min_features_to_select = min_features_to_select
+        self.param_routing = param_routing
+        self.router = check_routing(self.param_routing,
+                                    ['estimator', 'cv', 'scoring'],
+                                    {'cv': 'groups', 'estimator': '-groups'})
 
-    def fit(self, X, y, groups=None):
+    def fit(self, X, y, **fit_params):
         """Fit the RFE model and automatically tune the number of selected
            features.
 
@@ -571,6 +596,9 @@ class RFECV(RFE, MetaEstimatorMixin):
         groups : array-like, shape = [n_samples], optional
             Group labels for the samples used while splitting the dataset into
             train/test set.
+
+        **fit_params : dict of string -> object
+            Parameters passed to the ``fit`` method of the estimator
         """
         X, y = check_X_y(X, y, "csr", ensure_min_features=2)
 
@@ -597,15 +625,29 @@ class RFECV(RFE, MetaEstimatorMixin):
         # n_jobs to 1 and provides bound methods as scorers is not broken with
         # the addition of n_jobs parameter in version 0.18.
 
+        # make sure fit_params are sliceable
+        fit_params_values = indexable(*fit_params.values())
+        fit_params = dict(zip(fit_params.keys(), fit_params_values))
+
+        (fit_params, cv_params, score_params), remainder = (
+            self.router(fit_params))
+        if remainder:
+            raise TypeError('fit() got unexpected keyword arguments %r'
+                            % sorted(remainder))
+
         if effective_n_jobs(self.n_jobs) == 1:
             parallel, func = list, _rfe_single_fit
         else:
             parallel = Parallel(n_jobs=self.n_jobs)
             func = delayed(_rfe_single_fit)
 
+        fit_and_score_kwargs = dict(fit_params=fit_params,
+                                    score_params=score_params)
+
         scores, n_remaining_feature_steps = zip(*parallel(
-            func(rfe, self.estimator, X, y, train, test, scorer)
-            for train, test in cv.split(X, y, groups)))
+            func(rfe, self.estimator, X, y, train, test, scorer,
+                 **fit_and_score_kwargs)
+            for train, test in cv.split(X, y, **cv_params)))
 
         scores = np.sum(scores, axis=0)
         # Each same so just get first
@@ -631,17 +673,17 @@ class RFECV(RFE, MetaEstimatorMixin):
                   tune_step_at=tune_step_at, tuning_step=self.tuning_step,
                   reducing_step=self.reducing_step, verbose=self.verbose)
 
-        rfe.fit(X, y)
+        rfe.fit(X, y, **fit_params)
 
         # Set final attributes
         self.support_ = rfe.support_
         self.n_features_ = rfe.n_features_
         self.ranking_ = rfe.ranking_
         self.estimator_ = clone(self.estimator)
-        self.estimator_.fit(self.transform(X), y)
+        self.estimator_.fit(self.transform(X), y, **fit_params)
         self.n_remaining_feature_steps_ = n_remaining_feature_steps
 
         # Fixing a normalization error, n is equal to get_n_splits(X, y) - 1
         # here, the scores are normalized by get_n_splits(X, y)
-        self.grid_scores_ = scores[::-1] / cv.get_n_splits(X, y, groups)
+        self.grid_scores_ = scores[::-1] / cv.get_n_splits(X, y, **cv_params)
         return self
