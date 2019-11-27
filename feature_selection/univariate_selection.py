@@ -310,15 +310,8 @@ def f_regression(X, y, center=True):
 # Base scorer class
 
 class BaseScorer(BaseEstimator):
-    """Initialize the univariate feature scorer."""
-    def __init__(self):
-        pass
-
-    def fit(self, X, y):
-        pass
-
-    def _check_params(self, X, y):
-        pass
+    """Base univariate feature scorer."""
+    pass
 
 
 ######################################################################
@@ -344,8 +337,6 @@ class ANOVAFScorerClassification(BaseScorer):
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
-    def __init__(self):
-        pass
 
     def fit(self, X, y):
         """Run feature scorer on (X, y).
@@ -365,9 +356,6 @@ class ANOVAFScorerClassification(BaseScorer):
         """
         self.scores_, self.pvalues_ = f_classif(X, y)
         return self
-
-    def _check_params(self, X, y):
-        pass
 
 
 class ANOVAFScorerRegression(BaseScorer):
@@ -406,6 +394,7 @@ class ANOVAFScorerRegression(BaseScorer):
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
+
     def __init__(self, center=True):
         self.center = center
 
@@ -427,9 +416,6 @@ class ANOVAFScorerRegression(BaseScorer):
         """
         self.scores_, self.pvalues_ = f_regression(X, y, self.center)
         return self
-
-    def _check_params(self, X, y):
-        pass
 
 
 class Chi2Scorer(BaseScorer):
@@ -466,8 +452,6 @@ class Chi2Scorer(BaseScorer):
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
-    def __init__(self):
-        pass
 
     def fit(self, X, y):
         """Run feature scorer on (X, y).
@@ -488,8 +472,6 @@ class Chi2Scorer(BaseScorer):
         self.scores_, self.pvalues_ = chi2(X, y)
         return self
 
-    def _check_params(self, X, y):
-        pass
 
 class MutualInfoScorerClassification(BaseScorer):
     """Estimate mutual information for a discrete target variable.
@@ -566,6 +548,7 @@ class MutualInfoScorerClassification(BaseScorer):
     Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
+
     def __init__(self, discrete_features='auto', n_neighbors=3,
                  copy=True, random_state=None):
         self.discrete_features = discrete_features
@@ -593,9 +576,6 @@ class MutualInfoScorerClassification(BaseScorer):
                                            self.n_neighbors, self.copy,
                                            self.random_state)
         return self
-
-    def _check_params(self, X, y):
-        pass
 
 
 class MutualInfoScorerRegression(BaseScorer):
@@ -673,6 +653,7 @@ class MutualInfoScorerRegression(BaseScorer):
     Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     """
+
     def __init__(self, discrete_features='auto', n_neighbors=3,
                  copy=True, random_state=None):
         self.discrete_features = discrete_features
@@ -700,9 +681,6 @@ class MutualInfoScorerRegression(BaseScorer):
                                               self.n_neighbors, self.copy,
                                               self.random_state)
         return self
-
-    def _check_params(self, X, y):
-        pass
 
 
 ######################################################################
@@ -738,13 +716,6 @@ class _BaseFilter(BaseEstimator, SelectorMixin):
         self : object
         """
         X, y = check_X_y(X, y, ['csr', 'csc'], multi_output=True)
-
-        if (not callable(self.score_func) and
-            not isinstance(self.score_func, BaseScorer)):
-            raise TypeError("The score function should be a callable or"
-                            "scorer object, %s (%s) was passed."
-                            % (self.score_func, type(self.score_func)))
-
         self._check_params(X, y)
         if callable(self.score_func):
             score_func_ret = self.score_func(X, y)
@@ -766,7 +737,11 @@ class _BaseFilter(BaseEstimator, SelectorMixin):
         return self
 
     def _check_params(self, X, y):
-        pass
+        if (not callable(self.score_func)
+                and not isinstance(self.score_func, BaseScorer)):
+            raise TypeError("The score function should be a callable or"
+                            "scorer object, %s (%s) was passed."
+                            % (self.score_func, type(self.score_func)))
 
 
 ######################################################################
@@ -932,7 +907,6 @@ class SelectKBest(_BaseFilter):
 
     def _get_support_mask(self):
         check_is_fitted(self, 'scores_')
-
         if self.k == 'all':
             return np.ones(self.scores_.shape, dtype=bool)
         elif self.k == 0:
@@ -1081,7 +1055,6 @@ class SelectFdr(_BaseFilter):
 
     def _get_support_mask(self):
         check_is_fitted(self, 'scores_')
-
         n_features = len(self.pvalues_)
         sv = np.sort(self.pvalues_)
         selected = sv[sv <= float(self.alpha) / n_features *
@@ -1151,7 +1124,6 @@ class SelectFwe(_BaseFilter):
 
     def _get_support_mask(self):
         check_is_fitted(self, 'scores_')
-
         return (self.pvalues_ < self.alpha / len(self.pvalues_))
 
 
@@ -1232,7 +1204,6 @@ class GenericUnivariateSelect(_BaseFilter):
 
     def _make_selector(self):
         selector = self._selection_modes[self.mode](score_func=self.score_func)
-
         # Now perform some acrobatics to set the right named parameter in
         # the selector
         possible_params = selector._get_param_names()
@@ -1247,7 +1218,6 @@ class GenericUnivariateSelect(_BaseFilter):
                              " (type %s) was passed."
                              % (self._selection_modes.keys(), self.mode,
                                 type(self.mode)))
-
         self._make_selector()._check_params(X, y)
 
     def _get_support_mask(self):

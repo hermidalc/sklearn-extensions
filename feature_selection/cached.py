@@ -5,11 +5,14 @@ from ..cached import CachedFitMixin
 
 class CachedANOVAFScorerClassification(CachedFitMixin,
                                        ANOVAFScorerClassification):
-    pass
+    def __init__(self, memory):
+        self.memory = memory
 
 
 class CachedChi2Scorer(CachedFitMixin, Chi2Scorer):
-    pass
+
+    def __init__(self, memory):
+        self.memory = memory
 
 
 class CachedMutualInfoScorerClassification(CachedFitMixin,
