@@ -37,8 +37,8 @@ def deseq2_vst_transform(X, geo_means, size_factors, disp_func, fit_type):
 
 
 def edger_tmm_logcpm_fit(X, prior_count):
-    return np.array(r_edger_tmm_logcpm_fit(X, prior_count=prior_count),
-                    dtype=float)
+    xt, rs = r_edger_tmm_logcpm_fit(X, prior_count=prior_count)
+    return np.array(xt, dtype=float), np.array(rs, dtype=float)
 
 
 def edger_tmm_logcpm_transform(X, ref_sample, prior_count):
