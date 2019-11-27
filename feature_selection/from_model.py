@@ -177,7 +177,8 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
             The target values (integers that correspond to classes in
             classification, real numbers in regression).
 
-        **fit_params : Other estimator specific parameters
+        **fit_params : dict of string -> object
+            Parameters passed to the ``fit`` method of the estimator
 
         Returns
         -------
@@ -209,7 +210,8 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
             The target values (integers that correspond to classes in
             classification, real numbers in regression).
 
-        **fit_params : Other estimator specific parameters
+        **fit_params : dict of string -> object
+            Parameters passed to the ``fit`` method of the estimator
 
         Returns
         -------
