@@ -12,67 +12,56 @@ from ..utils.metaestimators import if_delegate_has_method
 
 def _get_feature_importances(estimator, norm_order=1):
     """Retrieve or aggregate feature importances from estimator"""
-    importances = getattr(estimator, "feature_importances_", None)
+    importances = getattr(estimator, 'feature_importances_', None)
+    if importances is None:
+        if hasattr(estimator, 'coef_'):
+            if estimator.coef_.ndim == 1:
+                importances = np.abs(estimator.coef_)
 
-    if importances is None and hasattr(estimator, "coef_"):
-        if estimator.coef_.ndim == 1:
-            importances = np.abs(estimator.coef_)
-
+            else:
+                importances = np.linalg.norm(estimator.coef_, axis=0,
+                                             ord=norm_order)
         else:
-            importances = np.linalg.norm(estimator.coef_, axis=0,
-                                         ord=norm_order)
-
-    elif importances is None:
-        raise ValueError(
-            "The underlying estimator %s has no `coef_` or "
-            "`feature_importances_` attribute. Either pass a fitted estimator"
-            " to SelectFromModel or call fit before calling transform."
-            % estimator.__class__.__name__)
-
+            raise ValueError(
+                'The underlying estimator %s has no `coef_` or '
+                '`feature_importances_` attribute. Either pass a fitted '
+                'estimator to SelectFromModel or call fit before calling '
+                'transform.' % estimator.__class__.__name__)
     return importances
 
 
 def _calculate_threshold(estimator, importances, threshold):
     """Interpret the threshold value"""
-
     if threshold is None:
         # determine default from estimator
         est_name = estimator.__class__.__name__
-        if ((hasattr(estimator, "penalty") and estimator.penalty == "l1") or
-                "Lasso" in est_name):
+        if ((hasattr(estimator, 'penalty') and estimator.penalty == 'l1')
+                or 'Lasso' in est_name):
             # the natural default threshold is 0 when l1 penalty was used
             threshold = 1e-5
         else:
-            threshold = "mean"
-
+            threshold = 'mean'
     if isinstance(threshold, six.string_types):
-        if "*" in threshold:
-            scale, reference = threshold.split("*")
+        if '*' in threshold:
+            scale, reference = threshold.split('*')
             scale = float(scale.strip())
             reference = reference.strip()
-
-            if reference == "median":
+            if reference == 'median':
                 reference = np.median(importances)
-            elif reference == "mean":
+            elif reference == 'mean':
                 reference = np.mean(importances)
             else:
-                raise ValueError("Unknown reference: " + reference)
-
+                raise ValueError('Unknown reference: ' + reference)
             threshold = scale * reference
-
-        elif threshold == "median":
+        elif threshold == 'median':
             threshold = np.median(importances)
-
-        elif threshold == "mean":
+        elif threshold == 'mean':
             threshold = np.mean(importances)
-
         else:
             raise ValueError("Expected threshold='mean' or threshold='median' "
                              "got %s" % threshold)
-
     else:
         threshold = float(threshold)
-
     return threshold
 
 
@@ -126,8 +115,13 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
 
     threshold_ : float
         The threshold value used for feature selection.
+
+    scores_ : array, shape = (n_features,)
+        feature importances for each feature
     """
-    def __init__(self, estimator, threshold=None, k=None, prefit=False, norm_order=1):
+
+    def __init__(self, estimator, threshold=None, k=None, prefit=False,
+                 norm_order=1):
         self.estimator = estimator
         self.threshold = threshold
         self.k = k
@@ -135,10 +129,10 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
         self.norm_order = norm_order
 
     def _check_params(self, X, y):
-        if self.k is not None and not (self.k == "all" or 0 <= self.k <= X.shape[1]):
-            raise ValueError("k should be >=0, <= n_features; got %r."
-                             "Use k='all' to return all features."
-                             % self.k)
+        if (self.k is not None
+                and not (self.k == 'all' or 0 <= self.k <= X.shape[1])):
+            raise ValueError("k should be 0 <= k <= n_features; got %r."
+                             "Use k='all' to return all features." % self.k)
 
     def _get_support_mask(self):
         # SelectFromModel can directly call on transform.
@@ -147,23 +141,21 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
         elif hasattr(self, 'estimator_'):
             estimator = self.estimator_
         else:
-            raise ValueError(
-                'Either fit SelectFromModel before transform or set "prefit='
-                'True" and pass a fitted estimator to the constructor.')
+            raise ValueError('Either fit SelectFromModel before transform or '
+                             'set prefit=True and pass a fitted estimator to '
+                             'the constructor.')
         self.scores_ = _get_feature_importances(estimator, self.norm_order)
         if self.k is None:
-            threshold = _calculate_threshold(estimator, self.scores_, self.threshold)
-            return self.scores_ >= threshold
-        elif self.k == 'all':
+            threshold = _calculate_threshold(estimator, self.scores_,
+                                             self.threshold)
+            return self.scores_ > threshold
+        if self.k == 'all':
             return np.ones(self.scores_.shape, dtype=bool)
-        elif self.k == 0:
+        if self.k == 0:
             return np.zeros(self.scores_.shape, dtype=bool)
-        else:
-            mask = np.zeros(self.scores_.shape, dtype=bool)
-            # Request a stable sort. Mergesort takes more memory (~40MB per
-            # megafeature on x86-64).
-            mask[np.argsort(self.scores_, kind="mergesort")[-self.k:]] = True
-            return mask
+        mask = np.zeros(self.scores_.shape, dtype=bool)
+        mask[np.argsort(self.scores_, kind='mergesort')[-self.k:]] = True
+        return mask
 
     def fit(self, X, y=None, **fit_params):
         """Fit the SelectFromModel meta-transformer.
@@ -186,8 +178,7 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
             Returns self.
         """
         if self.prefit:
-            raise NotFittedError(
-                "Since 'prefit=True', call transform directly")
+            raise NotFittedError('Since prefit=True, call transform directly')
         self.estimator_ = clone(self.estimator)
         self.estimator_.fit(X, y, **fit_params)
         return self
@@ -219,9 +210,8 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
             Returns self.
         """
         if self.prefit:
-            raise NotFittedError(
-                "Since 'prefit=True', call transform directly")
-        if not hasattr(self, "estimator_"):
+            raise NotFittedError('Since prefit=True, call transform directly')
+        if not hasattr(self, 'estimator_'):
             self.estimator_ = clone(self.estimator)
         self.estimator_.partial_fit(X, y, **fit_params)
         return self
