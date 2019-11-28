@@ -115,9 +115,6 @@ class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
 
     threshold_ : float
         The threshold value used for feature selection.
-
-    scores_ : array, shape = (n_features,)
-        feature importances for each feature
     """
 
     def __init__(self, estimator, threshold=None, k=None, prefit=False,
