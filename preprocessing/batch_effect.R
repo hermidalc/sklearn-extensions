@@ -58,8 +58,10 @@ stica_transform <- function(X, params) {
 }
 
 bapred_fit <- function(
-    X, sample_meta,
-    method=c("cbt", "ctr", "fab", "qnorm", "rta", "rtg", "std", "sva")
+    X, sample_meta, method=c(
+        "combat", "meancenter", "fabatch", "qunorm", "ratioa", "ratiog",
+        "standardize", "sva"
+    )
 ) {
     suppressPackageStartupMessages(library("bapred"))
     y <- as.factor(sample_meta$Class + 1)
@@ -71,25 +73,25 @@ bapred_fit <- function(
         }
     }
     batch <- as.factor(batch)
-    if (method == "cbt") {
+    if (method == "combat") {
         params <- combatba(X, batch)
     }
-    else if (method == "ctr") {
+    else if (method == "meancenter") {
         params <- meancenter(X, batch)
     }
-    else if (method == "fab") {
+    else if (method == "fabatch") {
         params <- fabatch(X, y, batch)
     }
-    else if (method == "qnorm") {
+    else if (method == "qunorm") {
         params <- qunormtrain(X)
     }
-    else if (method == "rta") {
+    else if (method == "ratioa") {
         params <- ratioa(X, batch)
     }
-    else if (method == "rtg") {
+    else if (method == "ratiog") {
         params <- ratiog(X, batch)
     }
-    else if (method == "std") {
+    else if (method == "standardize") {
         params <- standardize(X, batch)
     }
     else if (method == "sva") {
@@ -99,7 +101,7 @@ bapred_fit <- function(
         # ctrls <- as.numeric(grepl("^AFFX", rownames(t(X))))
         params <- svaba(X, batch, mod, mod0, algorithm="fast")
     }
-    if (method == "qnorm") {
+    if (method == "qunorm") {
         xadj_key <- "xnorm"
     } else {
         xadj_key <- "xadj"
@@ -108,8 +110,10 @@ bapred_fit <- function(
 }
 
 bapred_transform <- function(
-    X, sample_meta, params,
-    method=c("cbt", "ctr", "fab", "qnorm", "rta", "rtg", "std", "sva")
+    X, sample_meta, method=c(
+        "combat", "meancenter", "fabatch", "qunorm", "ratioa", "ratiog",
+        "standardize", "sva"
+    ), params
 ) {
     suppressPackageStartupMessages(library("bapred"))
     batch <- sample_meta$Batch
@@ -120,25 +124,25 @@ bapred_transform <- function(
         }
     }
     batch <- as.factor(batch)
-    if (method == "cbt") {
+    if (method == "combat") {
         return(combatbaaddon(params, X, batch))
     }
-    else if (method == "ctr") {
+    else if (method == "meancenter") {
         return(meancenteraddon(params, X, batch))
     }
-    else if (method == "fab") {
+    else if (method == "fabatch") {
         return(fabatchaddon(params, X, batch))
     }
-    else if (method == "qnorm") {
+    else if (method == "qunorm") {
         return(qunormaddon(params, X))
     }
-    else if (method == "rta") {
+    else if (method == "ratioa") {
         return(ratioaaddon(params, X, batch))
     }
-    else if (method == "rtg") {
+    else if (method == "ratiog") {
         return(ratiogaddon(params, X, batch))
     }
-    else if (method == "std") {
+    else if (method == "standardize") {
         return(standardizeaddon(params, X, batch))
     }
     else if (method == "sva") {
