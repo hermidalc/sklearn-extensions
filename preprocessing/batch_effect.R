@@ -1,7 +1,7 @@
 # Batch effect correction transformer functions
 
 # adapted from limma::removeBatchEffect source code
-limma_remove_ba_fit <- function(X, sample_meta, preserve_design=TRUE) {
+limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {
     suppressPackageStartupMessages(library("limma"))
     batch <- sample_meta$Batch
     sample_meta$Batch <- NULL
@@ -20,7 +20,7 @@ limma_remove_ba_fit <- function(X, sample_meta, preserve_design=TRUE) {
     return(beta)
 }
 
-limma_remove_ba_transform <- function(X, sample_meta, beta) {
+limma_removeba_transform <- function(X, sample_meta, beta) {
     batch <- sample_meta$Batch
     batch <- as.factor(batch)
     contrasts(batch) <- contr.sum(levels(batch))
@@ -28,7 +28,7 @@ limma_remove_ba_transform <- function(X, sample_meta, beta) {
     return(t(t(X) - beta %*% t(batch)))
 }
 
-stica_fit <- function(
+stica_removeba_fit <- function(
     X, sample_meta, method=c("stICA", "SVD"), k=20, alpha=0.5
 ) {
     if (!exists("normFact")) {
@@ -48,16 +48,16 @@ stica_fit <- function(
     return(list(t(params$Xn), params[names(params) != "Xn"]))
 }
 
-stica_transform <- function(X, params) {
+stica_removeba_transform <- function(X, params) {
     # Renard et al stICA IEEE 2017 paper code add-on batch effect correction
     # Vte = dot(dot(Xte.T,U),np.linalg.inv(dot(U.T,U)))
     # Xte_n = dot(U,Vte.T)
     return(
-        t(params$U %*% t((X %*% params$U) %*% solve(t(params$U) %*% params$U)))
+        t(params$U %*% t(X %*% params$U %*% solve(t(params$U) %*% params$U)))
     )
 }
 
-bapred_fit <- function(
+bapred_removeba_fit <- function(
     X, sample_meta, method=c(
         "combat", "meancenter", "fabatch", "qunorm", "ratioa", "ratiog",
         "standardize", "sva"
@@ -95,6 +95,9 @@ bapred_fit <- function(
         params <- standardize(X, batch)
     }
     else if (method == "sva") {
+        if (!exists("svaba")) {
+            source(paste(dirname(sys.frame(1)$ofile), "svapred.R", sep="/"))
+        }
         sample_meta$Class <- as.factor(sample_meta$Class)
         mod <- model.matrix(~Class, data=sample_meta)
         mod0 <- model.matrix(~1, data=sample_meta)
@@ -109,7 +112,7 @@ bapred_fit <- function(
     return(list(params[[xadj_key]], params[names(params) != xadj_key]))
 }
 
-bapred_transform <- function(
+bapred_removeba_transform <- function(
     X, sample_meta, method=c(
         "combat", "meancenter", "fabatch", "qunorm", "ratioa", "ratiog",
         "standardize", "sva"
@@ -146,6 +149,9 @@ bapred_transform <- function(
         return(standardizeaddon(params, X, batch))
     }
     else if (method == "sva") {
+        if (!exists("svabaaddon")) {
+            source(paste(dirname(sys.frame(1)$ofile), "svapred.R", sep="/"))
+        }
         return(svabaaddon(params, X))
     }
 }
