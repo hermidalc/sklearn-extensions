@@ -1,8 +1,5 @@
 # Multivariate feature selection functions
 
-r_lib_dir <- dirname(sys.frame(1)$ofile)
-source(paste(r_lib_dir, "fcbf.R", sep="/"))
-
 cfs_feature_idxs <- function(X, y) {
     X <- as.data.frame(X)
     colnames(X) <- seq(1, ncol(X))
@@ -13,6 +10,9 @@ cfs_feature_idxs <- function(X, y) {
 }
 
 fcbf_feature_idxs <- function(X, y, threshold=0) {
+    if (!exists("select.fast.filter")) {
+        source(paste(dirname(sys.frame(1)$ofile), "fcbf.R", sep="/"))
+    }
     results <- select.fast.filter(
         cbind(X, as.factor(y)), disc.method="MDL", threshold=threshold
     )
