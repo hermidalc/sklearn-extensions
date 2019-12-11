@@ -1,5 +1,8 @@
 # Batch effect correction transformer functions
 
+source(paste(dirname(sys.frame(1)$ofile), "stICA.R", sep="/"))
+source(paste(dirname(sys.frame(1)$ofile), "svapred.R", sep="/"))
+
 # adapted from limma::removeBatchEffect source code
 limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {
     suppressPackageStartupMessages(library("limma"))
@@ -31,9 +34,6 @@ limma_removeba_transform <- function(X, sample_meta, beta) {
 stica_removeba_fit <- function(
     X, sample_meta, method=c("stICA", "SVD"), k=20, alpha=0.5
 ) {
-    if (!exists("normFact")) {
-        source(paste(dirname(sys.frame(1)$ofile), "stICA.R", sep="/"))
-    }
     if (method == "stICA") {
         params <- normFact(
             method, t(X), sample_meta$Batch, "categorical", k=k, alpha=alpha,
@@ -95,9 +95,6 @@ bapred_removeba_fit <- function(
         params <- standardize(X, batch)
     }
     else if (method == "sva") {
-        if (!exists("svaba")) {
-            source(paste(dirname(sys.frame(1)$ofile), "svapred.R", sep="/"))
-        }
         sample_meta$Class <- as.factor(sample_meta$Class)
         mod <- model.matrix(~Class, data=sample_meta)
         mod0 <- model.matrix(~1, data=sample_meta)
@@ -149,9 +146,6 @@ bapred_removeba_transform <- function(
         return(standardizeaddon(params, X, batch))
     }
     else if (method == "sva") {
-        if (!exists("svabaaddon")) {
-            source(paste(dirname(sys.frame(1)$ofile), "svapred.R", sep="/"))
-        }
         return(svabaaddon(params, X))
     }
 }
