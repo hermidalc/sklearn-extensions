@@ -7,7 +7,6 @@ from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
 from .base import SelectorMixin
-from .univariate_selection import BaseScorer
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -418,17 +417,17 @@ class EdgeR(BaseEstimator, SelectorMixin):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'padjs_')
+        mask = np.zeros_like(self.padjs_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.padjs_, dtype=bool)
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
         return mask
 
 
@@ -683,17 +682,17 @@ class LimmaVoom(BaseEstimator, SelectorMixin):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'padjs_')
+        mask = np.zeros_like(self.padjs_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.padjs_, dtype=bool)
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
         return mask
 
 
@@ -852,17 +851,17 @@ class DreamVoom(BaseEstimator, SelectorMixin):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'padjs_')
+        mask = np.zeros_like(self.padjs_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.padjs_, dtype=bool)
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
         return mask
 
 
@@ -969,7 +968,7 @@ class Limma(BaseEstimator, SelectorMixin):
         Xr : array of shape (n_samples, n_selected_features)
             Gene expression data matrix with only the selected features.
         """
-        check_is_fitted(self, 'pvals_')
+        check_is_fitted(self, 'padjs_')
         return super().transform(X, feature_meta)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
@@ -1005,15 +1004,15 @@ class Limma(BaseEstimator, SelectorMixin):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'padjs_')
+        mask = np.zeros_like(self.padjs_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.padjs_, dtype=bool)
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
-                    mask[self.pvals_ > self.pv] = False
+                    mask[self.padjs_ > self.pv] = False
         return mask
