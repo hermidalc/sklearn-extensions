@@ -1,7 +1,8 @@
 # RNA-seq transformer functions
 
 deseq2_vst_fit <- function(
-    X, y, sample_meta=NULL, blind=FALSE, fit_type="local", model_batch=FALSE
+    X, y, sample_meta=NULL, blind=FALSE, fit_type="parametric",
+    model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     counts <- t(X)
@@ -18,8 +19,10 @@ deseq2_vst_fit <- function(
         )
     }
     dds <- estimateSizeFactors(dds, quiet=TRUE)
-    dds <- estimateDispersions(dds, fitType=fit_type, quiet=TRUE)
-    vsd <- varianceStabilizingTransformation(dds, blind=blind, fitType=fit_type)
+    suppressMessages(
+        dds <- estimateDispersions(dds, fitType=fit_type, quiet=TRUE)
+    )
+    vsd <- varianceStabilizingTransformation(dds, blind=blind)
     return(list(
         t(as.matrix(assay(vsd))), geo_means, sizeFactors(dds),
         dispersionFunction(dds)
@@ -27,7 +30,7 @@ deseq2_vst_fit <- function(
 }
 
 deseq2_vst_transform <- function(
-    X, geo_means, size_factors, disp_func, fit_type="local"
+    X, geo_means, size_factors, disp_func, fit_type="parametric"
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     counts <- t(X)
@@ -36,7 +39,7 @@ deseq2_vst_transform <- function(
     )
     dds <- estimateSizeFactors(dds, geoMeans=geo_means, quiet=TRUE)
     suppressMessages(dispersionFunction(dds) <- disp_func)
-    vsd <- varianceStabilizingTransformation(dds, blind=FALSE, fitType=fit_type)
+    vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
     return(t(as.matrix(assay(vsd))))
 }
 

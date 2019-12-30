@@ -1,7 +1,7 @@
 # RNA-seq feature selection and scoring functions
 
 deseq2_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, blind=FALSE, fit_type="local",
+    X, y, sample_meta=NULL, lfc=0, blind=FALSE, fit_type="parametric",
     model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
@@ -26,7 +26,9 @@ deseq2_feature_score <- function(
             counts, data.frame(Class=factor(y)), ~Class
         )
     }
-    dds <- DESeq(dds, fitType=fit_type, parallel=parallel, quiet=TRUE)
+    suppressMessages(
+        dds <- DESeq(dds, fitType=fit_type, parallel=parallel, quiet=TRUE)
+    )
     suppressMessages(results <- as.data.frame(lfcShrink(
         dds, coef=length(resultsNames(dds)), type="apeglm", lfcThreshold=lfc,
         svalue=TRUE, parallel=parallel, quiet=TRUE
@@ -36,7 +38,7 @@ deseq2_feature_score <- function(
     #     lfcThreshold=lfc, altHypothesis="greaterAbs", pAdjustMethod="BH"
     # ))
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
-    vsd <- varianceStabilizingTransformation(dds, blind=blind, fitType=fit_type)
+    vsd <- varianceStabilizingTransformation(dds, blind=blind)
     return(list(
         results$svalue, t(as.matrix(assay(vsd))), geo_means, sizeFactors(dds),
         dispersionFunction(dds)

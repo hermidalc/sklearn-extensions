@@ -106,9 +106,8 @@ class DESeq2(BaseEstimator, SelectorMixin):
     blind : bool (default = False)
         varianceStabilizingTransformation blind option.
 
-    fit_type : str (default = "local")
-        estimateDispersions and varianceStabilizingTransformation fitType
-        option.
+    fit_type : str (default = "parametric")
+        estimateDispersions fitType option.
 
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and Batch column
@@ -139,7 +138,7 @@ class DESeq2(BaseEstimator, SelectorMixin):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, k='all', sv=1, fc=1, blind=False, fit_type='local',
+    def __init__(self, k='all', sv=1, fc=1, blind=False, fit_type='parametric',
                  model_batch=False, n_threads=1, memory=None):
         self.k = k
         self.sv = sv
