@@ -8,8 +8,8 @@ deseq2_vst_fit <- function(
     counts <- t(X)
     geo_means <- exp(rowMeans(log(counts)))
     if (!is.null(sample_meta) && model_batch) {
-        sample_meta$Batch <- as.factor(sample_meta$Batch)
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        sample_meta$Class <- factor(sample_meta$Class)
         dds <- DESeqDataSetFromMatrix(
             counts, as.data.frame(sample_meta), ~Batch + Class
         )

@@ -9,12 +9,12 @@ limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {
     batch <- sample_meta$Batch
     sample_meta$Batch <- NULL
     if (preserve_design) {
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Class <- factor(sample_meta$Class)
         design <- model.matrix(~Class, data=sample_meta)
     } else {
         design <- matrix(1, ncol(t(X)), 1)
     }
-    batch <- as.factor(batch)
+    batch <- factor(batch)
     contrasts(batch) <- contr.sum(levels(batch))
     batch <- model.matrix(~batch)[, -1, drop=FALSE]
     fit <- lmFit(t(X), cbind(design, batch))
@@ -25,7 +25,7 @@ limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {
 
 limma_removeba_transform <- function(X, sample_meta, beta) {
     batch <- sample_meta$Batch
-    batch <- as.factor(batch)
+    batch <- factor(batch)
     contrasts(batch) <- contr.sum(levels(batch))
     batch <- model.matrix(~batch)[, -1, drop=FALSE]
     return(t(t(X) - beta %*% t(batch)))
@@ -64,7 +64,7 @@ bapred_removeba_fit <- function(
     )
 ) {
     suppressPackageStartupMessages(library("bapred"))
-    y <- as.factor(sample_meta$Class + 1)
+    y <- factor(sample_meta$Class + 1)
     batch <- sample_meta$Batch
     unique_batch <- sort(unique(batch))
     for (j in seq_len(unique_batch)) {
@@ -72,7 +72,7 @@ bapred_removeba_fit <- function(
             batch <- replace(batch, batch == unique_batch[j], j)
         }
     }
-    batch <- as.factor(batch)
+    batch <- factor(batch)
     if (method == "combat") {
         params <- combatba(X, batch)
     }
@@ -95,7 +95,7 @@ bapred_removeba_fit <- function(
         params <- standardize(X, batch)
     }
     else if (method == "sva") {
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Class <- factor(sample_meta$Class)
         mod <- model.matrix(~Class, data=sample_meta)
         mod0 <- model.matrix(~1, data=sample_meta)
         # ctrls <- as.numeric(grepl("^AFFX", rownames(t(X))))
@@ -123,7 +123,7 @@ bapred_removeba_transform <- function(
             batch <- replace(batch, batch == unique_batch[j], j)
         }
     }
-    batch <- as.factor(batch)
+    batch <- factor(batch)
     if (method == "combat") {
         return(combatbaaddon(params, X, batch))
     }

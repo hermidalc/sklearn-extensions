@@ -16,8 +16,8 @@ deseq2_feature_score <- function(
     counts <- t(X)
     geo_means <- exp(rowMeans(log(counts)))
     if (!is.null(sample_meta) && model_batch) {
-        sample_meta$Batch <- as.factor(sample_meta$Batch)
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        sample_meta$Class <- factor(sample_meta$Class)
         dds <- DESeqDataSetFromMatrix(
             counts, as.data.frame(sample_meta), ~Batch + Class
         )
@@ -60,8 +60,8 @@ edger_feature_score <- function(
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method="TMM")
     if (!is.null(sample_meta) && model_batch) {
-        sample_meta$Batch <- as.factor(sample_meta$Batch)
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        sample_meta$Class <- factor(sample_meta$Class)
         design <- model.matrix(~Batch + Class, data=sample_meta)
     } else {
         design <- model.matrix(~factor(y))
@@ -86,8 +86,8 @@ edger_filterbyexpr_mask <- function(X, y, sample_meta=NULL, model_batch=FALSE) {
     suppressPackageStartupMessages(library("edgeR"))
     dge <- DGEList(counts=t(X))
     if (!is.null(sample_meta) && model_batch) {
-        sample_meta$Batch <- as.factor(sample_meta$Batch)
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        sample_meta$Class <- factor(sample_meta$Class)
         design <- model.matrix(~Batch + Class, data=sample_meta)
     } else {
         design <- model.matrix(~factor(y))
@@ -107,15 +107,15 @@ limma_voom_feature_score <- function(
     if (!is.null(sample_meta) && (model_batch || model_dupcor)) {
         if (model_batch) {
             formula <- ~Batch + Class
-            sample_meta$Batch <- as.factor(sample_meta$Batch)
+            sample_meta$Batch <- factor(sample_meta$Batch)
         } else {
             formula <- ~Class
         }
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Class <- factor(sample_meta$Class)
         design <- model.matrix(formula, data=sample_meta)
         v <- voom(dge, design)
         if (model_dupcor) {
-            sample_meta$Group <- as.factor(sample_meta$Group)
+            sample_meta$Group <- factor(sample_meta$Group)
             suppressMessages(dupcor <- duplicateCorrelation(
                 v, design, block=sample_meta$Group
             ))
@@ -165,12 +165,12 @@ dream_voom_feature_score <- function(
     dge <- calcNormFactors(dge, method="TMM")
     if (model_batch) {
         formula <- ~Batch + Class + (1|Group)
-        sample_meta$Batch <- as.factor(sample_meta$Batch)
+        sample_meta$Batch <- factor(sample_meta$Batch)
     } else {
         formula <- ~Class + (1|Group)
     }
-    sample_meta$Class <- as.factor(sample_meta$Class)
-    sample_meta$Group <- as.factor(sample_meta$Group)
+    sample_meta$Class <- factor(sample_meta$Class)
+    sample_meta$Group <- factor(sample_meta$Group)
     invisible(capture.output(
         v <- voomWithDreamWeights(dge, formula, sample_meta)
     ))
@@ -192,8 +192,8 @@ limma_feature_score <- function(
 ) {
     suppressPackageStartupMessages(library("limma"))
     if (!is.null(sample_meta) && model_batch) {
-        sample_meta$Batch <- as.factor(sample_meta$Batch)
-        sample_meta$Class <- as.factor(sample_meta$Class)
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        sample_meta$Class <- factor(sample_meta$Class)
         design <- model.matrix(~Batch + Class, data=sample_meta)
     } else {
         design <- model.matrix(~factor(y))
