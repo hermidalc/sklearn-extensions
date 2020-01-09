@@ -22,13 +22,13 @@ import scipy.sparse as sp
 from sklearn.base import is_classifier, clone
 from sklearn.utils import (indexable, check_random_state, safe_indexing,
                            _message_with_time)
+from sklearn.utils.metaestimators import _safe_split
 from sklearn.utils.validation import _is_arraylike, _num_samples
 from sklearn.utils._joblib import Parallel, delayed
 from sklearn.exceptions import FitFailedWarning
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
 from ..metrics.scorer import check_scoring, _check_multimetric_scoring
-from ..utils.metaestimators import _safe_split
 
 
 __all__ = ['cross_validate', 'cross_val_score', 'cross_val_predict',

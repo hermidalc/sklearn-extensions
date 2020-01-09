@@ -32,11 +32,12 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils._joblib import Parallel, delayed
 from sklearn.utils import check_random_state
 from sklearn.utils.fixes import MaskedArray
+from sklearn.utils.metaestimators import if_delegate_has_method
 from sklearn.utils.random import sample_without_replacement
 from sklearn.utils.validation import indexable, check_is_fitted
-from ..utils.metaestimators import if_delegate_has_method, check_routing
 from ..metrics.scorer import _check_multimetric_scoring
 from ..metrics.scorer import check_scoring
+from ..utils.metaestimators import check_routing
 from ._validation import _fit_and_score
 from ._validation import _aggregate_score_dicts
 
@@ -378,7 +379,8 @@ def _check_param_grid(param_grid):
                                  "to be a non-empty sequence.".format(name))
 
 
-class BaseSearchCV(BaseEstimator, MetaEstimatorMixin, metaclass=ABCMeta):
+class ExtendedBaseSearchCV(MetaEstimatorMixin, BaseEstimator,
+                           metaclass=ABCMeta):
     """Abstract base class for hyper parameter search with cross-validation.
     """
 
@@ -851,7 +853,7 @@ class BaseSearchCV(BaseEstimator, MetaEstimatorMixin, metaclass=ABCMeta):
         return results
 
 
-class ExtendedGridSearchCV(GridSearchCV):
+class ExtendedGridSearchCV(ExtendedBaseSearchCV, GridSearchCV):
     """Exhaustive search over specified parameter values for an estimator.
 
     Important members are fit, predict.
@@ -1174,7 +1176,7 @@ class ExtendedGridSearchCV(GridSearchCV):
         evaluate_candidates(ExtendedParameterGrid(self.param_grid))
 
 
-class ExtendedRandomizedSearchCV(RandomizedSearchCV):
+class ExtendedRandomizedSearchCV(ExtendedBaseSearchCV, RandomizedSearchCV):
     """Randomized search on hyper parameters.
 
     ExtendedRandomizedSearchCV implements a "fit" and a "score" method.

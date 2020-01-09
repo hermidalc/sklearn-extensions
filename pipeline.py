@@ -20,18 +20,18 @@ from sklearn.base import clone
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.utils._joblib import Parallel, delayed
 from sklearn.utils import Bunch, _print_elapsed_time
+from sklearn.utils.metaestimators import if_delegate_has_method
 from sklearn.utils.validation import check_memory
 from .base import ExtendedTransformerMixin
 from .feature_selection.base import ExtendedSelectorMixin
-from .utils.metaestimators import (_BaseComposition, if_delegate_has_method,
-                                   check_routing)
+from .utils.metaestimators import check_routing
 
 
 __all__ = ['ExtendedPipeline', 'ExtendedFeatureUnion',
            'make_extended_pipeline', 'make_extended_union']
 
 
-class ExtendedPipeline(_BaseComposition, Pipeline):
+class ExtendedPipeline(Pipeline):
     """ExtendedPipeline of transforms with a final estimator.
 
     Sequentially apply a list of transforms and a final estimator.
@@ -792,8 +792,7 @@ def _fit_one(transformer,
         return transformer.fit(X, y, **fit_params)
 
 
-class ExtendedFeatureUnion(_BaseComposition, ExtendedTransformerMixin,
-                           FeatureUnion):
+class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
     """Concatenates results of multiple transformer objects.
 
     This estimator applies a list of transformer objects in parallel to the

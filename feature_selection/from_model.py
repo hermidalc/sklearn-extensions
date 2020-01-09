@@ -8,8 +8,8 @@ import numpy as np
 from sklearn.base import BaseEstimator, clone, MetaEstimatorMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.utils import check_X_y
+from sklearn.utils.metaestimators import if_delegate_has_method
 from .base import ExtendedSelectorMixin
-from ..utils.metaestimators import if_delegate_has_method
 
 
 def _get_feature_importances(estimator, norm_order=1):
