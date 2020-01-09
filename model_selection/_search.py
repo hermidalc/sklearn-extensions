@@ -25,7 +25,7 @@ from scipy.stats import rankdata
 
 from sklearn.base import BaseEstimator, is_classifier, clone
 from sklearn.base import MetaEstimatorMixin
-from sklearn.model_selection import (GridSearchCV, ParameterGrid,
+from sklearn.model_selection import (BaseSearchCV, GridSearchCV, ParameterGrid,
                                      ParameterSampler, RandomizedSearchCV)
 from sklearn.model_selection._split import check_cv
 from sklearn.exceptions import NotFittedError
@@ -379,8 +379,7 @@ def _check_param_grid(param_grid):
                                  "to be a non-empty sequence.".format(name))
 
 
-class ExtendedBaseSearchCV(MetaEstimatorMixin, BaseEstimator,
-                           metaclass=ABCMeta):
+class ExtendedBaseSearchCV(BaseSearchCV):
     """Abstract base class for hyper parameter search with cross-validation.
     """
 
