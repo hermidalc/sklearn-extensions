@@ -11,7 +11,6 @@ parameters of an estimator.
 #         Leandro Hermida <hermidal@cs.umd.edu>
 # License: BSD 3 clause
 
-from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from collections.abc import Mapping, Sequence, Iterable
 from functools import partial, reduce
@@ -23,10 +22,10 @@ import warnings
 import numpy as np
 from scipy.stats import rankdata
 
-from sklearn.base import BaseEstimator, is_classifier, clone
-from sklearn.base import MetaEstimatorMixin
-from sklearn.model_selection import (BaseSearchCV, GridSearchCV, ParameterGrid,
+from sklearn.base import is_classifier, clone
+from sklearn.model_selection import (GridSearchCV, ParameterGrid,
                                      ParameterSampler, RandomizedSearchCV)
+from sklearn.model_selection._search import BaseSearchCV
 from sklearn.model_selection._split import check_cv
 from sklearn.exceptions import NotFittedError
 from sklearn.utils._joblib import Parallel, delayed
