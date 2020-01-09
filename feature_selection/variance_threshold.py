@@ -6,10 +6,10 @@ from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 from sklearn.utils.sparsefuncs import mean_variance_axis
 from sklearn.utils.validation import check_is_fitted
-from .base import SelectorMixin
+from .base import ExtendedSelectorMixin
 
 
-class VarianceThreshold(BaseEstimator, SelectorMixin):
+class VarianceThreshold(ExtendedSelectorMixin, BaseEstimator):
     """Feature selector that removes all low-variance features.
 
     This feature selection algorithm looks only at the features (X), not the

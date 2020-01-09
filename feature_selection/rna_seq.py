@@ -6,7 +6,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
-from .base import SelectorMixin
+from .base import ExtendedSelectorMixin
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -83,7 +83,7 @@ def limma_feature_score(X, y, sample_meta, lfc, robust, trend, model_batch):
     return (np.array(pv, dtype=float), np.array(pa, dtype=float))
 
 
-class DESeq2(BaseEstimator, SelectorMixin):
+class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     """DESeq2 differential expression feature selector and
     normalizer/transformer for RNA-seq count data
 
@@ -260,7 +260,7 @@ class DESeq2(BaseEstimator, SelectorMixin):
         return mask
 
 
-class EdgeR(BaseEstimator, SelectorMixin):
+class EdgeR(ExtendedSelectorMixin, BaseEstimator):
     """edgeR differential expression feature selector and
     normalizer/transformer for RNA-seq count data
 
@@ -430,7 +430,7 @@ class EdgeR(BaseEstimator, SelectorMixin):
         return mask
 
 
-class EdgeRFilterByExpr(BaseEstimator, SelectorMixin):
+class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
     """edgeR filterByExpr feature selector for count data
 
     Parameters
@@ -520,7 +520,7 @@ class EdgeRFilterByExpr(BaseEstimator, SelectorMixin):
         return self._mask
 
 
-class LimmaVoom(BaseEstimator, SelectorMixin):
+class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
     """limma-voom differential expression feature selector and
     normalizer/transformer for RNA-seq count data
 
@@ -695,7 +695,7 @@ class LimmaVoom(BaseEstimator, SelectorMixin):
         return mask
 
 
-class DreamVoom(BaseEstimator, SelectorMixin):
+class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
     """dream limma-voom differential expression feature selector and
     normalizer/transformer for RNA-seq count data repeated measures designs
 
@@ -864,7 +864,7 @@ class DreamVoom(BaseEstimator, SelectorMixin):
         return mask
 
 
-class Limma(BaseEstimator, SelectorMixin):
+class Limma(ExtendedSelectorMixin, BaseEstimator):
     """limma differential expression feature selector for gene expression data
 
     Parameters

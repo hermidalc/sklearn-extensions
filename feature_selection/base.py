@@ -9,11 +9,13 @@ from warnings import warn
 
 import numpy as np
 from scipy.sparse import issparse, csc_matrix
+from sklearn.feature_selection.base import SelectorMixin
 from sklearn.utils import check_array, safe_mask
-from ..base import TransformerMixin
+from ..base import ExtendedTransformerMixin
 
 
-class SelectorMixin(TransformerMixin, metaclass=ABCMeta):
+class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin,
+                            metaclass=ABCMeta):
     """
     Transformer mixin that performs feature selection given a support mask
 

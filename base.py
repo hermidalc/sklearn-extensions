@@ -4,8 +4,10 @@
 #          Leandro Hermida <hermidal@cs.umd.edu>
 # License: BSD 3 clause
 
+from sklearn.base import TransformerMixin
 
-class TransformerMixin:
+
+class ExtendedTransformerMixin(TransformerMixin):
     """Mixin class for all transformers in scikit-learn."""
 
     def fit_transform(self, X, y=None, **fit_params):

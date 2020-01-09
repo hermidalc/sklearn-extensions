@@ -18,7 +18,7 @@ from sklearn.utils.extmath import safe_sparse_dot, row_norms
 from sklearn.utils.validation import check_is_fitted
 from sklearn.feature_selection.mutual_info_ import (mutual_info_classif,
                                                     mutual_info_regression)
-from .base import SelectorMixin
+from .base import ExtendedSelectorMixin
 
 
 def _clean_nans(scores):
@@ -686,7 +686,7 @@ class MutualInfoScorerRegression(BaseScorer):
 ######################################################################
 # Base filter class
 
-class _BaseFilter(BaseEstimator, SelectorMixin):
+class _BaseFilter(ExtendedSelectorMixin, BaseEstimator):
     """Initialize the univariate feature selection.
 
     Parameters

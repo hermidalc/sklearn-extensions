@@ -6,7 +6,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted, check_memory
-from ..base import TransformerMixin
+from ..base import ExtendedTransformerMixin
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -34,7 +34,7 @@ def stica_removeba_transform(X, params):
     return np.array(r_stica_removeba_transform(X, params), dtype=float)
 
 
-class LimmaRemoveBatchEffect(BaseEstimator, TransformerMixin):
+class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
     """limma removeBatchEffect transformer for log-transformed expression data
 
     Parameters
@@ -110,7 +110,7 @@ class LimmaRemoveBatchEffect(BaseEstimator, TransformerMixin):
         raise NotImplementedError("inverse_transform not implemented.")
 
 
-class stICARemoveBatchEffect(BaseEstimator, TransformerMixin):
+class stICABatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
     """stICA batch effect removal transformer
 
     Parameters
@@ -199,7 +199,7 @@ class stICARemoveBatchEffect(BaseEstimator, TransformerMixin):
         raise NotImplementedError("inverse_transform not implemented.")
 
 
-class SVDRemoveBatchEffect(BaseEstimator, TransformerMixin):
+class SVDBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
     """Singular value decomposition (SVD) batch effect removal transformer
 
     Parameters

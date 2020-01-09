@@ -6,7 +6,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
-from ..base import TransformerMixin
+from ..base import ExtendedTransformerMixin
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -46,7 +46,7 @@ def edger_tmm_logcpm_transform(X, ref_sample, prior_count):
         X, ref_sample=ref_sample, prior_count=prior_count), dtype=float)
 
 
-class DESeq2RLEVST(BaseEstimator, TransformerMixin):
+class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
     """DESeq2 median-of-ratios normalization and VST transformation for count
     data
 
@@ -158,7 +158,7 @@ class DESeq2RLEVST(BaseEstimator, TransformerMixin):
         raise NotImplementedError('inverse_transform not implemented.')
 
 
-class EdgeRTMMLogCPM(BaseEstimator, TransformerMixin):
+class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
     """edgeR TMM normalization and log-CPM transformation for count data
 
     Parameters

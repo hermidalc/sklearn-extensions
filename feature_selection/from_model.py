@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, clone, MetaEstimatorMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.utils import check_X_y
-from .base import SelectorMixin
+from .base import ExtendedSelectorMixin
 from ..utils.metaestimators import if_delegate_has_method
 
 
@@ -66,7 +66,8 @@ def _calculate_threshold(estimator, importances, threshold):
     return threshold
 
 
-class SelectFromModel(BaseEstimator, SelectorMixin, MetaEstimatorMixin):
+class SelectFromModel(MetaEstimatorMixin, ExtendedSelectorMixin,
+                      BaseEstimator):
     """Meta-transformer for selecting features based on importance weights.
 
     .. versionadded:: 0.17

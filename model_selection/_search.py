@@ -25,6 +25,8 @@ from scipy.stats import rankdata
 
 from sklearn.base import BaseEstimator, is_classifier, clone
 from sklearn.base import MetaEstimatorMixin
+from sklearn.model_selection import (GridSearchCV, ParameterGrid,
+                                     ParameterSampler, RandomizedSearchCV)
 from sklearn.model_selection._split import check_cv
 from sklearn.exceptions import NotFittedError
 from sklearn.utils._joblib import Parallel, delayed
@@ -39,11 +41,11 @@ from ._validation import _fit_and_score
 from ._validation import _aggregate_score_dicts
 
 
-__all__ = ['GridSearchCV', 'ParameterGrid', 'fit_grid_point',
-           'ParameterSampler', 'RandomizedSearchCV']
+__all__ = ['ExtendedGridSearchCV', 'ExtendedParameterGrid', 'fit_grid_point',
+           'ExtendedParameterSampler', 'ExtendedRandomizedSearchCV']
 
 
-class ParameterGrid:
+class ExtendedParameterGrid(ParameterGrid):
     """Grid of parameters with a discrete number of values for each.
 
     Can be used to iterate over parameter value combinations with the
@@ -82,9 +84,9 @@ class ParameterGrid:
 
     See also
     --------
-    :class:`GridSearchCV`:
-        Uses :class:`ParameterGrid` to perform a full parallelized parameter
-        search.
+    :class:`ExtendedGridSearchCV`:
+        Uses :class:`ExtendedParameterGrid` to perform a full parallelized
+        parameter search.
     """
 
     def __init__(self, param_grid):
@@ -176,10 +178,10 @@ class ParameterGrid:
                     out[key] = v_list[offset]
                 return out
 
-        raise IndexError('ParameterGrid index out of range')
+        raise IndexError('ExtendedParameterGrid index out of range')
 
 
-class ParameterSampler:
+class ExtendedParameterSampler(ParameterSampler):
     """Generator on parameters sampled from given distributions.
 
     Non-deterministic iterable over random candidate combinations for hyper-
@@ -255,7 +257,7 @@ class ParameterSampler:
 
         if all_lists:
             # look up sampled parameter settings in parameter grid
-            param_grid = ParameterGrid(self.param_distributions)
+            param_grid = ExtendedParameterGrid(self.param_distributions)
             grid_size = len(param_grid)
             n_iter = self.n_iter
 
@@ -263,7 +265,7 @@ class ParameterSampler:
                 warnings.warn(
                     'The total space of parameters %d is smaller '
                     'than n_iter=%d. Running %d iterations. For exhaustive '
-                    'searches, use GridSearchCV.'
+                    'searches, use ExtendedGridSearchCV.'
                     % (grid_size, self.n_iter, grid_size), UserWarning)
                 n_iter = grid_size
             for i in sample_without_replacement(grid_size, n_iter,
@@ -849,12 +851,12 @@ class BaseSearchCV(BaseEstimator, MetaEstimatorMixin, metaclass=ABCMeta):
         return results
 
 
-class GridSearchCV(BaseSearchCV):
+class ExtendedGridSearchCV(GridSearchCV):
     """Exhaustive search over specified parameter values for an estimator.
 
     Important members are fit, predict.
 
-    GridSearchCV implements a "fit" and a "score" method.
+    ExtendedGridSearchCV implements a "fit" and a "score" method.
     It also implements "predict", "predict_proba", "decision_function",
     "transform" and "inverse_transform" if they are implemented in the
     estimator used.
@@ -963,7 +965,7 @@ class GridSearchCV(BaseSearchCV):
 
         The refitted estimator is made available at the ``best_estimator_``
         attribute and permits using ``predict`` directly on this
-        ``GridSearchCV`` instance.
+        ``ExtendedGridSearchCV`` instance.
 
         Also for multiple metric evaluation, the attributes ``best_index_``,
         ``best_score_`` and ``best_params_`` will only be available if
@@ -1141,12 +1143,12 @@ class GridSearchCV(BaseSearchCV):
 
     See Also
     ---------
-    :class:`ParameterGrid`:
+    :class:`ExtendedParameterGrid`:
         generates all the combinations of a hyperparameter grid.
 
     :func:`sklearn.model_selection.train_test_split`:
         utility function to split the data into a development set usable
-        for fitting a GridSearchCV instance and an evaluation set for
+        for fitting a ExtendedGridSearchCV instance and an evaluation set for
         its final evaluation.
 
     :func:`sklearn.metrics.make_scorer`:
@@ -1169,13 +1171,13 @@ class GridSearchCV(BaseSearchCV):
 
     def _run_search(self, evaluate_candidates):
         """Search all candidates in param_grid"""
-        evaluate_candidates(ParameterGrid(self.param_grid))
+        evaluate_candidates(ExtendedParameterGrid(self.param_grid))
 
 
-class RandomizedSearchCV(BaseSearchCV):
+class ExtendedRandomizedSearchCV(RandomizedSearchCV):
     """Randomized search on hyper parameters.
 
-    RandomizedSearchCV implements a "fit" and a "score" method.
+    ExtendedRandomizedSearchCV implements a "fit" and a "score" method.
     It also implements "predict", "predict_proba", "decision_function",
     "transform" and "inverse_transform" if they are implemented in the
     estimator used.
@@ -1183,9 +1185,9 @@ class RandomizedSearchCV(BaseSearchCV):
     The parameters of the estimator used to apply these methods are optimized
     by cross-validated search over parameter settings.
 
-    In contrast to GridSearchCV, not all parameter values are tried out, but
-    rather a fixed number of parameter settings is sampled from the specified
-    distributions. The number of parameter settings that are tried is
+    In contrast to ExtendedGridSearchCV, not all parameter values are tried
+    out, but rather a fixed number of parameter settings is sampled from the
+    specified distributions. The number of parameter settings that are tried is
     given by n_iter.
 
     If all parameters are presented as a list,
@@ -1305,7 +1307,7 @@ class RandomizedSearchCV(BaseSearchCV):
 
         The refitted estimator is made available at the ``best_estimator_``
         attribute and permits using ``predict`` directly on this
-        ``RandomizedSearchCV`` instance.
+        ``ExtendedRandomizedSearchCV`` instance.
 
         Also for multiple metric evaluation, the attributes ``best_index_``,
         ``best_score_`` and ``best_params_`` will only be available if
@@ -1461,10 +1463,10 @@ class RandomizedSearchCV(BaseSearchCV):
 
     See Also
     --------
-    :class:`GridSearchCV`:
+    :class:`ExtendedGridSearchCV`:
         Does exhaustive search over a grid of parameters.
 
-    :class:`ParameterSampler`:
+    :class:`ExtendedParameterSampler`:
         A generator over parameter settings, constructed from
         param_distributions.
 
@@ -1487,6 +1489,6 @@ class RandomizedSearchCV(BaseSearchCV):
 
     def _run_search(self, evaluate_candidates):
         """Search n_iter candidates from param_distributions"""
-        evaluate_candidates(ParameterSampler(
+        evaluate_candidates(ExtendedParameterSampler(
             self.param_distributions, self.n_iter,
             random_state=self.random_state))

@@ -17,20 +17,22 @@ import numpy as np
 from scipy import sparse
 
 from sklearn.base import clone
+from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.utils._joblib import Parallel, delayed
 from sklearn.utils import Bunch, _print_elapsed_time
 from sklearn.utils.validation import check_memory
-from .base import TransformerMixin
-from .feature_selection.base import SelectorMixin
+from .base import ExtendedTransformerMixin
+from .feature_selection.base import ExtendedSelectorMixin
 from .utils.metaestimators import (_BaseComposition, if_delegate_has_method,
                                    check_routing)
 
 
-__all__ = ['Pipeline', 'FeatureUnion', 'make_pipeline', 'make_union']
+__all__ = ['ExtendedPipeline', 'ExtendedFeatureUnion',
+           'make_extended_pipeline', 'make_extended_union']
 
 
-class Pipeline(_BaseComposition):
-    """Pipeline of transforms with a final estimator.
+class ExtendedPipeline(_BaseComposition, Pipeline):
+    """ExtendedPipeline of transforms with a final estimator.
 
     Sequentially apply a list of transforms and a final estimator.
     Intermediate steps of the pipeline must be 'transforms', that is, they
@@ -293,7 +295,7 @@ class Pipeline(_BaseComposition):
         else:
             iter = self._iter(with_final=False)
         for step_idx, _, transform in iter:
-            if isinstance(transform, SelectorMixin):
+            if isinstance(transform, ExtendedSelectorMixin):
                 if fmt is not None and 'feature_meta' in step_params[step_idx]:
                     step_params[step_idx]['feature_meta'] = fmt
                 res = transform.transform(Xt, **step_params[step_idx])
@@ -329,7 +331,7 @@ class Pipeline(_BaseComposition):
              transformer) in self._iter(with_final=False,
                                         filter_passthrough=False):
             if (transformer is None or transformer == 'passthrough'):
-                with _print_elapsed_time('Pipeline',
+                with _print_elapsed_time('ExtendedPipeline',
                                          self._log_message(step_idx)):
                     continue
 
@@ -352,13 +354,13 @@ class Pipeline(_BaseComposition):
             else:
                 cloned_transformer = clone(transformer)
             # Fit or load from cache the current transfomer
-            if isinstance(transformer, SelectorMixin):
+            if isinstance(transformer, ExtendedSelectorMixin):
                 if (fmt is not None and 'feature_meta' in
                         step_fit_params[step_idx]):
                     step_fit_params[step_idx]['feature_meta'] = fmt
                 res, fitted_transformer = fit_transform_one_cached(
                     cloned_transformer, Xt, y, None,
-                    message_clsname='Pipeline',
+                    message_clsname='ExtendedPipeline',
                     message=self._log_message(step_idx),
                     **step_fit_params[step_idx])
                 if isinstance(res, tuple):
@@ -368,7 +370,7 @@ class Pipeline(_BaseComposition):
             else:
                 Xt, fitted_transformer = fit_transform_one_cached(
                     cloned_transformer, Xt, y, None,
-                    message_clsname='Pipeline',
+                    message_clsname='ExtendedPipeline',
                     message=self._log_message(step_idx),
                     **step_fit_params[step_idx])
             # Replace the transformer of the step with the fitted
@@ -402,11 +404,11 @@ class Pipeline(_BaseComposition):
 
         Returns
         -------
-        self : Pipeline
+        self : ExtendedPipeline
             This estimator
         """
         Xt, fit_params = self._fit(X, y, **fit_params)
-        with _print_elapsed_time('Pipeline',
+        with _print_elapsed_time('ExtendedPipeline',
                                  self._log_message(len(self.steps) - 1)):
             if self._final_estimator != 'passthrough':
                 self._final_estimator.fit(Xt, y, **fit_params)
@@ -441,7 +443,7 @@ class Pipeline(_BaseComposition):
         """
         last_step = self._final_estimator
         Xt, fit_params = self._fit(X, y, **fit_params)
-        with _print_elapsed_time('Pipeline',
+        with _print_elapsed_time('ExtendedPipeline',
                                  self._log_message(len(self.steps) - 1)):
             if last_step == 'passthrough':
                 return Xt
@@ -505,7 +507,7 @@ class Pipeline(_BaseComposition):
         y_pred : array-like
         """
         Xt, fit_params = self._fit(X, y, **fit_params)
-        with _print_elapsed_time('Pipeline',
+        with _print_elapsed_time('ExtendedPipeline',
                                  self._log_message(len(self.steps) - 1)):
             y_pred = self.steps[-1][-1].fit_predict(Xt, y, **fit_params)
         return y_pred
@@ -682,12 +684,12 @@ def _name_estimators(estimators):
     return list(zip(names, estimators))
 
 
-def make_pipeline(*steps, **kwargs):
-    """Construct a Pipeline from the given estimators.
+def make_extended_pipeline(*steps, **kwargs):
+    """Construct an ExtendedPipeline from the given estimators.
 
-    This is a shorthand for the Pipeline constructor; it does not require, and
-    does not permit, naming the estimators. Instead, their names will be set
-    to the lowercase of their types automatically.
+    This is a shorthand for the ExtendedPipeline constructor; it does not
+    require, and does not permit, naming the estimators. Instead, their names
+    will be set to the lowercase of their types automatically.
 
     Parameters
     ----------
@@ -727,14 +729,15 @@ def make_pipeline(*steps, **kwargs):
 
     Returns
     -------
-    p : Pipeline
+    p : ExtendedPipeline
     """
     memory = kwargs.pop('memory', None)
     verbose = kwargs.pop('verbose', False)
     if kwargs:
         raise TypeError('Unknown keyword arguments: "{}"'
                         .format(list(kwargs.keys())[0]))
-    return Pipeline(_name_estimators(steps), memory=memory, verbose=verbose)
+    return ExtendedPipeline(_name_estimators(steps), memory=memory,
+                            verbose=verbose)
 
 
 def _transform_one(transformer, X, y, weight, **transform_params):
@@ -742,7 +745,8 @@ def _transform_one(transformer, X, y, weight, **transform_params):
     # if we have a weight for this transformer, multiply output
     if weight is None:
         return res
-    if isinstance(transformer, SelectorMixin) and isinstance(res, tuple):
+    if (isinstance(transformer, ExtendedSelectorMixin)
+            and isinstance(res, tuple)):
         return res[0] * weight, res[1]
     return res * weight
 
@@ -768,7 +772,8 @@ def _fit_transform_one(transformer,
 
     if weight is None:
         return res, transformer
-    if isinstance(transformer, SelectorMixin) and isinstance(res, tuple):
+    if (isinstance(transformer, ExtendedSelectorMixin)
+            and isinstance(res, tuple)):
         return (res[0] * weight, res[1]), transformer
     return res * weight, transformer
 
@@ -787,7 +792,8 @@ def _fit_one(transformer,
         return transformer.fit(X, y, **fit_params)
 
 
-class FeatureUnion(_BaseComposition, TransformerMixin):
+class ExtendedFeatureUnion(_BaseComposition, ExtendedTransformerMixin,
+                           FeatureUnion):
     """Concatenates results of multiple transformer objects.
 
     This estimator applies a list of transformer objects in parallel to the
@@ -823,8 +829,8 @@ class FeatureUnion(_BaseComposition, TransformerMixin):
 
     See also
     --------
-    sklearn.pipeline.make_union : convenience function for simplified
-        feature union construction.
+    sklearn.pipeline.make_extended_union : convenience function for simplified
+        extended feature union construction.
 
     Examples
     --------
@@ -932,7 +938,7 @@ class FeatureUnion(_BaseComposition, TransformerMixin):
 
         Returns
         -------
-        self : FeatureUnion
+        self : ExtendedFeatureUnion
             This estimator
         """
         transformers = self._parallel_func(X, y, fit_params, _fit_one)
@@ -987,7 +993,7 @@ class FeatureUnion(_BaseComposition, TransformerMixin):
 
         return Parallel(n_jobs=self.n_jobs)(delayed(func)(
             transformer, X, y, weight,
-            message_clsname='FeatureUnion',
+            message_clsname='ExtendedFeatureUnion',
             message=self._log_message(name, idx, len(transformers)),
             **fit_params) for idx, (name, transformer,
                                     weight) in enumerate(transformers, 1))
@@ -1025,12 +1031,13 @@ class FeatureUnion(_BaseComposition, TransformerMixin):
                                     for name, old in self.transformer_list]
 
 
-def make_union(*transformers, **kwargs):
-    """Construct a FeatureUnion from the given transformers.
+def make_extended_union(*transformers, **kwargs):
+    """Construct an ExtendedFeatureUnion from the given transformers.
 
-    This is a shorthand for the FeatureUnion constructor; it does not require,
-    and does not permit, naming the transformers. Instead, they will be given
-    names automatically based on their types. It also does not allow weighting.
+    This is a shorthand for the ExtendedFeatureUnion constructor; it does not
+    require, and does not permit, naming the transformers. Instead, they will
+    be given names automatically based on their types. It also does not allow
+    weighting.
 
     Parameters
     ----------
@@ -1048,7 +1055,7 @@ def make_union(*transformers, **kwargs):
 
     Returns
     -------
-    f : FeatureUnion
+    f : ExtendedFeatureUnion
 
     See also
     --------
@@ -1078,5 +1085,5 @@ def make_union(*transformers, **kwargs):
         # change its type spec in make_union
         raise TypeError('Unknown keyword arguments: "{}"'
                         .format(list(kwargs.keys())[0]))
-    return FeatureUnion(
-        _name_estimators(transformers), n_jobs=n_jobs, verbose=verbose)
+    return ExtendedFeatureUnion(_name_estimators(transformers), n_jobs=n_jobs,
+                                verbose=verbose)

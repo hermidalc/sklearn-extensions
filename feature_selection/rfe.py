@@ -16,7 +16,7 @@ from sklearn.base import MetaEstimatorMixin
 from sklearn.base import clone
 from sklearn.base import is_classifier
 from sklearn.model_selection import check_cv
-from .base import SelectorMixin
+from .base import ExtendedSelectorMixin
 from ..metrics.scorer import check_scoring
 from ..model_selection._validation import _index_param_value, _score
 from ..utils.metaestimators import (if_delegate_has_method, _safe_split,
@@ -45,7 +45,7 @@ def _rfe_single_fit(rfe, estimator, X, y, train, test, scorer, fit_params,
     return rfe.scores_, rfe.n_remaining_feature_steps_
 
 
-class RFE(BaseEstimator, MetaEstimatorMixin, SelectorMixin):
+class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
     """Feature ranking with recursive feature elimination.
 
     Given an external estimator that assigns weights to features (e.g., the

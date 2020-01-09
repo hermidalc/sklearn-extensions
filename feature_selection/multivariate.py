@@ -8,7 +8,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
-from .base import SelectorMixin
+from .base import ExtendedSelectorMixin
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -34,7 +34,7 @@ def relieff_feature_score(X, y, num_neighbors, sample_size):
                     dtype=float)
 
 
-class CFS(BaseEstimator, SelectorMixin):
+class CFS(ExtendedSelectorMixin, BaseEstimator):
     """Feature selector using Correlation Feature Selection (CFS) algorithm
 
     Attributes
@@ -77,7 +77,7 @@ class CFS(BaseEstimator, SelectorMixin):
         return mask
 
 
-class FCBF(BaseEstimator, SelectorMixin):
+class FCBF(ExtendedSelectorMixin, BaseEstimator):
     """Feature selector using Fast Correlation-Based Filter (FCBF) algorithm
 
     Parameters
@@ -158,7 +158,7 @@ class FCBF(BaseEstimator, SelectorMixin):
         return mask
 
 
-class ReliefF(BaseEstimator, SelectorMixin):
+class ReliefF(ExtendedSelectorMixin, BaseEstimator):
     """Feature selector using ReliefF algorithm
 
     Parameters
