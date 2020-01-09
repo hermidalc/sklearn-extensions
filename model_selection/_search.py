@@ -11,6 +11,7 @@ parameters of an estimator.
 #         Leandro Hermida <hermidal@cs.umd.edu>
 # License: BSD 3 clause
 
+from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Mapping, Sequence, Iterable
 from functools import partial, reduce
