@@ -1,6 +1,6 @@
 from ._univariate_selection import (
     ANOVAFScorerClassification, Chi2Scorer, MutualInfoScorerClassification)
-from ..cached import CachedFitMixin
+from .._cached import CachedFitMixin
 
 
 class CachedANOVAFScorerClassification(CachedFitMixin,
