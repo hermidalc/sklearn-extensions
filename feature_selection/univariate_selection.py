@@ -4,20 +4,16 @@
 #          L. Buitinck, A. Joly, L. Hermida
 # License: BSD 3 clause
 
-import warnings
 import numpy as np
 
-from scipy import special, stats
-from scipy.sparse import issparse
-
 from sklearn.base import BaseEstimator
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.utils import (as_float_array, check_array, check_X_y, safe_sqr,
-                           safe_mask)
-from sklearn.utils.extmath import safe_sparse_dot, row_norms
+from sklearn.utils import as_float_array, check_X_y
 from sklearn.utils.validation import check_is_fitted
-from sklearn.feature_selection.mutual_info_ import (mutual_info_classif,
+from sklearn.feature_selection._univariate_selection import (
+    chi2, f_classif, f_regression)
+from sklearn.feature_selection._mutual_info import (mutual_info_classif,
                                                     mutual_info_regression)
+
 from .base import ExtendedSelectorMixin
 
 
@@ -34,284 +30,10 @@ def _clean_nans(scores):
 
 
 ######################################################################
-# Scoring functions
-
-# The following function is a rewriting of scipy.stats.f_oneway
-# Contrary to the scipy.stats.f_oneway implementation it does not
-# copy the data while keeping the inputs unchanged.
-def f_oneway(*args):
-    """Performs a 1-way ANOVA.
-
-    The one-way ANOVA tests the null hypothesis that 2 or more groups have
-    the same population mean. The test is applied to samples from two or
-    more groups, possibly with differing sizes.
-
-    Read more in the :ref:`User Guide <univariate_feature_selection>`.
-
-    Parameters
-    ----------
-    *args : array_like, sparse matrices
-        sample1, sample2... The sample measurements should be given as
-        arguments.
-
-    Returns
-    -------
-    F-value : float
-        The computed F-value of the test.
-    p-value : float
-        The associated p-value from the F-distribution.
-
-    Notes
-    -----
-    The ANOVA test has important assumptions that must be satisfied in order
-    for the associated p-value to be valid.
-
-    1. The samples are independent
-    2. Each sample is from a normally distributed population
-    3. The population standard deviations of the groups are all equal. This
-       property is known as homoscedasticity.
-
-    If these assumptions are not true for a given set of data, it may still be
-    possible to use the Kruskal-Wallis H-test (`scipy.stats.kruskal`_) although
-    with some loss of power.
-
-    The algorithm is from Heiman[2], pp.394-7.
-
-    See ``scipy.stats.f_oneway`` that should give the same results while
-    being less efficient.
-
-    References
-    ----------
-
-    .. [1] Lowry, Richard.  "Concepts and Applications of Inferential
-           Statistics". Chapter 14.
-           http://faculty.vassar.edu/lowry/ch14pt1.html
-
-    .. [2] Heiman, G.W.  Research Methods in Statistics. 2002.
-
-    """
-    n_classes = len(args)
-    args = [as_float_array(a) for a in args]
-    n_samples_per_class = np.array([a.shape[0] for a in args])
-    n_samples = np.sum(n_samples_per_class)
-    ss_alldata = sum(safe_sqr(a).sum(axis=0) for a in args)
-    sums_args = [np.asarray(a.sum(axis=0)) for a in args]
-    square_of_sums_alldata = sum(sums_args) ** 2
-    square_of_sums_args = [s ** 2 for s in sums_args]
-    sstot = ss_alldata - square_of_sums_alldata / float(n_samples)
-    ssbn = 0.
-    for k, _ in enumerate(args):
-        ssbn += square_of_sums_args[k] / n_samples_per_class[k]
-    ssbn -= square_of_sums_alldata / float(n_samples)
-    sswn = sstot - ssbn
-    dfbn = n_classes - 1
-    dfwn = n_samples - n_classes
-    msb = ssbn / float(dfbn)
-    msw = sswn / float(dfwn)
-    constant_features_idx = np.where(msw == 0.)[0]
-    if (np.nonzero(msb)[0].size != msb.size and constant_features_idx.size):
-        warnings.warn("Features %s are constant." % constant_features_idx,
-                      UserWarning)
-    f = msb / msw
-    # flatten matrix to vector in sparse case
-    f = np.asarray(f).ravel()
-    prob = special.fdtrc(dfbn, dfwn, f)
-    return f, prob
-
-
-def f_classif(X, y):
-    """Compute the ANOVA F-value for the provided sample.
-
-    Read more in the :ref:`User Guide <univariate_feature_selection>`.
-
-    Parameters
-    ----------
-    X : {array-like, sparse matrix} shape = [n_samples, n_features]
-        The set of regressors that will be tested sequentially.
-
-    y : array of shape(n_samples)
-        The data matrix.
-
-    Returns
-    -------
-    F : array, shape = [n_features,]
-        The set of F values.
-
-    pval : array, shape = [n_features,]
-        The set of p-values.
-
-    See also
-    --------
-    chi2: Chi-squared stats of non-negative features for classification tasks.
-    f_regression: F-value between label/feature for regression tasks.
-    """
-    X, y = check_X_y(X, y, ['csr', 'csc', 'coo'])
-    args = [X[safe_mask(X, y == k)] for k in np.unique(y)]
-    return f_oneway(*args)
-
-
-def _chisquare(f_obs, f_exp):
-    """Fast replacement for scipy.stats.chisquare.
-
-    Version from https://github.com/scipy/scipy/pull/2525 with additional
-    optimizations.
-    """
-    f_obs = np.asarray(f_obs, dtype=np.float64)
-
-    k = len(f_obs)
-    # Reuse f_obs for chi-squared statistics
-    chisq = f_obs
-    chisq -= f_exp
-    chisq **= 2
-    with np.errstate(invalid="ignore"):
-        chisq /= f_exp
-    chisq = chisq.sum(axis=0)
-    return chisq, special.chdtrc(k - 1, chisq)
-
-
-def chi2(X, y):
-    """Compute chi-squared stats between each non-negative feature and class.
-
-    This score can be used to select the n_features features with the
-    highest values for the test chi-squared statistic from X, which must
-    contain only non-negative features such as booleans or frequencies
-    (e.g., term counts in document classification), relative to the classes.
-
-    Recall that the chi-square test measures dependence between stochastic
-    variables, so using this function "weeds out" the features that are the
-    most likely to be independent of class and therefore irrelevant for
-    classification.
-
-    Read more in the :ref:`User Guide <univariate_feature_selection>`.
-
-    Parameters
-    ----------
-    X : {array-like, sparse matrix}, shape = (n_samples, n_features_in)
-        Sample vectors.
-
-    y : array-like, shape = (n_samples,)
-        Target vector (class labels).
-
-    Returns
-    -------
-    chi2 : array, shape = (n_features,)
-        chi2 statistics of each feature.
-    pval : array, shape = (n_features,)
-        p-values of each feature.
-
-    Notes
-    -----
-    Complexity of this algorithm is O(n_classes * n_features).
-
-    See also
-    --------
-    f_classif: ANOVA F-value between label/feature for classification tasks.
-    f_regression: F-value between label/feature for regression tasks.
-    """
-
-    # XXX: we might want to do some of the following in logspace instead for
-    # numerical stability.
-    X = check_array(X, accept_sparse='csr')
-    if np.any((X.data if issparse(X) else X) < 0):
-        raise ValueError("Input X must be non-negative.")
-
-    Y = LabelBinarizer().fit_transform(y)
-    if Y.shape[1] == 1:
-        Y = np.append(1 - Y, Y, axis=1)
-
-    observed = safe_sparse_dot(Y.T, X)          # n_classes * n_features
-
-    feature_count = X.sum(axis=0).reshape(1, -1)
-    class_prob = Y.mean(axis=0).reshape(1, -1)
-    expected = np.dot(class_prob.T, feature_count)
-
-    return _chisquare(observed, expected)
-
-
-def f_regression(X, y, center=True):
-    """Univariate linear regression tests.
-
-    Linear model for testing the individual effect of each of many regressors.
-    This is a scoring function to be used in a feature selection procedure, not
-    a free standing feature selection procedure.
-
-    This is done in 2 steps:
-
-    1. The correlation between each regressor and the target is computed,
-       that is, ((X[:, i] - mean(X[:, i])) * (y - mean_y)) / (std(X[:, i]) *
-       std(y)).
-    2. It is converted to an F score then to a p-value.
-
-    For more on usage see the :ref:`User Guide <univariate_feature_selection>`.
-
-    Parameters
-    ----------
-    X : {array-like, sparse matrix}  shape = (n_samples, n_features)
-        The set of regressors that will be tested sequentially.
-
-    y : array of shape(n_samples).
-        The data matrix
-
-    center : True, bool,
-        If true, X and y will be centered.
-
-    Returns
-    -------
-    F : array, shape=(n_features,)
-        F values of features.
-
-    pval : array, shape=(n_features,)
-        p-values of F-scores.
-
-
-    See also
-    --------
-    mutual_info_regression: Mutual information for a continuous target.
-    f_classif: ANOVA F-value between label/feature for classification tasks.
-    chi2: Chi-squared stats of non-negative features for classification tasks.
-    SelectKBest: Select features based on the k highest scores.
-    SelectFpr: Select features based on a false positive rate test.
-    SelectFdr: Select features based on an estimated false discovery rate.
-    SelectFwe: Select features based on family-wise error rate.
-    SelectPercentile: Select features based on percentile of the highest
-        scores.
-    """
-    X, y = check_X_y(X, y, ['csr', 'csc', 'coo'], dtype=np.float64)
-    n_samples = X.shape[0]
-
-    # compute centered values
-    # note that E[(x - mean(x))*(y - mean(y))] = E[x*(y - mean(y))], so we
-    # need not center X
-    if center:
-        y = y - np.mean(y)
-        if issparse(X):
-            X_means = X.mean(axis=0).getA1()
-        else:
-            X_means = X.mean(axis=0)
-        # compute the scaled standard deviations via moments
-        X_norms = np.sqrt(row_norms(X.T, squared=True) -
-                          n_samples * X_means ** 2)
-    else:
-        X_norms = row_norms(X.T)
-
-    # compute the correlation
-    corr = safe_sparse_dot(y, X)
-    corr /= X_norms
-    corr /= np.linalg.norm(y)
-
-    # convert to p-value
-    degrees_of_freedom = y.size - (2 if center else 1)
-    F = corr ** 2 / (1 - corr ** 2) * degrees_of_freedom
-    pv = stats.f.sf(F, 1, degrees_of_freedom)
-    return F, pv
-
-
-######################################################################
 # Base scorer class
 
 class BaseScorer(BaseEstimator):
     """Base univariate feature scorer."""
-    pass
 
 
 ######################################################################
@@ -332,8 +54,10 @@ class ANOVAFScorerClassification(BaseScorer):
 
     See also
     --------
-    ANOVAFScorerRegression: ANOVA F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    ANOVAFScorerRegression: ANOVA F-value between label/feature for \
+    regression tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
@@ -389,8 +113,10 @@ class ANOVAFScorerRegression(BaseScorer):
 
     See also
     --------
-    ANOVAFScorerClassification: ANOVA F-value between label/feature for classification tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    ANOVAFScorerClassification: ANOVA F-value between label/feature for \
+    classification tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
@@ -447,8 +173,10 @@ class Chi2Scorer(BaseScorer):
 
     See also
     --------
-    ANOVAFScorerClassification: ANOVA F-value between label/feature for classification tasks.
-    ANOVAFScorerRegression: ANOVA F-value between label/feature for regression tasks.
+    ANOVAFScorerClassification: ANOVA F-value between label/feature for \
+    classification tasks.
+    ANOVAFScorerRegression: ANOVA F-value between label/feature for \
+    regression tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
@@ -526,7 +254,8 @@ class MutualInfoScorerClassification(BaseScorer):
        For example, pixel intensities of an image are discrete features
        (but hardly categorical) and you will get better results if mark them
        as such. Also note, that treating a continuous variable as discrete and
-       vice versa will usually give incorrect results, so be attentive about that.
+       vice versa will usually give incorrect results, so be attentive about
+       that.
     2. True mutual information can't be negative. If its estimate turns out
        to be negative, it is replaced by zero.
 
@@ -543,9 +272,12 @@ class MutualInfoScorerClassification(BaseScorer):
 
     See also
     --------
-    ANOVAFScorerClassification: ANOVA F-value between label/feature for classification tasks.
-    ANOVAFScorerRegression: ANOVA F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    ANOVAFScorerClassification: ANOVA F-value between label/feature for \
+    classification tasks.
+    ANOVAFScorerRegression: ANOVA F-value between label/feature for \
+    regression tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     """
 
@@ -631,7 +363,8 @@ class MutualInfoScorerRegression(BaseScorer):
        For example, pixel intensities of an image are discrete features
        (but hardly categorical) and you will get better results if mark them
        as such. Also note, that treating a continuous variable as discrete and
-       vice versa will usually give incorrect results, so be attentive about that.
+       vice versa will usually give incorrect results, so be attentive about
+       that.
     2. True mutual information can't be negative. If its estimate turns out
        to be negative, it is replaced by zero.
 
@@ -648,9 +381,12 @@ class MutualInfoScorerRegression(BaseScorer):
 
     See also
     --------
-    ANOVAFScorerClassification: ANOVA F-value between label/feature for classification tasks.
-    ANOVAFScorerRegression: ANOVA F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    ANOVAFScorerClassification: ANOVA F-value between label/feature for \
+    classification tasks.
+    ANOVAFScorerRegression: ANOVA F-value between label/feature for \
+    regression tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     """
 
@@ -693,7 +429,7 @@ class _BaseFilter(ExtendedSelectorMixin, BaseEstimator):
     ----------
     score_func : callable or object
         Function taking two arrays X and y, and returning a pair of arrays
-        (scores, pvalues) or a single array with scores or a scorer object
+        (scores, pvalues) or a single array with scores or a scorer object.
     """
 
     def __init__(self, score_func):
@@ -754,7 +490,7 @@ class SelectPercentile(_BaseFilter):
 
     Parameters
     ----------
-    score_func : callable or object, default=f_classif
+    score_func : callable or object
         Function taking two arrays X and y, and returning a pair of arrays
         (scores, pvalues) or a single array with scores or a scorer object.
         Default is f_classif (see below "See also"). The default function only
@@ -765,10 +501,10 @@ class SelectPercentile(_BaseFilter):
 
     Attributes
     ----------
-    scores_ : array-like, shape=(n_features,)
+    scores_ : array-like of shape (n_features,)
         Scores of features.
 
-    pvalues_ : array-like, shape=(n_features,)
+    pvalues_ : array-like of shape (n_features,)
         p-values of feature scores, None if `score_func` returned only scores.
 
     Examples
@@ -794,20 +530,23 @@ class SelectPercentile(_BaseFilter):
     chi2: Chi-squared stats of non-negative features for classification tasks.
     mutual_info_classif: Mutual information for a discrete target.
     mutual_info_regression: Mutual information for a continuous target.
-    ANOVAFScorerClassification: F-value between label/feature for classification tasks.
+    ANOVAFScorerClassification: F-value between label/feature for \
+    classification tasks.
     ANOVAFScorerRegression: F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     SelectKBest: Select features based on the k highest scores.
     SelectFpr: Select features based on a false positive rate test.
     SelectFdr: Select features based on an estimated false discovery rate.
     SelectFwe: Select features based on family-wise error rate.
-    GenericUnivariateSelect: Univariate feature selector with configurable mode.
+    GenericUnivariateSelect: Univariate feature selector with configurable \
+    mode.
     """
 
     def __init__(self, score_func=f_classif, percentile=10):
-        super(SelectPercentile, self).__init__(score_func)
+        super().__init__(score_func)
         self.percentile = percentile
 
     def _check_params(self, X, y):
@@ -816,8 +555,7 @@ class SelectPercentile(_BaseFilter):
                              % self.percentile)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
-
+        check_is_fitted(self)
         # Cater for NaNs
         if self.percentile == 100:
             return np.ones(len(self.scores_), dtype=np.bool)
@@ -842,7 +580,7 @@ class SelectKBest(_BaseFilter):
 
     Parameters
     ----------
-    score_func : callable or object, default=f_classif
+    score_func : callable or object
         Function taking two arrays X and y, and returning a pair of arrays
         (scores, pvalues) or a single array with scores or a scorer object.
         Default is f_classif (see below "See also"). The default function only
@@ -854,10 +592,10 @@ class SelectKBest(_BaseFilter):
 
     Attributes
     ----------
-    scores_ : array-like, shape=(n_features,)
+    scores_ : array-like of shape (n_features,)
         Scores of features.
 
-    pvalues_ : array-like, shape=(n_features,)
+    pvalues_ : array-like of shape (n_features,)
         p-values of feature scores, None if `score_func` returned only scores.
 
     Examples
@@ -883,20 +621,23 @@ class SelectKBest(_BaseFilter):
     chi2: Chi-squared stats of non-negative features for classification tasks.
     mutual_info_classif: Mutual information for a discrete target.
     mutual_info_regression: Mutual information for a continuous target.
-    ANOVAFScorerClassification: F-value between label/feature for classification tasks.
+    ANOVAFScorerClassification: F-value between label/feature for \
+    classification tasks.
     ANOVAFScorerRegression: F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     SelectKBest: Select features based on the k highest scores.
     SelectFpr: Select features based on a false positive rate test.
     SelectFdr: Select features based on an estimated false discovery rate.
     SelectFwe: Select features based on family-wise error rate.
-    GenericUnivariateSelect: Univariate feature selector with configurable mode.
+    GenericUnivariateSelect: Univariate feature selector with configurable \
+    mode.
     """
 
     def __init__(self, score_func=f_classif, k=10):
-        super(SelectKBest, self).__init__(score_func)
+        super().__init__(score_func)
         self.k = k
 
     def _check_params(self, X, y):
@@ -906,7 +647,7 @@ class SelectKBest(_BaseFilter):
                              % (X.shape[1], self.k))
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self)
         if self.k == 'all':
             return np.ones(self.scores_.shape, dtype=bool)
         elif self.k == 0:
@@ -931,7 +672,7 @@ class SelectFpr(_BaseFilter):
 
     Parameters
     ----------
-    score_func : callable or object, default=f_classif
+    score_func : callable or object
         Function taking two arrays X and y, and returning a pair of arrays
         (scores, pvalues) or a single array with scores or a scorer object.
         Default is f_classif (see below "See also"). The default function only
@@ -942,10 +683,10 @@ class SelectFpr(_BaseFilter):
 
     Attributes
     ----------
-    scores_ : array-like, shape=(n_features,)
+    scores_ : array-like of shape (n_features,)
         Scores of features.
 
-    pvalues_ : array-like, shape=(n_features,)
+    pvalues_ : array-like of shape (n_features,)
         p-values of feature scores.
 
     Examples
@@ -966,25 +707,27 @@ class SelectFpr(_BaseFilter):
     chi2: Chi-squared stats of non-negative features for classification tasks.
     mutual_info_classif: Mutual information for a discrete target.
     mutual_info_regression: Mutual information for a continuous target.
-    ANOVAFScorerClassification: F-value between label/feature for classification tasks.
+    ANOVAFScorerClassification: F-value between label/feature for \
+    classification tasks.
     ANOVAFScorerRegression: F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     SelectKBest: Select features based on the k highest scores.
     SelectFpr: Select features based on a false positive rate test.
     SelectFdr: Select features based on an estimated false discovery rate.
     SelectFwe: Select features based on family-wise error rate.
-    GenericUnivariateSelect: Univariate feature selector with configurable mode.
+    GenericUnivariateSelect: Univariate feature selector with configurable \
+    mode.
     """
 
     def __init__(self, score_func=f_classif, alpha=5e-2):
-        super(SelectFpr, self).__init__(score_func)
+        super().__init__(score_func)
         self.alpha = alpha
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
-
+        check_is_fitted(self)
         return self.pvalues_ < self.alpha
 
 
@@ -998,7 +741,7 @@ class SelectFdr(_BaseFilter):
 
     Parameters
     ----------
-    score_func : callable or object, default=f_classif
+    score_func : callable or object
         Function taking two arrays X and y, and returning a pair of arrays
         (scores, pvalues) or a single array with scores or a scorer object.
         Default is f_classif (see below "See also"). The default function only
@@ -1020,10 +763,10 @@ class SelectFdr(_BaseFilter):
 
     Attributes
     ----------
-    scores_ : array-like, shape=(n_features,)
+    scores_ : array-like of shape (n_features,)
         Scores of features.
 
-    pvalues_ : array-like, shape=(n_features,)
+    pvalues_ : array-like of shape (n_features,)
         p-values of feature scores.
 
     References
@@ -1037,24 +780,27 @@ class SelectFdr(_BaseFilter):
     chi2: Chi-squared stats of non-negative features for classification tasks.
     mutual_info_classif: Mutual information for a discrete target.
     mutual_info_regression: Mutual information for a continuous target.
-    ANOVAFScorerClassification: F-value between label/feature for classification tasks.
+    ANOVAFScorerClassification: F-value between label/feature for \
+    classification tasks.
     ANOVAFScorerRegression: F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     SelectKBest: Select features based on the k highest scores.
     SelectFpr: Select features based on a false positive rate test.
     SelectFdr: Select features based on an estimated false discovery rate.
     SelectFwe: Select features based on family-wise error rate.
-    GenericUnivariateSelect: Univariate feature selector with configurable mode.
+    GenericUnivariateSelect: Univariate feature selector with configurable \
+    mode.
     """
 
     def __init__(self, score_func=f_classif, alpha=5e-2):
-        super(SelectFdr, self).__init__(score_func)
+        super().__init__(score_func)
         self.alpha = alpha
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self)
         n_features = len(self.pvalues_)
         sv = np.sort(self.pvalues_)
         selected = sv[sv <= float(self.alpha) / n_features *
@@ -1071,7 +817,7 @@ class SelectFwe(_BaseFilter):
 
     Parameters
     ----------
-    score_func : callable or object, default=f_classif
+    score_func : callable or object
         Function taking two arrays X and y, and returning a pair of arrays
         (scores, pvalues) or a single array with scores or a scorer object.
         Default is f_classif (see below "See also"). The default function only
@@ -1093,10 +839,10 @@ class SelectFwe(_BaseFilter):
 
     Attributes
     ----------
-    scores_ : array-like, shape=(n_features,)
+    scores_ : array-like of shape (n_features,)
         Scores of features.
 
-    pvalues_ : array-like, shape=(n_features,)
+    pvalues_ : array-like of shape (n_features,)
         p-values of feature scores.
 
     See also
@@ -1106,24 +852,27 @@ class SelectFwe(_BaseFilter):
     chi2: Chi-squared stats of non-negative features for classification tasks.
     mutual_info_classif: Mutual information for a discrete target.
     mutual_info_regression: Mutual information for a continuous target.
-    ANOVAFScorerClassification: F-value between label/feature for classification tasks.
+    ANOVAFScorerClassification: F-value between label/feature for \
+    classification tasks.
     ANOVAFScorerRegression: F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     SelectKBest: Select features based on the k highest scores.
     SelectFpr: Select features based on a false positive rate test.
     SelectFdr: Select features based on an estimated false discovery rate.
     SelectFwe: Select features based on family-wise error rate.
-    GenericUnivariateSelect: Univariate feature selector with configurable mode.
+    GenericUnivariateSelect: Univariate feature selector with configurable \
+    mode.
     """
 
     def __init__(self, score_func=f_classif, alpha=5e-2):
-        super(SelectFwe, self).__init__(score_func)
+        super().__init__(score_func)
         self.alpha = alpha
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self)
         return (self.pvalues_ < self.alpha / len(self.pvalues_))
 
 
@@ -1140,11 +889,10 @@ class GenericUnivariateSelect(_BaseFilter):
 
     Parameters
     ----------
-    score_func : callable or object, default=f_classif
+    score_func : callable or object
         Function taking two arrays X and y, and returning a pair of arrays
         (scores, pvalues) or a single array with scores or a scorer object.
-        Default is f_classif (see below "See also"). The default function only
-        works with classification tasks.
+        For modes 'percentile' or 'kbest' it can return a single array scores.
 
     mode : {'percentile', 'k_best', 'fpr', 'fdr', 'fwe'}
         Feature selection mode.
@@ -1154,10 +902,10 @@ class GenericUnivariateSelect(_BaseFilter):
 
     Attributes
     ----------
-    scores_ : array-like, shape=(n_features,)
+    scores_ : array-like of shape (n_features,)
         Scores of features.
 
-    pvalues_ : array-like, shape=(n_features,)
+    pvalues_ : array-like of shape (n_features,)
         p-values of feature scores, None if `score_func` returned scores only.
 
     Examples
@@ -1179,16 +927,19 @@ class GenericUnivariateSelect(_BaseFilter):
     chi2: Chi-squared stats of non-negative features for classification tasks.
     mutual_info_classif: Mutual information for a discrete target.
     mutual_info_regression: Mutual information for a continuous target.
-    ANOVAFScorerClassification: F-value between label/feature for classification tasks.
+    ANOVAFScorerClassification: F-value between label/feature for \
+    classification tasks.
     ANOVAFScorerRegression: F-value between label/feature for regression tasks.
-    Chi2Scorer: Chi-squared stats of non-negative features for classification tasks.
+    Chi2Scorer: Chi-squared stats of non-negative features for classification \
+    tasks.
     MutualInfoScorerClassification: Mutual information for a discrete target.
     MutualInfoScorerRegression: Mutual information for a continuous target.
     SelectKBest: Select features based on the k highest scores.
     SelectFpr: Select features based on a false positive rate test.
     SelectFdr: Select features based on an estimated false discovery rate.
     SelectFwe: Select features based on family-wise error rate.
-    GenericUnivariateSelect: Univariate feature selector with configurable mode.
+    GenericUnivariateSelect: Univariate feature selector with configurable \
+    mode.
     """
 
     _selection_modes = {'percentile': SelectPercentile,
@@ -1198,7 +949,7 @@ class GenericUnivariateSelect(_BaseFilter):
                         'fwe': SelectFwe}
 
     def __init__(self, score_func=f_classif, mode='percentile', param=1e-5):
-        super(GenericUnivariateSelect, self).__init__(score_func)
+        super().__init__(score_func)
         self.mode = mode
         self.param = param
 
@@ -1221,8 +972,7 @@ class GenericUnivariateSelect(_BaseFilter):
         self._make_selector()._check_params(X, y)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
-
+        check_is_fitted(self)
         selector = self._make_selector()
         selector.pvalues_ = self.pvalues_
         selector.scores_ = self.scores_

@@ -9,8 +9,9 @@ from warnings import warn
 
 import numpy as np
 from scipy.sparse import issparse, csc_matrix
-from sklearn.feature_selection.base import SelectorMixin
+from sklearn.feature_selection._base import SelectorMixin
 from sklearn.utils import check_array, safe_mask
+
 from ..base import ExtendedTransformerMixin
 
 
@@ -76,7 +77,9 @@ class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin,
         X_r : array of shape [n_samples, n_selected_features]
             The input samples with only the selected features.
         """
-        X = check_array(X, dtype=None, accept_sparse='csr')
+        tags = self._get_tags()
+        X = check_array(X, dtype=None, accept_sparse='csr',
+                        force_all_finite=not tags.get('allow_nan', True))
         mask = self.get_support()
         if not mask.any():
             warn("No features were selected: either the data is"
@@ -109,7 +112,7 @@ class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin,
         -------
         X_r : array of shape [n_samples, n_original_features]
             `X` with columns of zeros inserted where features would have
-            been removed by `transform`.
+            been removed by :meth:`transform`.
         """
         if issparse(X):
             X = X.tocsc()

@@ -9,6 +9,7 @@ from sklearn.base import BaseEstimator, clone, MetaEstimatorMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.utils import check_X_y
 from sklearn.utils.metaestimators import if_delegate_has_method
+
 from .base import ExtendedSelectorMixin
 
 
@@ -122,6 +123,32 @@ class SelectFromModel(MetaEstimatorMixin, ExtendedSelectorMixin,
 
     threshold_ : float
         The threshold value used for feature selection.
+
+    Notes
+    -----
+    Allows NaN/Inf in the input if the underlying estimator does as well.
+
+    Examples
+    --------
+    >>> from sklearn.feature_selection import SelectFromModel
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> X = [[ 0.87, -1.34,  0.31 ],
+    ...      [-2.79, -0.02, -0.85 ],
+    ...      [-1.34, -0.48, -2.55 ],
+    ...      [ 1.92,  1.48,  0.65 ]]
+    >>> y = [0, 1, 0, 1]
+    >>> selector = SelectFromModel(estimator=LogisticRegression()).fit(X, y)
+    >>> selector.estimator_.coef_
+    array([[-0.3252302 ,  0.83462377,  0.49750423]])
+    >>> selector.threshold_
+    0.55245...
+    >>> selector.get_support()
+    array([False,  True, False])
+    >>> selector.transform(X)
+    array([[-1.34],
+           [-0.02],
+           [-0.48],
+           [ 1.48]])
     """
 
     def __init__(self, estimator, threshold=None, prefit=False, norm_order=1,
@@ -183,8 +210,7 @@ class SelectFromModel(MetaEstimatorMixin, ExtendedSelectorMixin,
             The target values (integers that correspond to classes in
             classification, real numbers in regression).
 
-        **fit_params : dict of string -> object
-            Parameters passed to the ``fit`` method of the estimator
+        **fit_params : Other estimator specific parameters
 
         Returns
         -------
@@ -196,6 +222,10 @@ class SelectFromModel(MetaEstimatorMixin, ExtendedSelectorMixin,
             self.estimator_ = clone(self.estimator)
         self.estimator_.partial_fit(X, y, **fit_params)
         return self
+
+    def _more_tags(self):
+        estimator_tags = self.estimator._get_tags()
+        return {'allow_nan': estimator_tags.get('allow_nan', True)}
 
     def _check_params(self, X, y):
         if self.max_features is not None:
