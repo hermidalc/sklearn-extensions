@@ -1,6 +1,6 @@
 # Multivariate feature selection functions
 
-source(paste(dirname(sys.frame(1)$ofile), "fcbf.R", sep="/"))
+source(paste(dirname(sys.frame(1)$ofile), "_fcbf.R", sep="/"))
 
 cfs_feature_idxs <- function(X, y) {
     X <- as.data.frame(X)

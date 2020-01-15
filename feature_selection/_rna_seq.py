@@ -15,7 +15,7 @@ pandas2ri.activate()
 
 r_base = importr('base')
 if 'deseq2_feature_score' not in robjects.globalenv:
-    r_base.source(os.path.dirname(__file__) + '/rna_seq.R')
+    r_base.source(os.path.dirname(__file__) + '/_rna_seq.R')
 r_deseq2_feature_score = robjects.globalenv['deseq2_feature_score']
 r_edger_feature_score = robjects.globalenv['edger_feature_score']
 r_edger_filterbyexpr_mask = robjects.globalenv['edger_filterbyexpr_mask']
@@ -23,7 +23,7 @@ r_limma_voom_feature_score = robjects.globalenv['limma_voom_feature_score']
 r_dream_voom_feature_score = robjects.globalenv['dream_voom_feature_score']
 r_limma_feature_score = robjects.globalenv['limma_feature_score']
 if 'deseq2_vst_fit' not in robjects.globalenv:
-    r_base.source(os.path.dirname(__file__) + '/../preprocessing/rna_seq.R')
+    r_base.source(os.path.dirname(__file__) + '/../preprocessing/_rna_seq.R')
 r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
