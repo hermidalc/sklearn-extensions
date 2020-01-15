@@ -15,7 +15,7 @@ pandas2ri.activate()
 
 if 'limma_removeba_it' not in robjects.globalenv:
     r_base = importr('base')
-    r_base.source(os.path.dirname(__file__) + '/batch_effect.R')
+    r_base.source(os.path.dirname(__file__) + '/_batch_effect.R')
 r_limma_removeba_fit = robjects.globalenv['limma_removeba_fit']
 r_limma_removeba_transform = robjects.globalenv['limma_removeba_transform']
 r_stica_removeba_fit = robjects.globalenv['stica_removeba_fit']

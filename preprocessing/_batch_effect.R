@@ -1,7 +1,7 @@
 # Batch effect correction transformer functions
 
-source(paste(dirname(sys.frame(1)$ofile), "stICA.R", sep="/"))
-source(paste(dirname(sys.frame(1)$ofile), "svapred.R", sep="/"))
+source(paste(dirname(sys.frame(1)$ofile), "_stICA.R", sep="/"))
+source(paste(dirname(sys.frame(1)$ofile), "_svapred.R", sep="/"))
 
 # adapted from limma::removeBatchEffect source code
 limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {

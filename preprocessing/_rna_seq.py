@@ -15,7 +15,7 @@ pandas2ri.activate()
 
 if 'deseq2_vst_fit' not in robjects.globalenv:
     r_base = importr('base')
-    r_base.source(os.path.dirname(__file__) + '/rna_seq.R')
+    r_base.source(os.path.dirname(__file__) + '/_rna_seq.R')
 r_deseq2_vst_fit = robjects.globalenv['deseq2_vst_fit']
 r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
 r_edger_tmm_logcpm_fit = robjects.globalenv['edger_tmm_logcpm_fit']
