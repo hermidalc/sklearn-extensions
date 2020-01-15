@@ -50,6 +50,8 @@ class ExtendedPipeline(Pipeline):
 
     Read more in the :ref:`User Guide <pipeline>`.
 
+    .. versionadded:: 0.5
+
     Parameters
     ----------
     steps : list
@@ -67,7 +69,7 @@ class ExtendedPipeline(Pipeline):
         inspect estimators within the pipeline. Caching the
         transformers is advantageous when fitting is time consuming.
 
-    verbose : boolean, optional
+    verbose : bool, default=False
         If True, the time elapsed while fitting each step will be printed as it
         is completed.
 
@@ -77,20 +79,20 @@ class ExtendedPipeline(Pipeline):
         Read-only attribute to access any step parameter by user given name.
         Keys are step names and values are steps parameters.
 
-    See also
+    See Also
     --------
-    sklearn.pipeline.make_pipeline : convenience function for simplified
+    sklearn.pipeline.make_pipeline : Convenience function for simplified
         pipeline construction.
 
     Examples
     --------
     >>> from sklearn import svm
-    >>> from sklearn.datasets import samples_generator
+    >>> from sklearn.datasets import make_classification
     >>> from sklearn.feature_selection import SelectKBest
     >>> from sklearn.feature_selection import f_regression
     >>> from sklearn.pipeline import Pipeline
     >>> # generate some data to play with
-    >>> X, y = samples_generator.make_classification(
+    >>> X, y = make_classification(
     ...     n_informative=5, n_redundant=0, random_state=42)
     >>> # ANOVA SVM-C
     >>> anova_filter = SelectKBest(f_regression, k=5)
@@ -100,29 +102,24 @@ class ExtendedPipeline(Pipeline):
     >>> # For instance, fit using a k of 10 in the SelectKBest
     >>> # and a parameter 'C' of the svm
     >>> anova_svm.set_params(anova__k=10, svc__C=.1).fit(X, y)
-    ... # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
-    Pipeline(memory=None,
-             steps=[('anova', SelectKBest(...)),
-                    ('svc', SVC(...))], verbose=False)
+    Pipeline(steps=[('anova', SelectKBest(...)), ('svc', SVC(...))])
     >>> prediction = anova_svm.predict(X)
-    >>> anova_svm.score(X, y)  # doctest: +ELLIPSIS
+    >>> anova_svm.score(X, y)
     0.83
     >>> # getting the selected features chosen by anova_filter
     >>> anova_svm['anova'].get_support()
-    ... # doctest: +NORMALIZE_WHITESPACE
     array([False, False,  True,  True, False, False,  True,  True, False,
            True, False,  True,  True, False,  True, False,  True,  True,
            False, False])
     >>> # Another way to get selected features chosen by anova_filter
     >>> anova_svm.named_steps.anova.get_support()
-    ... # doctest: +NORMALIZE_WHITESPACE
     array([False, False,  True,  True, False, False,  True,  True, False,
            True, False,  True,  True, False,  True, False,  True,  True,
            False, False])
     >>> # Indexing can also be used to extract a sub-pipeline.
     >>> sub_pipeline = anova_svm[:1]
-    >>> sub_pipeline  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
-    Pipeline(memory=None, steps=[('anova', ...)], verbose=False)
+    >>> sub_pipeline
+    Pipeline(steps=[('anova', SelectKBest(...))])
     >>> coef = anova_svm[-1].coef_
     >>> anova_svm['svc'] is anova_svm[-1]
     True
@@ -286,8 +283,7 @@ class ExtendedPipeline(Pipeline):
         if remainder:
             raise TypeError('%s() got unexpected keyword arguments %r'
                             % (caller_name, sorted(remainder)))
-        Xt = X
-        fmt = None
+        fm = None
         if caller_name == 'transform':
             iter = self._iter()
         elif caller_name == 'inverse_transform':
@@ -296,18 +292,18 @@ class ExtendedPipeline(Pipeline):
             iter = self._iter(with_final=False)
         for step_idx, _, transform in iter:
             if isinstance(transform, ExtendedSelectorMixin):
-                if fmt is not None and 'feature_meta' in step_params[step_idx]:
-                    step_params[step_idx]['feature_meta'] = fmt
-                res = transform.transform(Xt, **step_params[step_idx])
+                if fm is not None and 'feature_meta' in step_params[step_idx]:
+                    step_params[step_idx]['feature_meta'] = fm
+                res = transform.transform(X, **step_params[step_idx])
                 if isinstance(res, tuple):
-                    Xt, fmt = res
+                    X, fm = res
                 else:
-                    Xt = res
+                    X = res
             else:
-                Xt = transform.transform(Xt, **step_params[step_idx])
+                X = transform.transform(X, **step_params[step_idx])
         if caller_name in ['transform', 'inverse_transform']:
-            return Xt
-        return Xt, step_params[-1]
+            return X
+        return X, step_params[-1]
 
     # Estimator interface
 
@@ -324,8 +320,7 @@ class ExtendedPipeline(Pipeline):
         if remainder:
             raise TypeError('fit() got unexpected keyword arguments %r'
                             % sorted(remainder))
-        Xt = X
-        fmt = None
+        fm = None
         for (step_idx,
              name,
              transformer) in self._iter(with_final=False,
@@ -353,23 +348,23 @@ class ExtendedPipeline(Pipeline):
                     cloned_transformer = clone(transformer)
             else:
                 cloned_transformer = clone(transformer)
-            # Fit or load from cache the current transfomer
+            # Fit or load from cache the current transformer
             if isinstance(transformer, ExtendedSelectorMixin):
-                if (fmt is not None and 'feature_meta' in
+                if (fm is not None and 'feature_meta' in
                         step_fit_params[step_idx]):
-                    step_fit_params[step_idx]['feature_meta'] = fmt
+                    step_fit_params[step_idx]['feature_meta'] = fm
                 res, fitted_transformer = fit_transform_one_cached(
-                    cloned_transformer, Xt, y, None,
+                    cloned_transformer, X, y, None,
                     message_clsname='ExtendedPipeline',
                     message=self._log_message(step_idx),
                     **step_fit_params[step_idx])
                 if isinstance(res, tuple):
-                    Xt, fmt = res
+                    X, fm = res
                 else:
-                    Xt = res
+                    X = res
             else:
-                Xt, fitted_transformer = fit_transform_one_cached(
-                    cloned_transformer, Xt, y, None,
+                X, fitted_transformer = fit_transform_one_cached(
+                    cloned_transformer, X, y, None,
                     message_clsname='ExtendedPipeline',
                     message=self._log_message(step_idx),
                     **step_fit_params[step_idx])
@@ -378,8 +373,8 @@ class ExtendedPipeline(Pipeline):
             # from the cache.
             self.steps[step_idx] = (name, fitted_transformer)
         if self._final_estimator == 'passthrough':
-            return Xt, {}
-        return Xt, step_fit_params[-1]
+            return X, {}
+        return X, step_fit_params[-1]
 
     def fit(self, X, y=None, **fit_params):
         """Fit the model
@@ -438,7 +433,7 @@ class ExtendedPipeline(Pipeline):
 
         Returns
         -------
-        Xt : array-like, shape = [n_samples, n_transformed_features]
+        Xt : array-like of shape  (n_samples, n_transformed_features)
             Transformed samples
         """
         last_step = self._final_estimator
@@ -524,7 +519,7 @@ class ExtendedPipeline(Pipeline):
 
         Returns
         -------
-        y_proba : array-like, shape = [n_samples, n_classes]
+        y_proba : array-like of shape (n_samples, n_classes)
         """
         Xt, predict_params = self._transform_pipeline('predict_proba',
                                                       X, predict_params)
@@ -542,11 +537,29 @@ class ExtendedPipeline(Pipeline):
 
         Returns
         -------
-        y_score : array-like, shape = [n_samples, n_classes]
+        y_score : array-like of shape (n_samples, n_classes)
         """
         Xt, predict_params = self._transform_pipeline('decision_function',
                                                       X, predict_params)
         return self.steps[-1][-1].decision_function(Xt)
+
+    @if_delegate_has_method(delegate='_final_estimator')
+    def score_samples(self, X, **predict_params):
+        """Apply transforms, and score_samples of the final estimator.
+
+        Parameters
+        ----------
+        X : iterable
+            Data to predict on. Must fulfill input requirements of first step
+            of the pipeline.
+
+        Returns
+        -------
+        y_score : ndarray, shape (n_samples,)
+        """
+        Xt, predict_params = self._transform_pipeline('score_samples',
+                                                      X, predict_params)
+        return self.steps[-1][-1].score_samples(Xt)
 
     @if_delegate_has_method(delegate='_final_estimator')
     def predict_log_proba(self, X, **predict_params):
@@ -560,7 +573,7 @@ class ExtendedPipeline(Pipeline):
 
         Returns
         -------
-        y_score : array-like, shape = [n_samples, n_classes]
+        y_score : array-like of shape (n_samples, n_classes)
         """
         Xt, predict_params = self._transform_pipeline('predict_log_proba',
                                                       X, predict_params)
@@ -581,7 +594,7 @@ class ExtendedPipeline(Pipeline):
 
         Returns
         -------
-        Xt : array-like, shape = [n_samples, n_transformed_features]
+        Xt : array-like of shape  (n_samples, n_transformed_features)
         """
         # _final_estimator is None or has transform, otherwise attribute error
         # XXX: Handling the None case means we can't use if_delegate_has_method
@@ -601,7 +614,7 @@ class ExtendedPipeline(Pipeline):
 
         Parameters
         ----------
-        Xt : array-like, shape = [n_samples, n_transformed_features]
+        Xt : array-like of shape  (n_samples, n_transformed_features)
             Data samples, where ``n_samples`` is the number of samples and
             ``n_features`` is the number of features. Must fulfill
             input requirements of last step of pipeline's
@@ -609,7 +622,7 @@ class ExtendedPipeline(Pipeline):
 
         Returns
         -------
-        Xt : array-like, shape = [n_samples, n_features]
+        Xt : array-like of shape (n_samples, n_features)
         """
         # raise AttributeError if necessary for hasattr behaviour
         # XXX: Handling the None case means we can't use if_delegate_has_method
@@ -687,9 +700,9 @@ def _name_estimators(estimators):
 def make_extended_pipeline(*steps, **kwargs):
     """Construct an ExtendedPipeline from the given estimators.
 
-    This is a shorthand for the ExtendedPipeline constructor; it does not
-    require, and does not permit, naming the estimators. Instead, their names
-    will be set to the lowercase of their types automatically.
+    This is a shorthand for the Pipeline constructor; it does not require, and
+    does not permit, naming the estimators. Instead, their names will be set
+    to the lowercase of their types automatically.
 
     Parameters
     ----------
@@ -705,11 +718,11 @@ def make_extended_pipeline(*steps, **kwargs):
         inspect estimators within the pipeline. Caching the
         transformers is advantageous when fitting is time consuming.
 
-    verbose : boolean, optional
+    verbose : boolean, default=False
         If True, the time elapsed while fitting each step will be printed as it
         is completed.
 
-    See also
+    See Also
     --------
     sklearn.pipeline.Pipeline : Class for creating a pipeline of
         transforms with a final estimator.
@@ -719,13 +732,8 @@ def make_extended_pipeline(*steps, **kwargs):
     >>> from sklearn.naive_bayes import GaussianNB
     >>> from sklearn.preprocessing import StandardScaler
     >>> make_pipeline(StandardScaler(), GaussianNB(priors=None))
-    ... # doctest: +NORMALIZE_WHITESPACE
-    Pipeline(memory=None,
-             steps=[('standardscaler',
-                     StandardScaler(copy=True, with_mean=True, with_std=True)),
-                    ('gaussiannb',
-                     GaussianNB(priors=None, var_smoothing=1e-09))],
-             verbose=False)
+    Pipeline(steps=[('standardscaler', StandardScaler()),
+                    ('gaussiannb', GaussianNB())])
 
     Returns
     -------
@@ -733,11 +741,13 @@ def make_extended_pipeline(*steps, **kwargs):
     """
     memory = kwargs.pop('memory', None)
     verbose = kwargs.pop('verbose', False)
+    param_routing = kwargs.pop('param_routing', None)
     if kwargs:
         raise TypeError('Unknown keyword arguments: "{}"'
                         .format(list(kwargs.keys())[0]))
-    return ExtendedPipeline(_name_estimators(steps), memory=memory,
-                            verbose=verbose)
+    return ExtendedPipeline(steps)(_name_estimators(steps), memory=memory,
+                                   verbose=verbose,
+                                   param_routing=param_routing)
 
 
 def _transform_one(transformer, X, y, weight, **transform_params):
@@ -802,15 +812,20 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
     Parameters of the transformers may be set using its name and the parameter
     name separated by a '__'. A transformer may be replaced entirely by
     setting the parameter with its name to another transformer,
-    or removed by setting to 'drop' or ``None``.
+    or removed by setting to 'drop'.
 
     Read more in the :ref:`User Guide <feature_union>`.
+
+    .. versionadded:: 0.13
 
     Parameters
     ----------
     transformer_list : list of (string, transformer) tuples
         List of transformer objects to be applied to the data. The first
         half of each tuple is the name of the transformer.
+
+        .. versionchanged:: 0.22
+           Deprecated `None` as a transformer in favor of 'drop'.
 
     n_jobs : int or None, optional (default=None)
         Number of jobs to run in parallel.
@@ -826,10 +841,10 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
         If True, the time elapsed while fitting each transformer will be
         printed as it is completed.
 
-    See also
+    See Also
     --------
-    sklearn.pipeline.make_extended_union : convenience function for simplified
-        extended feature union construction.
+    sklearn.pipeline.make_union : Convenience function for simplified
+        feature union construction.
 
     Examples
     --------
@@ -838,7 +853,7 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
     >>> union = FeatureUnion([("pca", PCA(n_components=1)),
     ...                       ("svd", TruncatedSVD(n_components=2))])
     >>> X = [[0., 1., 3], [2., 2., 5]]
-    >>> union.fit_transform(X)  # doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
+    >>> union.fit_transform(X)
     array([[ 1.5       ,  3.0...,  0.8...],
            [-1.5       ,  5.7..., -0.4...]])
     """
@@ -888,7 +903,14 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
 
         # validate estimators
         for t in transformers:
-            if t is None or t == 'drop':
+            # TODO: Remove in 0.24 when None is removed
+            if t is None:
+                warnings.warn("Using None as a transformer is deprecated "
+                              "in version 0.22 and will be removed in "
+                              "version 0.24. Please use 'drop' instead.",
+                              FutureWarning)
+                continue
+            if t == 'drop':
                 continue
             if (not (hasattr(t, "fit") or hasattr(t, "fit_transform")) or not
                     hasattr(t, "transform")):
@@ -1033,10 +1055,9 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
 def make_extended_union(*transformers, **kwargs):
     """Construct an ExtendedFeatureUnion from the given transformers.
 
-    This is a shorthand for the ExtendedFeatureUnion constructor; it does not
-    require, and does not permit, naming the transformers. Instead, they will
-    be given names automatically based on their types. It also does not allow
-    weighting.
+    This is a shorthand for the FeatureUnion constructor; it does not require,
+    and does not permit, naming the transformers. Instead, they will be given
+    names automatically based on their types. It also does not allow weighting.
 
     Parameters
     ----------
@@ -1056,7 +1077,7 @@ def make_extended_union(*transformers, **kwargs):
     -------
     f : ExtendedFeatureUnion
 
-    See also
+    See Also
     --------
     sklearn.pipeline.FeatureUnion : Class for concatenating the results
         of multiple transformer objects.
@@ -1065,17 +1086,9 @@ def make_extended_union(*transformers, **kwargs):
     --------
     >>> from sklearn.decomposition import PCA, TruncatedSVD
     >>> from sklearn.pipeline import make_union
-    >>> make_union(PCA(), TruncatedSVD())  # doctest: +NORMALIZE_WHITESPACE
-    FeatureUnion(n_jobs=None,
-           transformer_list=[('pca',
-                              PCA(copy=True, iterated_power='auto',
-                                  n_components=None, random_state=None,
-                                  svd_solver='auto', tol=0.0, whiten=False)),
-                             ('truncatedsvd',
-                              TruncatedSVD(algorithm='randomized',
-                              n_components=2, n_iter=5,
-                              random_state=None, tol=0.0))],
-           transformer_weights=None, verbose=False)
+    >>> make_union(PCA(), TruncatedSVD())
+     FeatureUnion(transformer_list=[('pca', PCA()),
+                                   ('truncatedsvd', TruncatedSVD())])
     """
     n_jobs = kwargs.pop('n_jobs', None)
     verbose = kwargs.pop('verbose', False)
