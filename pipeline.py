@@ -32,7 +32,7 @@ __all__ = ['ExtendedPipeline', 'ExtendedFeatureUnion',
 
 
 class ExtendedPipeline(Pipeline):
-    """ExtendedPipeline of transforms with a final estimator.
+    """Pipeline of transforms with a final estimator.
 
     Sequentially apply a list of transforms and a final estimator.
     Intermediate steps of the pipeline must be 'transforms', that is, they
@@ -283,7 +283,7 @@ class ExtendedPipeline(Pipeline):
         if remainder:
             raise TypeError('%s() got unexpected keyword arguments %r'
                             % (caller_name, sorted(remainder)))
-        fm = None
+        feature_meta = None
         if caller_name == 'transform':
             iter = self._iter()
         elif caller_name == 'inverse_transform':
@@ -292,11 +292,12 @@ class ExtendedPipeline(Pipeline):
             iter = self._iter(with_final=False)
         for step_idx, _, transform in iter:
             if isinstance(transform, ExtendedSelectorMixin):
-                if fm is not None and 'feature_meta' in step_params[step_idx]:
-                    step_params[step_idx]['feature_meta'] = fm
+                if (feature_meta is not None
+                        and 'feature_meta' in step_params[step_idx]):
+                    step_params[step_idx]['feature_meta'] = feature_meta
                 res = transform.transform(X, **step_params[step_idx])
                 if isinstance(res, tuple):
-                    X, fm = res
+                    X, feature_meta = res
                 else:
                     X = res
             else:
@@ -320,13 +321,13 @@ class ExtendedPipeline(Pipeline):
         if remainder:
             raise TypeError('fit() got unexpected keyword arguments %r'
                             % sorted(remainder))
-        fm = None
+        feature_meta = None
         for (step_idx,
              name,
              transformer) in self._iter(with_final=False,
                                         filter_passthrough=False):
             if (transformer is None or transformer == 'passthrough'):
-                with _print_elapsed_time('ExtendedPipeline',
+                with _print_elapsed_time('Pipeline',
                                          self._log_message(step_idx)):
                     continue
 
@@ -350,22 +351,22 @@ class ExtendedPipeline(Pipeline):
                 cloned_transformer = clone(transformer)
             # Fit or load from cache the current transformer
             if isinstance(transformer, ExtendedSelectorMixin):
-                if (fm is not None and 'feature_meta' in
-                        step_fit_params[step_idx]):
-                    step_fit_params[step_idx]['feature_meta'] = fm
+                if (feature_meta is not None
+                        and 'feature_meta' in step_fit_params[step_idx]):
+                    step_fit_params[step_idx]['feature_meta'] = feature_meta
                 res, fitted_transformer = fit_transform_one_cached(
                     cloned_transformer, X, y, None,
-                    message_clsname='ExtendedPipeline',
+                    message_clsname='Pipeline',
                     message=self._log_message(step_idx),
                     **step_fit_params[step_idx])
                 if isinstance(res, tuple):
-                    X, fm = res
+                    X, feature_meta = res
                 else:
                     X = res
             else:
                 X, fitted_transformer = fit_transform_one_cached(
                     cloned_transformer, X, y, None,
-                    message_clsname='ExtendedPipeline',
+                    message_clsname='Pipeline',
                     message=self._log_message(step_idx),
                     **step_fit_params[step_idx])
             # Replace the transformer of the step with the fitted
@@ -399,11 +400,11 @@ class ExtendedPipeline(Pipeline):
 
         Returns
         -------
-        self : ExtendedPipeline
+        self : Pipeline
             This estimator
         """
         Xt, fit_params = self._fit(X, y, **fit_params)
-        with _print_elapsed_time('ExtendedPipeline',
+        with _print_elapsed_time('Pipeline',
                                  self._log_message(len(self.steps) - 1)):
             if self._final_estimator != 'passthrough':
                 self._final_estimator.fit(Xt, y, **fit_params)
@@ -438,7 +439,7 @@ class ExtendedPipeline(Pipeline):
         """
         last_step = self._final_estimator
         Xt, fit_params = self._fit(X, y, **fit_params)
-        with _print_elapsed_time('ExtendedPipeline',
+        with _print_elapsed_time('Pipeline',
                                  self._log_message(len(self.steps) - 1)):
             if last_step == 'passthrough':
                 return Xt
@@ -502,7 +503,7 @@ class ExtendedPipeline(Pipeline):
         y_pred : array-like
         """
         Xt, fit_params = self._fit(X, y, **fit_params)
-        with _print_elapsed_time('ExtendedPipeline',
+        with _print_elapsed_time('Pipeline',
                                  self._log_message(len(self.steps) - 1)):
             y_pred = self.steps[-1][-1].fit_predict(Xt, y, **fit_params)
         return y_pred
@@ -698,7 +699,7 @@ def _name_estimators(estimators):
 
 
 def make_extended_pipeline(*steps, **kwargs):
-    """Construct an ExtendedPipeline from the given estimators.
+    """Construct an Pipeline from the given estimators.
 
     This is a shorthand for the Pipeline constructor; it does not require, and
     does not permit, naming the estimators. Instead, their names will be set
@@ -737,7 +738,7 @@ def make_extended_pipeline(*steps, **kwargs):
 
     Returns
     -------
-    p : ExtendedPipeline
+    p : Pipeline
     """
     memory = kwargs.pop('memory', None)
     verbose = kwargs.pop('verbose', False)
@@ -959,7 +960,7 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
 
         Returns
         -------
-        self : ExtendedFeatureUnion
+        self : FeatureUnion
             This estimator
         """
         transformers = self._parallel_func(X, y, fit_params, _fit_one)
@@ -1014,12 +1015,12 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
 
         return Parallel(n_jobs=self.n_jobs)(delayed(func)(
             transformer, X, y, weight,
-            message_clsname='ExtendedFeatureUnion',
+            message_clsname='FeatureUnion',
             message=self._log_message(name, idx, len(transformers)),
             **fit_params) for idx, (name, transformer,
                                     weight) in enumerate(transformers, 1))
 
-    def transform(self, X):
+    def transform(self, X, **transform_params):
         """Transform X separately by each transformer, concatenate results.
 
         Parameters
@@ -1034,7 +1035,7 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
             sum of n_components (output dimension) over transformers.
         """
         Xs = Parallel(n_jobs=self.n_jobs)(
-            delayed(_transform_one)(trans, X, None, weight)
+            delayed(_transform_one)(trans, X, None, weight, **transform_params)
             for name, trans, weight in self._iter())
         if not Xs:
             # All transformers are None
@@ -1053,7 +1054,8 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
 
 
 def make_extended_union(*transformers, **kwargs):
-    """Construct an ExtendedFeatureUnion from the given transformers.
+    """
+    Construct a FeatureUnion from the given transformers.
 
     This is a shorthand for the FeatureUnion constructor; it does not require,
     and does not permit, naming the transformers. Instead, they will be given
@@ -1075,7 +1077,7 @@ def make_extended_union(*transformers, **kwargs):
 
     Returns
     -------
-    f : ExtendedFeatureUnion
+    f : FeatureUnion
 
     See Also
     --------
@@ -1097,5 +1099,5 @@ def make_extended_union(*transformers, **kwargs):
         # change its type spec in make_union
         raise TypeError('Unknown keyword arguments: "{}"'
                         .format(list(kwargs.keys())[0]))
-    return ExtendedFeatureUnion(_name_estimators(transformers), n_jobs=n_jobs,
-                                verbose=verbose)
+    return ExtendedFeatureUnion(
+        _name_estimators(transformers), n_jobs=n_jobs, verbose=verbose)
