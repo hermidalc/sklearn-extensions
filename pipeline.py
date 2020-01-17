@@ -746,9 +746,8 @@ def make_extended_pipeline(*steps, **kwargs):
     if kwargs:
         raise TypeError('Unknown keyword arguments: "{}"'
                         .format(list(kwargs.keys())[0]))
-    return ExtendedPipeline(steps)(_name_estimators(steps), memory=memory,
-                                   verbose=verbose,
-                                   param_routing=param_routing)
+    return ExtendedPipeline(_name_estimators(steps), memory=memory,
+                            verbose=verbose, param_routing=param_routing)
 
 
 def _transform_one(transformer, X, y, weight, **transform_params):
