@@ -13,14 +13,10 @@ from ._validation import validation_curve
 
 from ._search import ExtendedGridSearchCV
 from ._search import ExtendedRandomizedSearchCV
-from ._search import ExtendedParameterGrid
-from ._search import ExtendedParameterSampler
 from ._search import fit_grid_point
 
 
 __all__ = ['ExtendedGridSearchCV',
-           'ExtendedParameterGrid',
-           'ExtendedParameterSampler',
            'ExtendedRandomizedSearchCV',
            'StratifiedGroupShuffleSplit',
            'cross_val_predict',
