@@ -20,7 +20,7 @@ from sklearn.base import clone
 from sklearn.base import is_classifier
 from sklearn.model_selection import check_cv
 
-from .base import ExtendedSelectorMixin
+from ._base import ExtendedSelectorMixin
 from ..metrics import check_scoring
 from ..model_selection._validation import _score
 from ..utils.metaestimators import check_routing

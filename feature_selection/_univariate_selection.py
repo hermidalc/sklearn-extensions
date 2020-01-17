@@ -14,7 +14,7 @@ from sklearn.feature_selection._univariate_selection import (
 from sklearn.feature_selection._mutual_info import (mutual_info_classif,
                                                     mutual_info_regression)
 
-from .base import ExtendedSelectorMixin
+from ._base import ExtendedSelectorMixin
 
 
 def _clean_nans(scores):

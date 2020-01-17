@@ -10,7 +10,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils import check_X_y
 from sklearn.utils.metaestimators import if_delegate_has_method
 
-from .base import ExtendedSelectorMixin
+from ._base import ExtendedSelectorMixin
 
 
 def _get_feature_importances(estimator, norm_order=1):

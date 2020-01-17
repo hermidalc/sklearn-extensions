@@ -8,7 +8,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
-from .base import ExtendedSelectorMixin
+from ._base import ExtendedSelectorMixin
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()

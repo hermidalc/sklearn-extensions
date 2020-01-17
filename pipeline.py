@@ -23,7 +23,7 @@ from sklearn.utils import Bunch, _print_elapsed_time
 from sklearn.utils.metaestimators import if_delegate_has_method
 from sklearn.utils.validation import check_memory
 from .base import ExtendedTransformerMixin
-from .feature_selection.base import ExtendedSelectorMixin
+from .feature_selection._base import ExtendedSelectorMixin
 from .utils.metaestimators import check_routing
 
 

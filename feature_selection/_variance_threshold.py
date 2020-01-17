@@ -6,7 +6,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 from sklearn.utils.sparsefuncs import mean_variance_axis, min_max_axis
 from sklearn.utils.validation import check_is_fitted
-from .base import ExtendedSelectorMixin
+from ._base import ExtendedSelectorMixin
 
 
 class VarianceThreshold(ExtendedSelectorMixin, BaseEstimator):
