@@ -72,7 +72,6 @@ class _MultimetricScorer:
     scorers : dict
         Dictionary mapping names to callable scorers.
     """
-
     def __init__(self, **scorers):
         self._scorers = scorers
 
@@ -116,8 +115,8 @@ class _MultimetricScorer:
         if counter[_ThresholdScorer]:
             if is_regressor(estimator) and counter[_PredictScorer]:
                 return True
-            if (counter[_ProbaScorer]
-                    and not hasattr(estimator, "decision_function")):
+            elif (counter[_ProbaScorer] and
+                  not hasattr(estimator, "decision_function")):
                 return True
         return False
 
