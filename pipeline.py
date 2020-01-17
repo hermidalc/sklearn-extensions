@@ -136,8 +136,8 @@ class ExtendedPipeline(Pipeline):
         self.steps = steps
         self.memory = memory
         self.verbose = verbose
-        self._validate_steps()
         self.param_routing = param_routing
+        self._validate_steps()
         self.router = check_routing(self.param_routing,
                                     [[name, '*'] for name, _ in self.steps],
                                     self._default_routing)
