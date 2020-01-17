@@ -12,16 +12,17 @@ from joblib import Parallel, delayed, effective_n_jobs
 
 from sklearn.utils import check_X_y, safe_sqr
 from sklearn.utils.metaestimators import if_delegate_has_method, _safe_split
-from sklearn.utils.validation import check_is_fitted, indexable
+from sklearn.utils.validation import (check_is_fitted, indexable,
+                                      _check_fit_params)
 from sklearn.base import BaseEstimator
 from sklearn.base import MetaEstimatorMixin
 from sklearn.base import clone
 from sklearn.base import is_classifier
 from sklearn.model_selection import check_cv
-from sklearn.metrics import check_scoring
 
 from .base import ExtendedSelectorMixin
-from ..model_selection._validation import _index_param_value, _score
+from ..metrics import check_scoring
+from ..model_selection._validation import _score
 from ..utils.metaestimators import check_routing
 
 
@@ -32,12 +33,10 @@ def _rfe_single_fit(rfe, estimator, X, y, train, test, scorer, fit_params,
     """
     # Subset fit_params values for train indices
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = {k: _index_param_value(X, v, train)
-                  for k, v in fit_params.items()}
+    fit_params = _check_fit_params(X, fit_params, train)
     # Subset score_params values for test indices
     score_params = score_params if score_params is not None else {}
-    score_params = {k: _index_param_value(X, v, test)
-                    for k, v in score_params.items()}
+    score_params = _check_fit_params(X, score_params, test)
 
     X_train, y_train = _safe_split(estimator, X, y, train)
     X_test, y_test = _safe_split(estimator, X, y, test, train)
@@ -645,9 +644,8 @@ class RFECV(RFE):
         # n_jobs to 1 and provides bound methods as scorers is not broken with
         # the addition of n_jobs parameter in version 0.18.
 
-        # make sure fit_params are sliceable
-        fit_params_values = indexable(*fit_params.values())
-        fit_params = dict(zip(fit_params.keys(), fit_params_values))
+        X, y, fit_params = indexable(X, y, fit_params)
+        fit_params = _check_fit_params(X, fit_params)
 
         (fit_params, cv_params, score_params), remainder = (
             self.router(fit_params))
