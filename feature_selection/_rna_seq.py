@@ -30,17 +30,16 @@ r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
 def deseq2_feature_score(X, y, sample_meta, lfc, blind, fit_type, model_batch,
                          n_threads):
-    sv, xt, gm, sf, df = r_deseq2_feature_score(
+    sv, xt, gm, df = r_deseq2_feature_score(
         X, y, sample_meta=sample_meta, lfc=lfc, blind=blind, fit_type=fit_type,
         model_batch=model_batch, n_threads=n_threads)
     return (np.array(sv, dtype=float), np.array(xt, dtype=float),
-            np.array(gm, dtype=float), np.array(sf, dtype=float), df)
+            np.array(gm, dtype=float), df)
 
 
-def deseq2_vst_transform(X, geo_means, size_factors, disp_func, fit_type):
+def deseq2_vst_transform(X, geo_means, disp_func):
     return np.array(r_deseq2_vst_transform(
-        X, geo_means=geo_means, size_factors=size_factors, disp_func=disp_func,
-        fit_type=fit_type), dtype=float)
+        X, geo_means=geo_means, disp_func=disp_func), dtype=float)
 
 
 def edger_feature_score(X, y, sample_meta, lfc, robust, prior_count,
@@ -131,9 +130,6 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     geo_means_ : array, shape (n_features,)
         Feature geometric means.
 
-    size_factors_ : array, shape (n_features,)
-        RLE normalization size factors.
-
     disp_func_ : R/rpy2 function
         RLE normalization dispersion function.
     """
@@ -175,11 +171,11 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        (self.svals_, self._vst_data, self.geo_means_, self.size_factors_,
-         self.disp_func_) = memory.cache(deseq2_feature_score)(
-             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-             blind=self.blind, fit_type=self.fit_type,
-             model_batch=self.model_batch, n_threads=self.n_threads)
+        self.svals_, self._vst_data, self.geo_means_, self.disp_func_ = (
+            memory.cache(deseq2_feature_score)(
+                X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
+                blind=self.blind, fit_type=self.fit_type,
+                model_batch=self.model_batch, n_threads=self.n_threads))
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -206,8 +202,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         if hasattr(self, '_train_done'):
             memory = check_memory(self.memory)
             X = memory.cache(deseq2_vst_transform)(
-                X, geo_means=self.geo_means_, size_factors=self.size_factors_,
-                disp_func=self.disp_func_, fit_type=self.fit_type)
+                X, geo_means=self.geo_means_, disp_func=self.disp_func_)
         else:
             X = self._vst_data
             self._train_done = True

@@ -23,17 +23,15 @@ r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
 
 def deseq2_vst_fit(X, y, sample_meta, blind, fit_type, model_batch):
-    xt, gm, sf, df = r_deseq2_vst_fit(
+    xt, gm, df = r_deseq2_vst_fit(
         X, y, sample_meta=sample_meta, blind=blind, fit_type=fit_type,
         model_batch=model_batch)
-    return (np.array(xt, dtype=float), np.array(gm, dtype=float),
-            np.array(sf, dtype=float), df)
+    return np.array(xt, dtype=float), np.array(gm, dtype=float), df
 
 
-def deseq2_vst_transform(X, geo_means, size_factors, disp_func, fit_type):
+def deseq2_vst_transform(X, geo_means, disp_func):
     return np.array(r_deseq2_vst_transform(
-        X, geo_means=geo_means, size_factors=size_factors, disp_func=disp_func,
-        fit_type=fit_type), dtype=float)
+        X, geo_means=geo_means, disp_func=disp_func), dtype=float)
 
 
 def edger_tmm_logcpm_fit(X, prior_count):
@@ -72,9 +70,6 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
     geo_means_ : array, shape (n_features,)
         Feature geometric means.
 
-    size_factors_ : array, shape (n_features,)
-        RLE normalization size factors.
-
     disp_func_ : R/rpy2 function
         RLE normalization dispersion function.
     """
@@ -109,10 +104,10 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        (self._vst_data, self.geo_means_, self.size_factors_,
-         self.disp_func_) = memory.cache(deseq2_vst_fit)(
-             X, y, sample_meta=sample_meta, blind=self.blind,
-             fit_type=self.fit_type, model_batch=self.model_batch)
+        self._vst_data, self.geo_means_, self.disp_func_ = (
+            memory.cache(deseq2_vst_fit)(
+                X, y, sample_meta=sample_meta, blind=self.blind,
+                fit_type=self.fit_type, model_batch=self.model_batch))
         return self
 
     def transform(self, X, sample_meta=None):
@@ -135,8 +130,7 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         if hasattr(self, '_train_done'):
             memory = check_memory(self.memory)
             X = memory.cache(deseq2_vst_transform)(
-                X, geo_means=self.geo_means_, size_factors=self.size_factors_,
-                disp_func=self.disp_func_, fit_type=self.fit_type)
+                X, geo_means=self.geo_means_, disp_func=self.disp_func_)
         else:
             X = self._vst_data
             self._train_done = True

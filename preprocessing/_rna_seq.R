@@ -24,14 +24,11 @@ deseq2_vst_fit <- function(
     )
     vsd <- varianceStabilizingTransformation(dds, blind=blind)
     return(list(
-        t(as.matrix(assay(vsd))), geo_means, sizeFactors(dds),
-        dispersionFunction(dds)
+        t(as.matrix(assay(vsd))), geo_means, dispersionFunction(dds)
     ))
 }
 
-deseq2_vst_transform <- function(
-    X, geo_means, size_factors, disp_func, fit_type="parametric"
-) {
+deseq2_vst_transform <- function(X, geo_means, disp_func) {
     suppressPackageStartupMessages(library("DESeq2"))
     counts <- t(X)
     dds <- DESeqDataSetFromMatrix(

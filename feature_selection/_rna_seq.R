@@ -40,7 +40,7 @@ deseq2_feature_score <- function(
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
     vsd <- varianceStabilizingTransformation(dds, blind=blind)
     return(list(
-        results$svalue, t(as.matrix(assay(vsd))), geo_means, sizeFactors(dds),
+        results$svalue, t(as.matrix(assay(vsd))), geo_means,
         dispersionFunction(dds)
     ))
 }
