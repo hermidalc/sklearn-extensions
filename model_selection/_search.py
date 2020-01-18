@@ -111,8 +111,8 @@ def fit_grid_point(X, y, estimator, parameters, train, test, scorer,
     fit_params = {k: v for k, v in fit_params.items()
                   if k != 'feature_meta'}
 
-    X, y = indexable(X, y)
-    fit_params = dict(zip(fit_params.keys(), indexable(*fit_params.values())))
+    X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+    fit_params = dict(zip(fit_params.keys(), fit_params_values))
     fit_params = _check_fit_params(X, fit_params)
 
     (fit_params, _, score_params), remainder = router(fit_params)
@@ -422,9 +422,8 @@ class ExtendedBaseSearchCV(BaseSearchCV):
         fit_params = {k: v for k, v in fit_params.items()
                       if k != 'feature_meta'}
 
-        X, y = indexable(X, y)
-        fit_params = dict(zip(fit_params.keys(),
-                              indexable(*fit_params.values())))
+        X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+        fit_params = dict(zip(fit_params.keys(), fit_params_values))
         fit_params = _check_fit_params(X, fit_params)
 
         (fit_params, cv_params, score_params), remainder = (

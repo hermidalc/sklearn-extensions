@@ -231,8 +231,8 @@ def cross_validate(estimator, X, y=None, groups=None, scoring=None, cv=None,
 
     fit_params['groups'] = groups
 
-    X, y = indexable(X, y)
-    fit_params = dict(zip(fit_params.keys(), indexable(*fit_params.values())))
+    X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+    fit_params = dict(zip(fit_params.keys(), fit_params_values))
     fit_params = _check_fit_params(X, fit_params)
 
     (fit_params, cv_params, score_params), remainder = router(fit_params)
@@ -771,8 +771,8 @@ def cross_val_predict(estimator, X, y=None, groups=None, cv=None,
 
     fit_params['groups'] = groups
 
-    X, y = indexable(X, y)
-    fit_params = dict(zip(fit_params.keys(), indexable(*fit_params.values())))
+    X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+    fit_params = dict(zip(fit_params.keys(), fit_params_values))
     fit_params = _check_fit_params(X, fit_params)
 
     (fit_params, cv_params, predict_params), remainder = router(fit_params)
@@ -1104,8 +1104,8 @@ def permutation_test_score(estimator, X, y, groups=None, cv=None,
 
     fit_params['groups'] = groups
 
-    X, y = indexable(X, y)
-    fit_params = dict(zip(fit_params.keys(), indexable(*fit_params.values())))
+    X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+    fit_params = dict(zip(fit_params.keys(), fit_params_values))
     fit_params = _check_fit_params(X, fit_params)
 
     (fit_params, _, score_params), remainder = router(fit_params)
@@ -1315,8 +1315,8 @@ def learning_curve(estimator, X, y, groups=None,
 
     fit_params['groups'] = groups
 
-    X, y = indexable(X, y)
-    fit_params = dict(zip(fit_params.keys(), indexable(*fit_params.values())))
+    X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+    fit_params = dict(zip(fit_params.keys(), fit_params_values))
     fit_params = _check_fit_params(X, fit_params)
 
     (fit_params, cv_params, score_params), remainder = router(fit_params)
@@ -1599,8 +1599,8 @@ def validation_curve(estimator, X, y, param_name, param_range, groups=None,
 
     fit_params['groups'] = groups
 
-    X, y = indexable(X, y)
-    fit_params = dict(zip(fit_params.keys(), indexable(*fit_params.values())))
+    X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+    fit_params = dict(zip(fit_params.keys(), fit_params_values))
     fit_params = _check_fit_params(X, fit_params)
 
     (fit_params, cv_params, score_params), remainder = router(fit_params)

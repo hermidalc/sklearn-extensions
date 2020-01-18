@@ -644,9 +644,8 @@ class RFECV(RFE):
         # n_jobs to 1 and provides bound methods as scorers is not broken with
         # the addition of n_jobs parameter in version 0.18.
 
-        X, y = indexable(X, y)
-        fit_params = dict(zip(fit_params.keys(),
-                              indexable(*fit_params.values())))
+        X, y, *fit_params_values = indexable(X, y, *fit_params.values())
+        fit_params = dict(zip(fit_params.keys(), fit_params_values))
         fit_params = _check_fit_params(X, fit_params)
 
         (fit_params, cv_params, score_params), remainder = (
