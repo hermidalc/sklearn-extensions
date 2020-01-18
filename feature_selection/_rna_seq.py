@@ -194,8 +194,8 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         Returns
         -------
         Xr : array of shape (n_samples, n_selected_features)
-            DESeq2 median-of-ratios normalized VST transformed counts data
-            matrix with only the selected features.
+            DESeq2 median-of-ratios normalized VST transformed data matrix
+            with only the selected features.
         """
         check_is_fitted(self, '_vst_data')
         X = check_array(X, dtype=int)
@@ -364,8 +364,8 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         Returns
         -------
         Xr : array of shape (n_samples, n_selected_features)
-            edgeR TMM normalized log-CPM transformed counts data matrix with
-            only the selected features.
+            edgeR TMM normalized log-CPM transformed data matrix with only the
+            selected features.
         """
         check_is_fitted(self, '_log_cpms')
         X = check_array(X, dtype=int)
@@ -629,8 +629,8 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         Returns
         -------
         Xr : array of shape (n_samples, n_selected_features)
-            edgeR TMM normalized log-CPM transformed counts data matrix with
-            only the selected features.
+            edgeR TMM normalized log-CPM transformed data matrix with only the
+            selected features.
         """
         check_is_fitted(self, '_log_cpms')
         X = check_array(X, dtype=int)
@@ -798,8 +798,8 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         Returns
         -------
         Xr : array of shape (n_samples, n_selected_features)
-            edgeR TMM normalized log-CPM transformed counts data matrix with
-            only the selected features.
+            edgeR TMM normalized log-CPM transformed data matrix with only the
+            selected features.
         """
         check_is_fitted(self, '_log_cpms')
         X = check_array(X, dtype=int)

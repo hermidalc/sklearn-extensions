@@ -122,8 +122,7 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         Returns
         -------
         Xt : array of shape (n_samples, n_features)
-            DESeq2 median-of-ratios normalized VST transformed counts data
-            matrix.
+            DESeq2 median-of-ratios normalized VST transformed data matrix.
         """
         check_is_fitted(self, '_vst_data')
         X = check_array(X, dtype=int)
@@ -206,7 +205,7 @@ class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
         Returns
         -------
         Xt : array of shape (n_samples, n_features)
-            edgeR TMM normalized log-CPM transformed counts data matrix.
+            edgeR TMM normalized log-CPM transformed data matrix.
         """
         check_is_fitted(self, '_log_cpms')
         X = check_array(X, dtype=int)
