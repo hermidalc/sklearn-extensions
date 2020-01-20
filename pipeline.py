@@ -285,12 +285,12 @@ class ExtendedPipeline(Pipeline):
                             % (caller_name, sorted(remainder)))
         feature_meta = None
         if caller_name == 'transform':
-            iter = self._iter()
+            step_iter = self._iter()
         elif caller_name == 'inverse_transform':
-            iter = reversed(list(self._iter()))
+            step_iter = reversed(list(self._iter()))
         else:
-            iter = self._iter(with_final=False)
-        for step_idx, _, transform in iter:
+            step_iter = self._iter(with_final=False)
+        for step_idx, _, transform in step_iter:
             if isinstance(transform, ExtendedSelectorMixin):
                 if (feature_meta is not None
                         and 'feature_meta' in step_params[step_idx]):
