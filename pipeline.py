@@ -319,7 +319,7 @@ class ExtendedPipeline(Pipeline):
 
         step_fit_params, remainder = self.router(fit_params)
         if remainder:
-            raise TypeError('fit() got unexpected keyword arguments %r'
+            raise TypeError('Got unexpected keyword arguments %r'
                             % sorted(remainder))
         feature_meta = None
         for (step_idx,
@@ -750,7 +750,8 @@ def make_extended_pipeline(*steps, **kwargs):
                             verbose=verbose, param_routing=param_routing)
 
 
-def _transform_one(transformer, X, y, weight, **transform_params):
+def _transform_one(transformer, X, y, weight, message_clsname='',
+                   message=None, **transform_params):
     res = transformer.transform(X, **transform_params)
     # if we have a weight for this transformer, multiply output
     if weight is None:
@@ -860,12 +861,18 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
     _required_parameters = ["transformer_list"]
 
     def __init__(self, transformer_list, n_jobs=None,
-                 transformer_weights=None, verbose=False):
+                 transformer_weights=None, verbose=False,
+                 param_routing=None):
         self.transformer_list = transformer_list
         self.n_jobs = n_jobs
         self.transformer_weights = transformer_weights
         self.verbose = verbose
+        self.param_routing = param_routing
         self._validate_transformers()
+        self.router = check_routing(
+            self.param_routing,
+            [[name, '*'] for name, _ in self.transformer_list],
+            self._default_routing)
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.
@@ -927,6 +934,20 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
         return ((name, trans, get_weight(name))
                 for name, trans in self.transformer_list
                 if trans is not None and trans != 'drop')
+
+    def _default_routing(self, params):
+        names = [name for name, _ in self.transformer_list]
+        transformer_params = {name: {} for name in names}
+        remainder = set()
+        for k, v in params.items():
+            if v is not None:
+                # XXX: not sure if we need to remove Nones
+                name, prop = k.split('__', 1)
+                try:
+                    transformer_params[name][prop] = v
+                except KeyError:
+                    remainder.add(k)
+        return [transformer_params[name] for name in names], remainder
 
     def get_feature_names(self):
         """Get feature names from all transformers.
@@ -1008,16 +1029,22 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
 
     def _parallel_func(self, X, y, fit_params, func):
         """Runs func in parallel on X and y"""
+        transformer_fit_params, remainder = self.router(fit_params)
+        if remainder:
+            raise TypeError('%s got unexpected keyword arguments %r'
+                            % (func, sorted(remainder)))
+
         self.transformer_list = list(self.transformer_list)
         self._validate_transformers()
         transformers = list(self._iter())
 
-        return Parallel(n_jobs=self.n_jobs)(delayed(func)(
-            transformer, X, y, weight,
-            message_clsname='FeatureUnion',
-            message=self._log_message(name, idx, len(transformers)),
-            **fit_params) for idx, (name, transformer,
-                                    weight) in enumerate(transformers, 1))
+        return Parallel(n_jobs=self.n_jobs)(
+            delayed(func)(
+                transformer, X, y, weight,
+                message_clsname='FeatureUnion',
+                message=self._log_message(name, idx, len(transformers)),
+                **transformer_fit_params[idx - 1])
+            for idx, (name, transformer, weight) in enumerate(transformers, 1))
 
     def transform(self, X, **transform_params):
         """Transform X separately by each transformer, concatenate results.
@@ -1033,9 +1060,20 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
             hstack of results of transformers. sum_n_components is the
             sum of n_components (output dimension) over transformers.
         """
+        transformer_transform_params, remainder = self.router(transform_params)
+        if remainder:
+            raise TypeError('Got unexpected keyword arguments %r'
+                            % sorted(remainder))
+
+        transformers = list(self._iter())
+
         Xs = Parallel(n_jobs=self.n_jobs)(
-            delayed(_transform_one)(trans, X, None, weight, **transform_params)
-            for name, trans, weight in self._iter())
+            delayed(_transform_one)(
+                trans, X, None, weight,
+                message_clsname='FeatureUnion',
+                message=self._log_message(name, idx, len(transformers)),
+                **transformer_transform_params[idx - 1])
+            for idx, (name, trans, weight) in enumerate(transformers, 1))
         if not Xs:
             # All transformers are None
             return np.zeros((X.shape[0], 0))
@@ -1093,10 +1131,12 @@ def make_extended_union(*transformers, **kwargs):
     """
     n_jobs = kwargs.pop('n_jobs', None)
     verbose = kwargs.pop('verbose', False)
+    param_routing = kwargs.pop('param_routing', None)
     if kwargs:
         # We do not currently support `transformer_weights` as we may want to
         # change its type spec in make_union
         raise TypeError('Unknown keyword arguments: "{}"'
                         .format(list(kwargs.keys())[0]))
     return ExtendedFeatureUnion(
-        _name_estimators(transformers), n_jobs=n_jobs, verbose=verbose)
+        _name_estimators(transformers), n_jobs=n_jobs, verbose=verbose,
+        param_routing=param_routing)
