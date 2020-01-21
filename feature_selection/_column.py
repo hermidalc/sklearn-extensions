@@ -108,6 +108,9 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
         return super().inverse_transform(X, feature_meta)
 
     def _check_params(self, X, y, feature_meta):
+        if X.shape[1] != feature_meta.shape[0]:
+            raise ValueError("X and feature_meta have different feature "
+                             "dimensions.")
         if self.cols:
             types = {type(i) for i in self.cols}
             if len(types) > 1:

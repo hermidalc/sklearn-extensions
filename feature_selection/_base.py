@@ -92,6 +92,9 @@ class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin,
             if len(mask) != feature_meta.shape[0]:
                 raise ValueError("feature_meta has a different shape than "
                                  "during fitting.")
+            if X.shape[1] != feature_meta.shape[0]:
+                raise ValueError("X and feature_meta have different feature "
+                                 "dimensions.")
             return X[:, safe_mask(X, mask)], feature_meta[mask]
         return X[:, safe_mask(X, mask)]
 
