@@ -1043,8 +1043,9 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
                 transformer, X, y, weight,
                 message_clsname='FeatureUnion',
                 message=self._log_message(name, idx, len(transformers)),
-                **transformer_fit_params[idx - 1])
-            for idx, (name, transformer, weight) in enumerate(transformers, 1))
+                **fit_params)
+            for idx, ((name, transformer, weight), fit_params) in (
+                enumerate(zip(transformers, transformer_fit_params), 1)))
 
     def transform(self, X, **transform_params):
         """Transform X separately by each transformer, concatenate results.
@@ -1072,8 +1073,9 @@ class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
                 trans, X, None, weight,
                 message_clsname='FeatureUnion',
                 message=self._log_message(name, idx, len(transformers)),
-                **transformer_transform_params[idx - 1])
-            for idx, (name, trans, weight) in enumerate(transformers, 1))
+                **transform_params)
+            for idx, ((name, trans, weight), transform_params) in (
+                enumerate(zip(transformers, transformer_transform_params), 1)))
         if not Xs:
             # All transformers are None
             return np.zeros((X.shape[0], 0))

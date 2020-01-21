@@ -484,9 +484,11 @@ boolean mask array or callable
                     weight=weight,
                     message_clsname='ColumnTransformer',
                     message=self._log_message(name, idx, len(transformers)),
-                    **transformer_fit_params[idx - 1])
-                for idx, (name, trans, column, weight) in enumerate(
-                        self._iter(fitted=fitted, replace_strings=True), 1))
+                    **{k: _safe_indexing(v, column, axis=0)
+                       if k == 'feature_meta' else v
+                       for k, v in fit_params.items()})
+                for idx, ((name, trans, column, weight), fit_params) in (
+                    enumerate(zip(transformers, transformer_fit_params), 1)))
         except ValueError as e:
             if "Expected 2D array, got 1D array instead" in str(e):
                 raise ValueError(_ERR_MSG_1DCOLUMN)
