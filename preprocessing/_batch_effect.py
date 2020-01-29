@@ -45,8 +45,8 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
 
     Attributes
     ----------
-    beta_ : array, shape (n_features, n_batches - 1)
-        removeBatchEffect linear model coefficents
+    batch_adj_ : pandas.DataFrame, shape (n_features, n_batches)
+        removeBatchEffect feature batch adjustments
     """
 
     def __init__(self, preserve_design=True):
@@ -68,8 +68,8 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         X = check_array(X)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.beta_ = np.array(r_limma_removeba_fit(
-            X, sample_meta, preserve_design=self.preserve_design), dtype=float)
+        self.batch_adj_ = r_limma_removeba_fit(
+            X, sample_meta, preserve_design=self.preserve_design)
         return self
 
     def transform(self, X, sample_meta):
@@ -88,10 +88,10 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             Batched corrected log-transformed input data matrix.
         """
-        check_is_fitted(self, 'beta_')
+        check_is_fitted(self, 'batch_adj_')
         X = check_array(X)
         X = np.array(r_limma_removeba_transform(
-            X, sample_meta, beta=self.beta_), dtype=float)
+            X, sample_meta, self.batch_adj_), dtype=float)
         return X
 
     def inverse_transform(self, X, sample_meta):

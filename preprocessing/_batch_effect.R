@@ -6,29 +6,32 @@ source(paste(dirname(sys.frame(1)$ofile), "_svapred.R", sep="/"))
 # adapted from limma::removeBatchEffect source code
 limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {
     suppressPackageStartupMessages(library("limma"))
-    batch <- sample_meta$Batch
-    sample_meta$Batch <- NULL
-    if (preserve_design) {
-        sample_meta$Class <- factor(sample_meta$Class)
-        design <- model.matrix(~Class, data=sample_meta)
+    batch <- factor(sample_meta$Batch)
+    if (length(levels(batch)) > 1) {
+        contrasts <- contr.sum(levels(batch))
+        contrasts(batch) <- contrasts
+        batch <- model.matrix(~batch)[, -1, drop=FALSE]
+        if (preserve_design) {
+            sample_meta$Class <- factor(sample_meta$Class)
+            design <- model.matrix(~Class, data=sample_meta)
+        } else {
+            design <- matrix(1, ncol(t(X)), 1)
+        }
+        fit <- lmFit(t(X), cbind(design, batch))
+        beta <- fit$coefficients[, -seq_len(ncol(design)), drop=FALSE]
+        beta[is.na(beta)] <- 0
+        batch_adj <- as.data.frame(beta %*% t(contrasts))
     } else {
-        design <- matrix(1, ncol(t(X)), 1)
+        batch_adj <- as.data.frame(matrix(0, nrow=nrow(t(X)), ncol=1))
+        colnames(batch_adj) <- levels(batch)
     }
-    batch <- factor(batch)
-    contrasts(batch) <- contr.sum(levels(batch))
-    batch <- model.matrix(~batch)[, -1, drop=FALSE]
-    fit <- lmFit(t(X), cbind(design, batch))
-    beta <- fit$coefficients[, -seq_len(ncol(design)), drop=FALSE]
-    beta[is.na(beta)] <- 0
-    return(beta)
+    return(batch_adj)
 }
 
-limma_removeba_transform <- function(X, sample_meta, beta) {
-    batch <- sample_meta$Batch
-    batch <- factor(batch)
-    contrasts(batch) <- contr.sum(levels(batch))
-    batch <- model.matrix(~batch)[, -1, drop=FALSE]
-    return(t(t(X) - beta %*% t(batch)))
+limma_removeba_transform <- function(X, sample_meta, batch_adj) {
+    batch <- as.character(sample_meta$Batch)
+    batch_adj[, setdiff(batch, colnames(batch_adj))] <- 0
+    return(t(t(X) - as.matrix(batch_adj)[, batch]))
 }
 
 stica_removeba_fit <- function(
@@ -65,11 +68,11 @@ bapred_removeba_fit <- function(
 ) {
     suppressPackageStartupMessages(library("bapred"))
     y <- factor(sample_meta$Class + 1)
-    batch <- sample_meta$Batch
+    batch <- as.character(sample_meta$Batch)
     unique_batch <- sort(unique(batch))
-    for (j in seq_len(unique_batch)) {
-        if (j != unique_batch[j]) {
-            batch <- replace(batch, batch == unique_batch[j], j)
+    for (n in seq_len(length(unique_batch))) {
+        if (n != unique_batch[n]) {
+            batch <- replace(batch, batch == unique_batch[n], n)
         }
     }
     batch <- factor(batch)
@@ -116,11 +119,11 @@ bapred_removeba_transform <- function(
     ), params
 ) {
     suppressPackageStartupMessages(library("bapred"))
-    batch <- sample_meta$Batch
+    batch <- as.character(sample_meta$Batch)
     unique_batch <- sort(unique(batch))
-    for (j in seq_len(unique_batch)) {
-        if (j != unique_batch[j]) {
-            batch <- replace(batch, batch == unique_batch[j], j)
+    for (n in seq_len(length(unique_batch))) {
+        if (n != unique_batch[n]) {
+            batch <- replace(batch, batch == unique_batch[n], n)
         }
     }
     batch <- factor(batch)
