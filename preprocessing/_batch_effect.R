@@ -10,22 +10,22 @@ limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {
     if (length(levels(batch)) > 1) {
         contrasts <- contr.sum(levels(batch))
         contrasts(batch) <- contrasts
-        batch <- model.matrix(~batch)[, -1, drop=FALSE]
+        batch_design <- model.matrix(~batch)[, -1, drop=FALSE]
         if (preserve_design) {
             sample_meta$Class <- factor(sample_meta$Class)
             design <- model.matrix(~Class, data=sample_meta)
         } else {
-            design <- matrix(1, ncol(t(X)), 1)
+            design <- matrix(1, nrow=nrow(X), ncol=1)
         }
-        fit <- lmFit(t(X), cbind(design, batch))
+        fit <- lmFit(t(X), cbind(design, batch_design))
         beta <- fit$coefficients[, -seq_len(ncol(design)), drop=FALSE]
         beta[is.na(beta)] <- 0
-        batch_adj <- as.data.frame(beta %*% t(contrasts))
+        batch_adj <- beta %*% t(contrasts)
     } else {
-        batch_adj <- as.data.frame(matrix(0, nrow=nrow(t(X)), ncol=1))
+        batch_adj <- matrix(0, nrow=ncol(X), ncol=1)
         colnames(batch_adj) <- levels(batch)
     }
-    return(batch_adj)
+    return(as.data.frame(batch_adj))
 }
 
 limma_removeba_transform <- function(X, sample_meta, batch_adj) {
