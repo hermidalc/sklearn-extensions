@@ -18,11 +18,11 @@ from joblib import Parallel, delayed
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.utils import Bunch, _get_column_indices, _determine_key_type
+from sklearn.utils import Bunch
 from sklearn.utils.validation import check_array, check_is_fitted
 
 from ..base import ExtendedTransformerMixin
-from ..utils import _safe_indexing
+from ..utils import _determine_key_type, _get_column_indices, _safe_indexing
 from ..utils.metaestimators import check_routing
 from ..pipeline import _fit_transform_one, _transform_one, _name_estimators
 
