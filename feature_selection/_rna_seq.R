@@ -38,6 +38,7 @@ deseq2_feature_score <- function(
     #     lfcThreshold=lfc, altHypothesis="greaterAbs", pAdjustMethod="BH"
     # ))
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
+    results$svalue[is.na(results$svalue)] <- 1
     vsd <- varianceStabilizingTransformation(dds, blind=blind)
     return(list(
         results$svalue, t(as.matrix(assay(vsd))), geo_means,
