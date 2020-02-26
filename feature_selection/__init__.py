@@ -13,6 +13,7 @@ from ._multivariate import CFS, FCBF, ReliefF
 from ._rna_seq import (DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr, Limma,
                        LimmaVoom)
 from ._rfe import RFE, RFECV
+from ._univariate_model import SelectFromUnivariateModel
 from ._univariate_selection import (
     ANOVAFScorerClassification, ANOVAFScorerRegression, Chi2Scorer,
     GenericUnivariateSelect, MutualInfoScorerClassification,
@@ -44,6 +45,7 @@ __all__ = ['ANOVAFScorerClassification',
            'SelectFdr',
            'SelectFpr',
            'SelectFromModel',
+           'SelectFromUnivariateModel',
            'SelectFwe',
            'SelectKBest',
            'SelectPercentile',
