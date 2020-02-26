@@ -547,6 +547,7 @@ class SelectPercentile(_BaseFilter):
         self.percentile = percentile
 
     def _check_params(self, X, y):
+        super()._check_params(X, y)
         if not 0 <= self.percentile <= 100:
             raise ValueError("percentile should be >=0, <=100; got %r"
                              % self.percentile)
@@ -638,6 +639,7 @@ class SelectKBest(_BaseFilter):
         self.k = k
 
     def _check_params(self, X, y):
+        super()._check_params(X, y)
         if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError("k should be >=0, <= n_features = %d; got %r. "
                              "Use k='all' to return all features."
@@ -961,6 +963,7 @@ class GenericUnivariateSelect(_BaseFilter):
         return selector
 
     def _check_params(self, X, y):
+        super()._check_params(X, y)
         if self.mode not in self._selection_modes:
             raise ValueError("The mode passed should be one of %s, %r,"
                              " (type %s) was passed."
