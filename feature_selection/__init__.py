@@ -4,6 +4,7 @@ algorithms. It currently includes univariate filter selection methods and the
 recursive feature elimination algorithm.
 """
 
+from ._base import ExtendedSelectorMixin
 from ._cached import (
     CachedANOVAFScorerClassification, CachedChi2Scorer,
     CachedMutualInfoScorerClassification)
@@ -33,6 +34,7 @@ __all__ = ['ANOVAFScorerClassification',
            'DreamVoom',
            'EdgeR',
            'EdgeRFilterByExpr',
+           'ExtendedSelectorMixin',
            'FCBF',
            'GenericUnivariateSelect',
            'Limma',
