@@ -12,8 +12,6 @@ from joblib import Parallel, delayed, effective_n_jobs
 
 from sklearn.utils import check_X_y, safe_sqr
 from sklearn.utils.metaestimators import if_delegate_has_method, _safe_split
-from sklearn.utils.validation import (check_is_fitted, indexable,
-                                      _check_fit_params)
 from sklearn.base import BaseEstimator
 from sklearn.base import MetaEstimatorMixin
 from sklearn.base import clone
@@ -24,6 +22,7 @@ from ._base import ExtendedSelectorMixin
 from ..metrics import check_scoring
 from ..model_selection._validation import _score
 from ..utils.metaestimators import check_routing
+from ..utils.validation import indexable, check_is_fitted, _check_fit_params
 
 
 def _rfe_single_fit(rfe, estimator, X, y, train, test, scorer, fit_params,

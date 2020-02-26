@@ -28,8 +28,7 @@ import numpy as np
 
 from sklearn.metrics import (r2_score, median_absolute_error, max_error,
                              mean_absolute_error, mean_squared_error,
-                             mean_squared_log_error, mean_poisson_deviance,
-                             mean_gamma_deviance, accuracy_score, f1_score,
+                             mean_squared_log_error, accuracy_score, f1_score,
                              roc_auc_score, average_precision_score,
                              precision_score, recall_score, log_loss,
                              balanced_accuracy_score, explained_variance_score,
@@ -44,6 +43,8 @@ from sklearn.metrics.cluster import (adjusted_rand_score, homogeneity_score,
 
 from sklearn.utils.multiclass import type_of_target
 from sklearn.base import is_regressor
+
+from . import mean_gamma_deviance, mean_poisson_deviance
 
 
 def _cached_call(cache, estimator, method, *args, **kwargs):

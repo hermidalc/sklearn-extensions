@@ -83,15 +83,23 @@ edger_feature_score <- function(
     return(list(results$PValue, results$FDR, t(log_cpm), ref_sample))
 }
 
-edger_filterbyexpr_mask <- function(X, y, sample_meta=NULL, model_batch=FALSE) {
+edger_filterbyexpr_mask <- function(
+    X, y, sample_meta=NULL, model_batch=FALSE, is_classif=TRUE
+) {
     suppressPackageStartupMessages(library("edgeR"))
     dge <- DGEList(counts=t(X))
     if (!is.null(sample_meta) && model_batch) {
         sample_meta$Batch <- factor(sample_meta$Batch)
-        sample_meta$Class <- factor(sample_meta$Class)
-        design <- model.matrix(~Batch + Class, data=sample_meta)
-    } else {
+        if (is_classif) {
+            sample_meta$Class <- factor(sample_meta$Class)
+            design <- model.matrix(~Batch + Class, data=sample_meta)
+        } else {
+            design <- model.matrix(~Batch, data=sample_meta)
+        }
+    } else if (is_classif) {
         design <- model.matrix(~factor(y))
+    } else {
+        design <- NULL
     }
     return(filterByExpr(dge, design))
 }

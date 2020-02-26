@@ -21,10 +21,10 @@ from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.utils._joblib import Parallel, delayed
 from sklearn.utils import Bunch, _print_elapsed_time
 from sklearn.utils.metaestimators import if_delegate_has_method
-from sklearn.utils.validation import check_memory
 from .base import ExtendedTransformerMixin
 from .feature_selection._base import ExtendedSelectorMixin
 from .utils.metaestimators import check_routing
+from .utils.validation import check_memory
 
 
 __all__ = ['ExtendedPipeline', 'ExtendedFeatureUnion',

@@ -32,11 +32,10 @@ from sklearn.model_selection._split import check_cv
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.fixes import MaskedArray
 from sklearn.utils.metaestimators import if_delegate_has_method
-from sklearn.utils.validation import (indexable, check_is_fitted,
-                                      _check_fit_params)
 from ..metrics import check_scoring
 from ..metrics._scorer import _check_multimetric_scoring
 from ..utils.metaestimators import check_routing
+from ..utils.validation import indexable, check_is_fitted, _check_fit_params
 from ._validation import _fit_and_score
 from ._validation import _aggregate_score_dicts
 

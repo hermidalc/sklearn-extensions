@@ -9,7 +9,7 @@ from warnings import warn
 
 import numpy as np
 from scipy.sparse import issparse, csc_matrix
-from sklearn.feature_selection._base import SelectorMixin
+from sklearn.feature_selection.base import SelectorMixin
 from sklearn.utils import check_array, safe_mask
 
 from ..base import ExtendedTransformerMixin

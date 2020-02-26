@@ -1,4 +1,4 @@
-from sklearn.utils.validation import check_memory
+from .utils.validation import check_memory
 
 
 class CachedFitMixin:

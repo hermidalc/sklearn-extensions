@@ -22,16 +22,16 @@ import scipy.sparse as sp
 from joblib import Parallel, delayed
 
 from sklearn.base import is_classifier, clone
-from sklearn.utils import (indexable, check_random_state, _safe_indexing,
-                           _message_with_time)
+from sklearn.utils import check_random_state, _message_with_time
 from sklearn.utils.metaestimators import _safe_split
-from sklearn.utils.validation import _check_fit_params, _num_samples
 from sklearn.exceptions import FitFailedWarning
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
 from ..metrics import check_scoring
 from ..metrics._scorer import _check_multimetric_scoring, _MultimetricScorer
+from ..utils import _safe_indexing
 from ..utils.metaestimators import check_routing
+from ..utils.validation import indexable, _check_fit_params, _num_samples
 
 
 __all__ = ['cross_validate', 'cross_val_score', 'cross_val_predict',

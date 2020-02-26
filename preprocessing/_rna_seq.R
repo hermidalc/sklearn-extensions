@@ -2,20 +2,30 @@
 
 deseq2_vst_fit <- function(
     X, y, sample_meta=NULL, blind=FALSE, fit_type="parametric",
-    model_batch=FALSE
+    model_batch=FALSE, is_classif=TRUE
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     counts <- t(X)
     geo_means <- exp(rowMeans(log(counts)))
     if (!is.null(sample_meta) && model_batch) {
         sample_meta$Batch <- factor(sample_meta$Batch)
-        sample_meta$Class <- factor(sample_meta$Class)
+        if (is_classif) {
+            sample_meta$Class <- factor(sample_meta$Class)
+            dds <- DESeqDataSetFromMatrix(
+                counts, as.data.frame(sample_meta), ~Batch + Class
+            )
+        } else {
+            dds <- DESeqDataSetFromMatrix(
+                counts, as.data.frame(sample_meta), ~Batch
+            )
+        }
+    } else if (is_classif) {
         dds <- DESeqDataSetFromMatrix(
-            counts, as.data.frame(sample_meta), ~Batch + Class
+            counts, data.frame(Class=factor(y)), ~Class
         )
     } else {
         dds <- DESeqDataSetFromMatrix(
-            counts, data.frame(Class=factor(y)), ~Class
+            counts, data.frame(row.names=seq(1, ncol(counts))), ~1
         )
     }
     dds <- estimateSizeFactors(dds, quiet=TRUE)

@@ -5,8 +5,8 @@ from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
-from sklearn.utils.validation import check_is_fitted, check_memory
 from ..base import ExtendedTransformerMixin
+from ..utils.validation import check_is_fitted, check_memory
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -22,10 +22,11 @@ r_edger_tmm_logcpm_fit = robjects.globalenv['edger_tmm_logcpm_fit']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
 
-def deseq2_vst_fit(X, y, sample_meta, blind, fit_type, model_batch):
+def deseq2_vst_fit(X, y, sample_meta, blind, fit_type, model_batch,
+                   is_classif):
     xt, gm, df = r_deseq2_vst_fit(
         X, y, sample_meta=sample_meta, blind=blind, fit_type=fit_type,
-        model_batch=model_batch)
+        model_batch=model_batch, is_classif=is_classif)
     return np.array(xt, dtype=float), np.array(gm, dtype=float), df
 
 
@@ -60,6 +61,9 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
 
+    is_classif : bool (default = True)
+        Whether this is a classification design.
+
     memory : None, str or object with the joblib.Memory interface \
         (default = None)
         Used for internal caching. By default, no caching is done.
@@ -75,10 +79,11 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
     """
 
     def __init__(self, blind=False, fit_type='parametric', model_batch=False,
-                 memory=None):
+                 is_classif=True, memory=None):
         self.blind = blind
         self.fit_type = fit_type
         self.model_batch = model_batch
+        self.is_classif = is_classif
         self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
@@ -107,7 +112,8 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         self._vst_data, self.geo_means_, self.disp_func_ = (
             memory.cache(deseq2_vst_fit)(
                 X, y, sample_meta=sample_meta, blind=self.blind,
-                fit_type=self.fit_type, model_batch=self.model_batch))
+                fit_type=self.fit_type, model_batch=self.model_batch,
+                is_classif=self.is_classif))
         return self
 
     def transform(self, X, sample_meta=None):

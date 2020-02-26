@@ -5,8 +5,8 @@ from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
-from sklearn.utils.validation import check_is_fitted, check_memory
 from ._base import ExtendedSelectorMixin
+from ..utils.validation import check_is_fitted, check_memory
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -433,10 +433,14 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
+
+    is_classif : bool (default = True)
+        Whether this is a classification design.
     """
 
-    def __init__(self, model_batch=False):
+    def __init__(self, model_batch=False, is_classif=True):
         self.model_batch = model_batch
+        self.is_classif = is_classif
 
     def fit(self, X, y, sample_meta=None, feature_meta=None):
         """
@@ -463,8 +467,8 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self._mask = np.array(r_edger_filterbyexpr_mask(
-            X, y, sample_meta=sample_meta, model_batch=self.model_batch),
-                              dtype=bool)
+            X, y, sample_meta=sample_meta, model_batch=self.model_batch,
+            is_classif=self.is_classif), dtype=bool)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
