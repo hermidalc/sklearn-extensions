@@ -60,17 +60,13 @@ class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin,
             retention.
         """
 
-    def transform(self, X, feature_meta=None, **transform_params):
+    def transform(self, X, **transform_params):
         """Reduce X to the selected features.
 
         Parameters
         ----------
         X : array of shape [n_samples, n_features]
             The input samples.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -88,17 +84,9 @@ class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin,
             return np.empty(0).reshape((X.shape[0], 0))
         if len(mask) != X.shape[1]:
             raise ValueError("X has a different shape than during fitting.")
-        if feature_meta is not None:
-            if len(mask) != feature_meta.shape[0]:
-                raise ValueError("feature_meta has a different shape than "
-                                 "during fitting.")
-            if X.shape[1] != feature_meta.shape[0]:
-                raise ValueError("X and feature_meta have different feature "
-                                 "dimensions.")
-            return X[:, safe_mask(X, mask)], feature_meta[mask]
         return X[:, safe_mask(X, mask)]
 
-    def inverse_transform(self, X, feature_meta=None, **transform_params):
+    def inverse_transform(self, X, **transform_params):
         """
         Reverse the transformation operation
 
@@ -106,10 +94,6 @@ class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin,
         ----------
         X : array of shape [n_samples, n_selected_features]
             The input samples.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------

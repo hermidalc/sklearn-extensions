@@ -74,9 +74,7 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
         X : array-like, shape = (n_samples, n_features)
             Input data matrix.
 
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
+        feature_meta : Ignored.
 
         Returns
         -------
@@ -85,7 +83,7 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
             features.
         """
         check_is_fitted(self, '_mask')
-        return super().transform(X, feature_meta)
+        return super().transform(X)
 
     def inverse_transform(self, X, feature_meta=None):
         """
@@ -94,9 +92,7 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
         X : array-like, shape = (n_samples, n_features)
             Input transformed data matrix.
 
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
+        feature_meta : Ignored.
 
         Returns
         -------
@@ -105,12 +101,13 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
             been removed by :meth:`transform`.
         """
         check_is_fitted(self, '_mask')
-        return super().inverse_transform(X, feature_meta)
+        return super().inverse_transform(X)
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError("X and feature_meta have different feature "
-                             "dimensions.")
+            raise ValueError(('X ({:d}) and feature_meta ({:d}) have '
+                              'different feature dimensions')
+                             .format(X.shape[1], feature_meta.shape[0]))
         if self.cols:
             types = {type(i) for i in self.cols}
             if len(types) > 1:

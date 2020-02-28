@@ -145,7 +145,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         self.n_threads = n_threads
         self.memory = memory
 
-    def fit(self, X, y, sample_meta=None, feature_meta=None):
+    def fit(self, X, y, sample_meta=None):
         """
         Parameters
         ----------
@@ -158,8 +158,6 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
             Training sample metadata.
-
-        feature_meta : Ignored.
 
         Returns
         -------
@@ -178,7 +176,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
                 model_batch=self.model_batch, n_threads=self.n_threads))
         return self
 
-    def transform(self, X, sample_meta=None, feature_meta=None):
+    def transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -186,10 +184,6 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             Input counts data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -206,9 +200,9 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         else:
             X = self._vst_data
             self._train_done = True
-        return super().transform(X, feature_meta)
+        return super().transform(X)
 
-    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
+    def inverse_transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -216,10 +210,6 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             Input transformed data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -315,7 +305,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         self.model_batch = model_batch
         self.memory = memory
 
-    def fit(self, X, y, sample_meta=None, feature_meta=None):
+    def fit(self, X, y, sample_meta=None):
         """
         Parameters
         ----------
@@ -328,8 +318,6 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
             Training sample metadata.
-
-        feature_meta : Ignored.
 
         Returns
         -------
@@ -348,7 +336,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
                 model_batch=self.model_batch))
         return self
 
-    def transform(self, X, sample_meta=None, feature_meta=None):
+    def transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -356,10 +344,6 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             Input counts data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -376,9 +360,9 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         else:
             X = self._log_cpms
             self._train_done = True
-        return super().transform(X, feature_meta)
+        return super().transform(X)
 
-    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
+    def inverse_transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -386,10 +370,6 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             Input transformed data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -442,7 +422,7 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         self.model_batch = model_batch
         self.is_classif = is_classif
 
-    def fit(self, X, y, sample_meta=None, feature_meta=None):
+    def fit(self, X, y, sample_meta=None):
         """
         Parameters
         ----------
@@ -455,8 +435,6 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
             Training sample metadata.
-
-        feature_meta : Ignored.
 
         Returns
         -------
@@ -471,7 +449,7 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             is_classif=self.is_classif), dtype=bool)
         return self
 
-    def transform(self, X, sample_meta=None, feature_meta=None):
+    def transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -480,10 +458,6 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
 
         sample_meta : Ignored.
 
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
-
         Returns
         -------
         Xr : array of shape (n_samples, n_selected_features)
@@ -491,9 +465,9 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             features.
         """
         check_is_fitted(self, '_mask')
-        return super().transform(X, feature_meta)
+        return super().transform(X)
 
-    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
+    def inverse_transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -501,10 +475,6 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             Input transformed data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -584,7 +554,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         self.model_dupcor = model_dupcor
         self.memory = memory
 
-    def fit(self, X, y, sample_meta=None, feature_meta=None):
+    def fit(self, X, y, sample_meta=None):
         """
         Parameters
         ----------
@@ -597,8 +567,6 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
             Training sample metadata.
-
-        feature_meta : Ignored.
 
         Returns
         -------
@@ -617,7 +585,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
                 model_batch=self.model_batch, model_dupcor=self.model_dupcor))
         return self
 
-    def transform(self, X, sample_meta=None, feature_meta=None):
+    def transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -625,10 +593,6 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             Input counts data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -645,9 +609,9 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         else:
             X = self._log_cpms
             self._train_done = True
-        return super().transform(X, feature_meta)
+        return super().transform(X)
 
-    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
+    def inverse_transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -655,10 +619,6 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             Input transformed data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -755,7 +715,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         self.n_threads = n_threads
         self.memory = memory
 
-    def fit(self, X, y, sample_meta, feature_meta=None):
+    def fit(self, X, y, sample_meta):
         """
         Parameters
         ----------
@@ -768,8 +728,6 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         sample_meta : pandas.DataFrame, pandas.Series \
             shape = (n_samples, n_metadata)
             Training sample metadata.
-
-        feature_meta : Ignored.
 
         Returns
         -------
@@ -786,7 +744,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
                 n_threads=self.n_threads))
         return self
 
-    def transform(self, X, sample_meta=None, feature_meta=None):
+    def transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -794,10 +752,6 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             Input counts data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -814,9 +768,9 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         else:
             X = self._log_cpms
             self._train_done = True
-        return super().transform(X, feature_meta)
+        return super().transform(X)
 
-    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
+    def inverse_transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -824,10 +778,6 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             Input transformed data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------
@@ -917,7 +867,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         self.model_batch = model_batch
         self.memory = memory
 
-    def fit(self, X, y, sample_meta=None, feature_meta=None):
+    def fit(self, X, y, sample_meta=None):
         """
         Parameters
         ----------
@@ -930,8 +880,6 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
             Training sample metadata.
-
-        feature_meta : Ignored.
 
         Returns
         -------
@@ -948,7 +896,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
             robust=self.robust, trend=self.trend, model_batch=self.model_batch)
         return self
 
-    def transform(self, X, sample_meta=None, feature_meta=None):
+    def transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -957,19 +905,15 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
 
         sample_meta : Ignored.
 
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
-
         Returns
         -------
         Xr : array of shape (n_samples, n_selected_features)
             Gene expression data matrix with only the selected features.
         """
         check_is_fitted(self, 'padjs_')
-        return super().transform(X, feature_meta)
+        return super().transform(X)
 
-    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
+    def inverse_transform(self, X, sample_meta=None):
         """
         Parameters
         ----------
@@ -977,10 +921,6 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
             Input transformed data matrix.
 
         sample_meta : Ignored.
-
-        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_features, n_metadata)
-            Feature metadata.
 
         Returns
         -------

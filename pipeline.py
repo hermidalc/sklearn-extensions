@@ -14,15 +14,16 @@ from collections import defaultdict
 from itertools import islice
 
 import numpy as np
+import pandas as pd
 from scipy import sparse
 
 from sklearn.base import clone
+from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.utils._joblib import Parallel, delayed
 from sklearn.utils import Bunch, _print_elapsed_time
 from sklearn.utils.metaestimators import if_delegate_has_method
 from .base import ExtendedTransformerMixin
-from .feature_selection._base import ExtendedSelectorMixin
 from .utils.metaestimators import check_routing
 from .utils.validation import check_memory
 
@@ -278,6 +279,54 @@ class ExtendedPipeline(Pipeline):
                     remainder.add(k)
         return [step_params[name] for name in names], remainder
 
+    def _transform_feature_meta(self, transformer, feature_meta):
+        transformed_feature_meta = None
+        if isinstance(transformer, ColumnTransformer):
+            for _, trf_pipe, trf_columns in transformer.transformers_:
+                trf_feature_meta = feature_meta.loc[trf_columns]
+                for trf_transformer in trf_pipe:
+                    if hasattr(trf_transformer, 'get_support'):
+                        trf_feature_meta = trf_feature_meta.loc[
+                            trf_transformer.get_support()]
+                    elif hasattr(trf_transformer, 'get_feature_names'):
+                        trf_new_feature_names = (
+                            trf_transformer.get_feature_names(
+                                input_features=trf_feature_meta.index.values
+                            ).astype(str))
+                        trf_feature_meta = pd.DataFrame(
+                            np.repeat(trf_feature_meta.values, [
+                                np.sum(np.char.startswith(
+                                    trf_new_feature_names,
+                                    '{}_'.format(feature_name)))
+                                for feature_name in trf_feature_meta.index],
+                                      axis=0),
+                            columns=trf_feature_meta.columns,
+                            index=trf_new_feature_names)
+                if transformed_feature_meta is None:
+                    transformed_feature_meta = trf_feature_meta
+                else:
+                    transformed_feature_meta = pd.concat(
+                        [transformed_feature_meta, trf_feature_meta], axis=0)
+        else:
+            if transformed_feature_meta is None:
+                transformed_feature_meta = feature_meta
+            if hasattr(transformer, 'get_support'):
+                transformed_feature_meta = transformed_feature_meta.loc[
+                    transformer.get_support()]
+            elif hasattr(transformer, 'get_feature_names'):
+                new_feature_names = transformer.get_feature_names(
+                    input_features=transformed_feature_meta.index.values
+                ).astype(str)
+                transformed_feature_meta = pd.DataFrame(
+                    np.repeat(transformed_feature_meta.values, [
+                        np.sum(np.char.startswith(
+                            new_feature_names, '{}_'.format(feature_name)))
+                        for feature_name in transformed_feature_meta.index],
+                              axis=0),
+                    columns=transformed_feature_meta.columns,
+                    index=new_feature_names)
+        return transformed_feature_meta
+
     def _transform_pipeline(self, caller_name, X, params):
         step_params, remainder = self.router(params)
         if remainder:
@@ -290,18 +339,14 @@ class ExtendedPipeline(Pipeline):
             step_iter = reversed(list(self._iter()))
         else:
             step_iter = self._iter(with_final=False)
-        for step_idx, _, transform in step_iter:
-            if isinstance(transform, ExtendedSelectorMixin):
-                if (feature_meta is not None
-                        and 'feature_meta' in step_params[step_idx]):
-                    step_params[step_idx]['feature_meta'] = feature_meta
-                res = transform.transform(X, **step_params[step_idx])
-                if isinstance(res, tuple):
-                    X, feature_meta = res
-                else:
-                    X = res
-            else:
-                X = transform.transform(X, **step_params[step_idx])
+        for step_idx, _, transformer in step_iter:
+            if (feature_meta is not None
+                    and 'feature_meta' in step_params[step_idx]):
+                step_params[step_idx]['feature_meta'] = feature_meta
+            X = transformer.transform(X, **step_params[step_idx])
+            if 'feature_meta' in step_params[step_idx]:
+                feature_meta = self._transform_feature_meta(
+                    transformer, step_params[step_idx]['feature_meta'])
         if caller_name in ['transform', 'inverse_transform']:
             return X
         return X, step_params[-1]
@@ -349,26 +394,28 @@ class ExtendedPipeline(Pipeline):
                     cloned_transformer = clone(transformer)
             else:
                 cloned_transformer = clone(transformer)
+
+            if (feature_meta is not None
+                    and 'feature_meta' in step_fit_params[step_idx]):
+                step_fit_params[step_idx]['feature_meta'] = feature_meta
+
             # Fit or load from cache the current transformer
-            if isinstance(transformer, ExtendedSelectorMixin):
-                if (feature_meta is not None
-                        and 'feature_meta' in step_fit_params[step_idx]):
-                    step_fit_params[step_idx]['feature_meta'] = feature_meta
-                res, fitted_transformer = fit_transform_one_cached(
-                    cloned_transformer, X, y, None,
-                    message_clsname='Pipeline',
-                    message=self._log_message(step_idx),
-                    **step_fit_params[step_idx])
-                if isinstance(res, tuple):
-                    X, feature_meta = res
-                else:
-                    X = res
-            else:
-                X, fitted_transformer = fit_transform_one_cached(
-                    cloned_transformer, X, y, None,
-                    message_clsname='Pipeline',
-                    message=self._log_message(step_idx),
-                    **step_fit_params[step_idx])
+            X, fitted_transformer = fit_transform_one_cached(
+                cloned_transformer, X, y, None,
+                message_clsname='Pipeline',
+                message=self._log_message(step_idx),
+                **step_fit_params[step_idx])
+
+            if 'feature_meta' in step_fit_params[step_idx]:
+                feature_meta = self._transform_feature_meta(
+                    fitted_transformer,
+                    step_fit_params[step_idx]['feature_meta'])
+                if X.shape[1] != feature_meta.shape[0]:
+                    raise ValueError(
+                        ('X ({:d}) and feature_meta ({:d}) have different '
+                         'feature dimensions').format(X.shape[1],
+                                                      feature_meta.shape[0]))
+
             # Replace the transformer of the step with the fitted
             # transformer. This is necessary when loading the transformer
             # from the cache.
@@ -756,9 +803,6 @@ def _transform_one(transformer, X, y, weight, message_clsname='',
     # if we have a weight for this transformer, multiply output
     if weight is None:
         return res
-    if (isinstance(transformer, ExtendedSelectorMixin)
-            and isinstance(res, tuple)):
-        return res[0] * weight, res[1]
     return res * weight
 
 
@@ -783,9 +827,6 @@ def _fit_transform_one(transformer,
 
     if weight is None:
         return res, transformer
-    if (isinstance(transformer, ExtendedSelectorMixin)
-            and isinstance(res, tuple)):
-        return (res[0] * weight, res[1]), transformer
     return res * weight, transformer
 
 
