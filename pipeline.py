@@ -332,7 +332,7 @@ class ExtendedPipeline(Pipeline):
         if remainder:
             raise TypeError('%s() got unexpected keyword arguments %r'
                             % (caller_name, sorted(remainder)))
-        feature_meta = None
+        feature_meta = params.get('feature_meta', None)
         if caller_name == 'transform':
             step_iter = self._iter()
         elif caller_name == 'inverse_transform':
@@ -340,13 +340,13 @@ class ExtendedPipeline(Pipeline):
         else:
             step_iter = self._iter(with_final=False)
         for step_idx, _, transformer in step_iter:
-            if (feature_meta is not None
+            if (step_idx > 0 and feature_meta is not None
                     and 'feature_meta' in step_params[step_idx]):
                 step_params[step_idx]['feature_meta'] = feature_meta
             X = transformer.transform(X, **step_params[step_idx])
-            if 'feature_meta' in step_params[step_idx]:
-                feature_meta = self._transform_feature_meta(
-                    transformer, step_params[step_idx]['feature_meta'])
+            if feature_meta is not None:
+                feature_meta = self._transform_feature_meta(transformer,
+                                                            feature_meta)
         if caller_name in ['transform', 'inverse_transform']:
             return X
         return X, step_params[-1]
@@ -366,7 +366,7 @@ class ExtendedPipeline(Pipeline):
         if remainder:
             raise TypeError('Got unexpected keyword arguments %r'
                             % sorted(remainder))
-        feature_meta = None
+        feature_meta = fit_params.get('feature_meta', None)
         for (step_idx,
              name,
              transformer) in self._iter(with_final=False,
@@ -395,7 +395,7 @@ class ExtendedPipeline(Pipeline):
             else:
                 cloned_transformer = clone(transformer)
 
-            if (feature_meta is not None
+            if (step_idx > 0 and feature_meta is not None
                     and 'feature_meta' in step_fit_params[step_idx]):
                 step_fit_params[step_idx]['feature_meta'] = feature_meta
 
@@ -406,15 +406,13 @@ class ExtendedPipeline(Pipeline):
                 message=self._log_message(step_idx),
                 **step_fit_params[step_idx])
 
-            if 'feature_meta' in step_fit_params[step_idx]:
-                feature_meta = self._transform_feature_meta(
-                    fitted_transformer,
-                    step_fit_params[step_idx]['feature_meta'])
+            if feature_meta is not None:
+                feature_meta = self._transform_feature_meta(fitted_transformer,
+                                                            feature_meta)
                 if X.shape[1] != feature_meta.shape[0]:
-                    raise ValueError(
-                        ('X ({:d}) and feature_meta ({:d}) have different '
-                         'feature dimensions').format(X.shape[1],
-                                                      feature_meta.shape[0]))
+                    raise ValueError(('X ({:d}) and feature_meta ({:d}) have '
+                                      'different feature dimensions').format(
+                                          X.shape[1], feature_meta.shape[0]))
 
             # Replace the transformer of the step with the fitted
             # transformer. This is necessary when loading the transformer
