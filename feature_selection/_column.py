@@ -57,8 +57,7 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
             mask = np.ones(X.shape[1], dtype=bool)
         elif isinstance(self.cols[0], str):
             if self.meta_col:
-                mask = feature_meta.isin(
-                    {self.meta_col: self.cols})[self.meta_col].to_numpy()
+                mask = feature_meta[self.meta_col].isin(self.cols).to_numpy()
             else:
                 mask = feature_meta.index.isin(self.cols)
         else:
@@ -106,8 +105,8 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
             raise ValueError(('X ({:d}) and feature_meta ({:d}) have '
-                              'different feature dimensions')
-                             .format(X.shape[1], feature_meta.shape[0]))
+                              'different feature dimensions').format(
+                                  X.shape[1], feature_meta.shape[0]))
         if self.cols:
             types = {type(i) for i in self.cols}
             if len(types) > 1:
