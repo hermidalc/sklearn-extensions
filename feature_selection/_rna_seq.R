@@ -15,7 +15,10 @@ deseq2_feature_score <- function(
     }
     counts <- t(X)
     geo_means <- exp(rowMeans(log(counts)))
-    if (!is.null(sample_meta) && model_batch) {
+    if (
+        !is.null(sample_meta) && length(unique(sample_meta$Batch)) > 1 &&
+        model_batch
+    ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
         dds <- DESeqDataSetFromMatrix(
@@ -60,7 +63,10 @@ edger_feature_score <- function(
     counts <- t(X)
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method="TMM")
-    if (!is.null(sample_meta) && model_batch) {
+    if (
+        !is.null(sample_meta) && length(unique(sample_meta$Batch)) > 1 &&
+        model_batch
+    ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
         design <- model.matrix(~Batch + Class, data=sample_meta)
@@ -88,7 +94,10 @@ edger_filterbyexpr_mask <- function(
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     dge <- DGEList(counts=t(X))
-    if (!is.null(sample_meta) && model_batch) {
+    if (
+        !is.null(sample_meta) && length(unique(sample_meta$Batch)) > 1 &&
+        model_batch
+    ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         if (is_classif) {
             sample_meta$Class <- factor(sample_meta$Class)
@@ -114,7 +123,7 @@ limma_voom_feature_score <- function(
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method="TMM")
     if (!is.null(sample_meta) && (model_batch || model_dupcor)) {
-        if (model_batch) {
+        if (length(unique(sample_meta$Batch)) > 1 && model_batch) {
             formula <- ~Batch + Class
             sample_meta$Batch <- factor(sample_meta$Batch)
         } else {
@@ -172,7 +181,7 @@ dream_voom_feature_score <- function(
     counts <- t(X)
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method="TMM")
-    if (model_batch) {
+    if (length(unique(sample_meta$Batch)) > 1 && model_batch) {
         formula <- ~Batch + Class + (1|Group)
         sample_meta$Batch <- factor(sample_meta$Batch)
     } else {
