@@ -7,8 +7,8 @@ def shifted_log(X, base, shift):
     return np.log(X + shift) / np.log(base)
 
 
-class ShiftedLogTransformer(FunctionTransformer):
-    """Shifted log transformer
+class LogTransformer(FunctionTransformer):
+    """Log transformer
 
     Parameters
     ----------
