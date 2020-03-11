@@ -187,6 +187,14 @@ class ExtendedBaseSearchCV(BaseSearchCV):
         # allows cross-validation to see 'precomputed' metrics
         return getattr(self.estimator, '_pairwise', False)
 
+    def set_params(self, **params):
+        super().set_params(**params)
+        if 'param_routing' in params:
+            self.router = check_routing(
+                self.param_routing, ['estimator', 'cv', 'scoring'],
+                {'cv': 'groups', 'estimator': '-groups'})
+        return self
+
     def score(self, X, y=None, **score_params):
         """Returns the score on the given data, if the estimator has been refit.
 

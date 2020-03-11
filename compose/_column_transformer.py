@@ -239,6 +239,12 @@ boolean mask array or callable
         self
         """
         self._set_params('_transformers', **kwargs)
+        if 'param_routing' in kwargs:
+            self.router = check_routing(
+                self.param_routing,
+                [[name, '*'] for name, _, _ in self.transformers
+                 if name not in ('passthrough', 'drop')],
+                self._default_routing)
         return self
 
     def _iter(self, fitted=False, replace_strings=False):

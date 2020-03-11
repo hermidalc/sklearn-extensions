@@ -595,6 +595,14 @@ class RFECV(RFE):
                                     ['estimator', 'cv', 'scoring'],
                                     {'cv': 'groups', 'estimator': '-groups'})
 
+    def set_params(self, **params):
+        super().set_params(**params)
+        if 'param_routing' in params:
+            self.router = check_routing(
+                self.param_routing, ['estimator', 'cv', 'scoring'],
+                {'cv': 'groups', 'estimator': '-groups'})
+        return self
+
     def fit(self, X, y, **fit_params):
         """Fit the RFE model and automatically tune the number of selected
            features.

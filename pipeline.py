@@ -169,6 +169,10 @@ class ExtendedPipeline(Pipeline):
         self
         """
         self._set_params('steps', **kwargs)
+        if 'param_routing' in kwargs:
+            self.router = check_routing(
+                self.param_routing, [[name, '*'] for name, _ in self.steps],
+                self._default_routing)
         return self
 
     def _validate_steps(self):
