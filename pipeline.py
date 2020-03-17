@@ -353,6 +353,8 @@ class ExtendedPipeline(Pipeline):
                                                             feature_meta)
         if caller_name in ['transform', 'inverse_transform']:
             return X
+        if 'feature_meta' in step_params[-1]:
+            step_params[-1]['feature_meta'] = feature_meta
         return X, step_params[-1]
 
     # Estimator interface
@@ -399,8 +401,7 @@ class ExtendedPipeline(Pipeline):
             else:
                 cloned_transformer = clone(transformer)
 
-            if (step_idx > 0 and feature_meta is not None
-                    and 'feature_meta' in step_fit_params[step_idx]):
+            if step_idx > 0 and 'feature_meta' in step_fit_params[step_idx]:
                 step_fit_params[step_idx]['feature_meta'] = feature_meta
 
             # Fit or load from cache the current transformer
@@ -424,6 +425,8 @@ class ExtendedPipeline(Pipeline):
             self.steps[step_idx] = (name, fitted_transformer)
         if self._final_estimator == 'passthrough':
             return X, {}
+        if 'feature_meta' in step_fit_params[-1]:
+            step_fit_params[-1]['feature_meta'] = feature_meta
         return X, step_fit_params[-1]
 
     def fit(self, X, y=None, **fit_params):
