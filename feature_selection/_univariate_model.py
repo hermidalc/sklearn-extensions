@@ -190,8 +190,7 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         check_is_fitted(self)
         if self.k == 'all':
             return np.ones_like(self.scores_, dtype=bool)
-        if self.k == 0:
-            return np.zeros_like(self.scores_, dtype=bool)
         mask = np.zeros_like(self.scores_, dtype=bool)
-        mask[np.argsort(self.scores_, kind='mergesort')[-self.k:]] = True
+        if self.k > 0:
+            mask[np.argsort(self.scores_, kind='mergesort')[-self.k:]] = True
         return mask

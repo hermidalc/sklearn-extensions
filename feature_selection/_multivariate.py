@@ -224,9 +224,9 @@ class ReliefF(ExtendedSelectorMixin, BaseEstimator):
 
     def _get_support_mask(self):
         check_is_fitted(self, 'scores_')
-        mask = np.zeros_like(self.scores_, dtype=bool)
         if self.k == 'all':
-            mask = np.ones_like(self.scores_, dtype=bool)
-        elif self.k > 0:
+            return np.ones_like(self.scores_, dtype=bool)
+        mask = np.zeros_like(self.scores_, dtype=bool)
+        if self.k > 0:
             mask[np.argsort(self.scores_, kind='mergesort')[-self.k:]] = True
         return mask
