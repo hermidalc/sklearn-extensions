@@ -2,7 +2,7 @@
 The :mod:`sklearn.model_selection` module.
 """
 
-from ._split import StratifiedGroupShuffleSplit
+from ._split import StratifiedGroupKFold, StratifiedGroupShuffleSplit
 
 from ._validation import cross_val_score
 from ._validation import cross_val_predict
@@ -18,6 +18,7 @@ from ._search import fit_grid_point
 
 __all__ = ['ExtendedGridSearchCV',
            'ExtendedRandomizedSearchCV',
+           'StratifiedGroupKFold',
            'StratifiedGroupShuffleSplit',
            'cross_val_predict',
            'cross_val_score',
