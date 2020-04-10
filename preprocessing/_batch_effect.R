@@ -31,7 +31,7 @@ limma_removeba_fit <- function(X, sample_meta, preserve_design=TRUE) {
 limma_removeba_transform <- function(X, sample_meta, batch_adj) {
     batch <- as.character(sample_meta$Batch)
     batch_adj[, setdiff(batch, colnames(batch_adj))] <- 0
-    return(t(t(X) - as.matrix(batch_adj)[, batch]))
+    return(t(t(X) - as.matrix(batch_adj)[, batch, drop=FALSE]))
 }
 
 stica_removeba_fit <- function(
