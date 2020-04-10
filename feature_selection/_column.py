@@ -104,9 +104,9 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError(('X ({:d}) and feature_meta ({:d}) have '
-                              'different feature dimensions').format(
-                                  X.shape[1], feature_meta.shape[0]))
+            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
+                             'different feature dimensions'
+                             .format(X.shape[1], feature_meta.shape[0]))
         if self.cols:
             types = {type(i) for i in self.cols}
             if len(types) > 1:
