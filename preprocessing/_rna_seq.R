@@ -8,8 +8,8 @@ deseq2_vst_fit <- function(
     counts <- t(X)
     geo_means <- exp(rowMeans(log(counts)))
     if (
-        !is.null(sample_meta) && length(unique(sample_meta$Batch)) > 1 &&
-        model_batch
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
     ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         if (is_classif) {

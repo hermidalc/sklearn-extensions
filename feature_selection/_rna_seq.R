@@ -16,8 +16,8 @@ deseq2_feature_score <- function(
     counts <- t(X)
     geo_means <- exp(rowMeans(log(counts)))
     if (
-        !is.null(sample_meta) && length(unique(sample_meta$Batch)) > 1 &&
-        model_batch
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
     ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
@@ -64,8 +64,8 @@ edger_feature_score <- function(
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method="TMM")
     if (
-        !is.null(sample_meta) && length(unique(sample_meta$Batch)) > 1 &&
-        model_batch
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
     ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
@@ -95,8 +95,8 @@ edger_filterbyexpr_mask <- function(
     suppressPackageStartupMessages(library("edgeR"))
     dge <- DGEList(counts=t(X))
     if (
-        !is.null(sample_meta) && length(unique(sample_meta$Batch)) > 1 &&
-        model_batch
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
     ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         if (is_classif) {
@@ -122,8 +122,8 @@ limma_voom_feature_score <- function(
     counts <- t(X)
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method="TMM")
-    if (!is.null(sample_meta) && (model_batch || model_dupcor)) {
-        if (length(unique(sample_meta$Batch)) > 1 && model_batch) {
+    if ((model_batch || model_dupcor) && !is.null(sample_meta)) {
+        if (model_batch && length(unique(sample_meta$Batch)) > 1) {
             formula <- ~Batch + Class
             sample_meta$Batch <- factor(sample_meta$Batch)
         } else {
@@ -181,7 +181,7 @@ dream_voom_feature_score <- function(
     counts <- t(X)
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method="TMM")
-    if (length(unique(sample_meta$Batch)) > 1 && model_batch) {
+    if (model_batch && length(unique(sample_meta$Batch)) > 1) {
         formula <- ~Batch + Class + (1|Group)
         sample_meta$Batch <- factor(sample_meta$Batch)
     } else {
@@ -209,7 +209,10 @@ limma_feature_score <- function(
     X, y, sample_meta=NULL, lfc=0, robust=FALSE, trend=FALSE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("limma"))
-    if (!is.null(sample_meta) && model_batch) {
+    if (
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
+    ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
         design <- model.matrix(~Batch + Class, data=sample_meta)
