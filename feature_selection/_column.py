@@ -107,7 +107,8 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError('X ({:d}) and feature_meta ({:d}) have '
                              'different feature dimensions'
                              .format(X.shape[1], feature_meta.shape[0]))
-        if self.cols:
+        if (isinstance(self.cols, (list, tuple)) and self.cols
+                or self.cols.size > 0):
             types = {type(i) for i in self.cols}
             if len(types) > 1:
                 raise ValueError('cols should be all names or indices.')
