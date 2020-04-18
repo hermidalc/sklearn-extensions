@@ -219,6 +219,9 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError('inverse_transform not implemented.')
 
+    def _more_tags(self):
+        return {'requires_positive_X': True}
+
     def _check_params(self, X, y):
         if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
@@ -379,6 +382,9 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError('inverse_transform not implemented.')
 
+    def _more_tags(self):
+        return {'requires_positive_X': True}
+
     def _check_params(self, X, y):
         if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
             raise ValueError(
@@ -465,6 +471,7 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             features.
         """
         check_is_fitted(self, '_mask')
+        X = check_array(X, dtype=int)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -483,6 +490,9 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             been removed by :meth:`transform`.
         """
         raise NotImplementedError('inverse_transform not implemented.')
+
+    def _more_tags(self):
+        return {'requires_positive_X': True}
 
     def _get_support_mask(self):
         check_is_fitted(self, '_mask')
@@ -627,6 +637,9 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             been removed by :meth:`transform`.
         """
         raise NotImplementedError('inverse_transform not implemented.')
+
+    def _more_tags(self):
+        return {'requires_positive_X': True}
 
     def _check_params(self, X, y):
         if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
@@ -786,6 +799,9 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             been removed by :meth:`transform`.
         """
         raise NotImplementedError('inverse_transform not implemented.')
+
+    def _more_tags(self):
+        return {'requires_positive_X': True}
 
     def _check_params(self, X, y):
         if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):

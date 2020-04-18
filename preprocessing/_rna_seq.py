@@ -156,6 +156,9 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         """
         raise NotImplementedError('inverse_transform not implemented.')
 
+    def _more_tags(self):
+        return {'requires_positive_X': True}
+
 
 class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
     """edgeR TMM normalization and log-CPM transformation for count data
@@ -238,3 +241,6 @@ class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
         Xr : array of shape (n_samples, n_original_features)
         """
         raise NotImplementedError('inverse_transform not implemented.')
+
+    def _more_tags(self):
+        return {'requires_positive_X': True}
