@@ -10,6 +10,7 @@ from ._cached import (
 from ._column import ColumnSelector
 from ._from_model import SelectFromModel
 from ._multivariate import CFS, FCBF, ReliefF
+from ._nanostring import NanoStringEndogenousSelector
 from ._rna_seq import (DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr, Limma,
                        LimmaVoom)
 from ._rfe import RFE, RFECV
@@ -40,6 +41,7 @@ __all__ = ['ANOVAFScorerClassification',
            'LimmaVoom',
            'MutualInfoScorerClassification',
            'MutualInfoScorerRegression',
+           'NanoStringEndogenousSelector',
            'RFE',
            'RFECV',
            'SelectFdr',
