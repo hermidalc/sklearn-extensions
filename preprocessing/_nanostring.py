@@ -51,6 +51,11 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
         normalization is applied after Code Count normalization and Background
         correction.
 
+    round_values : bool (default = True)
+        Whether final normalized data should be rounded to the nearest integer.
+        This simplifies interpretation if data will be log transformed later by
+        adjusting values between 0-1 which would result in negative logs.
+
     meta_col : str (default = "Code.Class")
         Feature metadata column name holding Code Class information.
 
@@ -73,11 +78,13 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
     """
 
     def __init__(self, probe='adjust', code_count=None, background=None,
-                 sample_content=None, meta_col='Code.Class'):
+                 sample_content=None, round_values=True,
+                 meta_col='Code.Class'):
         self.probe = probe
         self.code_count = code_count
         self.background = background
         self.sample_content = sample_content
+        self.round_values = round_values
         self.meta_col = meta_col
 
     def fit(self, X, y, feature_meta):
@@ -145,6 +152,8 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                 Xt = Xt * rna_norm_factor[:, np.newaxis]
                 self.rna_content_ = rna_content
                 self.rna_norm_factor_ = rna_norm_factor
+        if self.round_values:
+            Xt = np.round(Xt).astype(int)
         self.Xt_ = Xt
         return self
 
@@ -209,6 +218,8 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                         [np.mean(np.append(self.rna_content_, r)) / r
                          for r in rna_content])
                     X = X * rna_norm_factor[:, np.newaxis]
+            if self.round_values:
+                X = np.round(X).astype(int)
             return X
         self._train_done = True
         return self.Xt_
