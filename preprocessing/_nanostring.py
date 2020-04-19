@@ -57,19 +57,19 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
     Attributes
     ----------
     pos_control_ : float, shape = (n_samples,)
-        Sample positive controls.
+        Summarized positive control counts.
 
     pos_norm_factor_ : float, shape = (n_samples,)
-        Sample positive normalization factors.
+        Summarized positive control count normalization factors.
 
     bkgrd_level_ : float, shape = (n_samples,)
-        Sample background levels.
+        Summarized background levels.
 
     rna_content_ : float, shape = (n_samples,)
-        Sample RNA content.
+        Summarized RNA content.
 
     rna_norm_factor_ : float, shape = (n_samples,)
-        Sample RNA content normalization factors.
+        Summarized RNA content normalization factors.
     """
 
     def __init__(self, probe='adjust', code_count=None, background=None,
@@ -114,7 +114,7 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
             elif self.code_count == 'sum':
                 pos_control = np.sum(Xt_pos, axis=1)
             pos_norm_factor = np.mean(pos_control) / pos_control
-            Xt = (Xt.T * pos_norm_factor).T
+            Xt = Xt * pos_norm_factor[:, np.newaxis]
             self.pos_control_ = pos_control
             self.pos_norm_factor_ = pos_norm_factor
         if self.background is not None:
@@ -127,7 +127,7 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                 bkgrd_level = np.apply_along_axis(_mean_plus_2sd, 1, Xt_neg)
             elif self.background == 'max':
                 bkgrd_level = np.max(Xt_neg, axis=1)
-            Xt = (Xt.T - bkgrd_level).T
+            Xt = Xt - bkgrd_level[:, np.newaxis]
             Xt[Xt < 0] = 0
             self.bkgrd_level_ = bkgrd_level
         if self.sample_content is not None:
@@ -142,10 +142,10 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                     rna_content = np.sum(Xt_hk, axis=1)
                 rna_content[rna_content < 1] = 1
                 rna_norm_factor = np.mean(rna_content) / rna_content
-                Xt = (Xt.T * rna_norm_factor).T
+                Xt = Xt * rna_norm_factor[:, np.newaxis]
                 self.rna_content_ = rna_content
                 self.rna_norm_factor_ = rna_norm_factor
-        self._Xt = Xt
+        self.Xt_ = Xt
         return self
 
     def transform(self, X, feature_meta):
@@ -178,8 +178,10 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                     pos_control = stats.gmean(X_pos, axis=1)
                 elif self.code_count == 'sum':
                     pos_control = np.sum(X_pos, axis=1)
-                pos_norm_factor = np.mean(self.pos_control_) / pos_control
-                X = (X.T * pos_norm_factor).T
+                pos_norm_factor = np.array(
+                    [np.mean(np.append(self.pos_control_, p)) / p
+                     for p in pos_control])
+                X = X * pos_norm_factor[:, np.newaxis]
             if self.background is not None:
                 neg_mask = (feature_meta[self.meta_col].isin(['Negative'])
                             .to_numpy())
@@ -190,7 +192,7 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                     bkgrd_level = np.apply_along_axis(_mean_plus_2sd, 1, X_neg)
                 elif self.background == 'max':
                     bkgrd_level = np.max(X_neg, axis=1)
-                X = (X.T - bkgrd_level).T
+                X = X - bkgrd_level[:, np.newaxis]
                 X[X < 0] = 0
             if self.sample_content is not None:
                 if self.sample_content.startswith('hk'):
@@ -203,11 +205,13 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                     elif self.sample_content == 'hk_sum':
                         rna_content = np.sum(X_hk, axis=1)
                     rna_content[rna_content < 1] = 1
-                    rna_norm_factor = np.mean(self.rna_content_) / rna_content
-                    X = (X.T * rna_norm_factor).T
+                    rna_norm_factor = np.array(
+                        [np.mean(np.append(self.rna_content_, r)) / r
+                         for r in rna_content])
+                    X = X * rna_norm_factor[:, np.newaxis]
             return X
         self._train_done = True
-        return self._Xt
+        return self.Xt_
 
     def inverse_transform(self, X, feature_meta=None):
         """
