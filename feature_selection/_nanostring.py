@@ -45,7 +45,7 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y, feature_meta)
         mask = feature_meta[self.meta_col].isin(['Endogenous']).to_numpy()
         if self.filter_empty:
-            mask = mask & np.any(X, axis=0)
+            mask &= np.any(X, axis=0)
         self.mask_ = mask
         return self
 
