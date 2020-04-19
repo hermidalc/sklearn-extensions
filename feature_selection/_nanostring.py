@@ -1,3 +1,5 @@
+import numpy as np
+
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
 from ._base import ExtendedSelectorMixin
@@ -5,15 +7,19 @@ from ..utils.validation import check_is_fitted
 
 
 class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
-    """NanoString Endogenous feature selector
+    """NanoString Endogenous feature selector.
 
     Parameters
     ----------
+    filter_empty : bool (default = True)
+        Whether to also filter endogenous features with all zero counts.
+
     meta_col : str (default = "Code.Class")
         Feature metadata column name holding Code Class information.
     """
 
-    def __init__(self, meta_col='Code.Class'):
+    def __init__(self, filter_empty=True, meta_col='Code.Class'):
+        self.filter_empty = filter_empty
         self.meta_col = meta_col
 
     def fit(self, X, y, feature_meta):
@@ -37,8 +43,10 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=None)
         self._check_params(X, y, feature_meta)
-        self._mask = (feature_meta[self.meta_col].isin(['Endogenous'])
-                      .to_numpy())
+        mask = feature_meta[self.meta_col].isin(['Endogenous']).to_numpy()
+        if self.filter_empty:
+            mask = mask & np.any(X, axis=0)
+        self.mask_ = mask
         return self
 
     def transform(self, X, feature_meta=None):
@@ -55,7 +63,7 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             Input data matrix with only endogenous features.
         """
-        check_is_fitted(self, '_mask')
+        check_is_fitted(self)
         return super().transform(X)
 
     def inverse_transform(self, X, feature_meta=None):
@@ -73,7 +81,7 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        check_is_fitted(self, '_mask')
+        check_is_fitted(self)
         return super().inverse_transform(X)
 
     def _check_params(self, X, y, feature_meta):
@@ -89,5 +97,5 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
                              'Endogenous features'.format(self.meta_col))
 
     def _get_support_mask(self):
-        check_is_fitted(self, '_mask')
-        return self._mask
+        check_is_fitted(self)
+        return self.mask_
