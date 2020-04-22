@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, clone
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.utils._joblib import Parallel, delayed
@@ -287,25 +287,34 @@ class ExtendedPipeline(Pipeline):
         transformed_feature_meta = None
         if isinstance(transformer, ColumnTransformer):
             for _, trf_pipe, trf_columns in transformer.transformers_:
-                trf_feature_meta = feature_meta.loc[trf_columns]
-                for trf_transformer in trf_pipe:
-                    if hasattr(trf_transformer, 'get_support'):
-                        trf_feature_meta = trf_feature_meta.loc[
-                            trf_transformer.get_support()]
-                    elif hasattr(trf_transformer, 'get_feature_names'):
-                        trf_new_feature_names = (
-                            trf_transformer.get_feature_names(
-                                input_features=trf_feature_meta.index.values
-                            ).astype(str))
-                        trf_feature_meta = pd.DataFrame(
-                            np.repeat(trf_feature_meta.values, [
-                                np.sum(np.char.startswith(
-                                    trf_new_feature_names,
-                                    '{}_'.format(feature_name)))
-                                for feature_name in trf_feature_meta.index],
-                                      axis=0),
-                            columns=trf_feature_meta.columns,
-                            index=trf_new_feature_names)
+                if isinstance(trf_pipe, str) and trf_pipe == 'drop':
+                    trf_feature_meta = feature_meta.iloc[
+                        ~feature_meta.index.isin(trf_columns)]
+                elif ((isinstance(trf_columns, slice)
+                       and (isinstance(trf_columns.start, str)
+                            or isinstance(trf_columns.stop, str)))
+                      or isinstance(trf_columns[0], str)):
+                    trf_feature_meta = feature_meta.loc[trf_columns]
+                else:
+                    trf_feature_meta = feature_meta.iloc[trf_columns]
+                if isinstance(trf_pipe, BaseEstimator):
+                    for trf_transformer in trf_pipe:
+                        if hasattr(trf_transformer, 'get_support'):
+                            trf_feature_meta = trf_feature_meta.loc[
+                                trf_transformer.get_support()]
+                        elif hasattr(trf_transformer, 'get_feature_names'):
+                            trf_new_feature_names = (
+                                trf_transformer.get_feature_names(
+                                    input_features=(trf_feature_meta.index
+                                                    .values)).astype(str))
+                            trf_feature_meta = pd.DataFrame(
+                                np.repeat(trf_feature_meta.values, [
+                                    np.sum(np.char.startswith(
+                                        trf_new_feature_names,
+                                        '{}_'.format(feature_name)))
+                                    for feature_name in trf_feature_meta.index
+                                ], axis=0), columns=trf_feature_meta.columns,
+                                index=trf_new_feature_names)
                 if transformed_feature_meta is None:
                     transformed_feature_meta = trf_feature_meta
                 else:
@@ -315,8 +324,8 @@ class ExtendedPipeline(Pipeline):
             if transformed_feature_meta is None:
                 transformed_feature_meta = feature_meta
             if hasattr(transformer, 'get_support'):
-                transformed_feature_meta = transformed_feature_meta.loc[
-                    transformer.get_support()]
+                transformed_feature_meta = (
+                    transformed_feature_meta.loc[transformer.get_support()])
             elif hasattr(transformer, 'get_feature_names'):
                 new_feature_names = transformer.get_feature_names(
                     input_features=transformed_feature_meta.index.values
@@ -325,9 +334,8 @@ class ExtendedPipeline(Pipeline):
                     np.repeat(transformed_feature_meta.values, [
                         np.sum(np.char.startswith(
                             new_feature_names, '{}_'.format(feature_name)))
-                        for feature_name in transformed_feature_meta.index],
-                              axis=0),
-                    columns=transformed_feature_meta.columns,
+                        for feature_name in transformed_feature_meta.index
+                    ], axis=0), columns=transformed_feature_meta.columns,
                     index=new_feature_names)
         return transformed_feature_meta
 
