@@ -193,8 +193,8 @@ boolean mask array or callable
         self._validate_transformers()
         self.router = check_routing(
             self.param_routing,
-            [[name, '*'] for name, _, _ in self.transformers
-             if name not in ('passthrough', 'drop')],
+            [[name, '*'] for name, trans, _ in self.transformers
+             if trans != 'drop'],
             self._default_routing)
 
     @property
@@ -242,8 +242,8 @@ boolean mask array or callable
         if 'param_routing' in kwargs:
             self.router = check_routing(
                 self.param_routing,
-                [[name, '*'] for name, _, _ in self.transformers
-                 if name not in ('passthrough', 'drop')],
+                [[name, '*'] for name, trans, _ in self.transformers
+                 if trans != 'drop'],
                 self._default_routing)
         return self
 
@@ -475,13 +475,15 @@ boolean mask array or callable
         on the passed function.
         ``fitted=True`` ensures the fitted transformers are used.
         """
+        transformers = list(self._iter(fitted=fitted, replace_strings=True))
+
         transformer_fit_params, remainder = self.router(fit_params)
         if remainder:
             raise TypeError('Got unexpected keyword arguments %r'
                             % sorted(remainder))
+        if transformers[-1][0] == 'remainder':
+            transformer_fit_params.append({})
 
-        transformers = list(
-            self._iter(fitted=fitted, replace_strings=True))
         try:
             return Parallel(n_jobs=self.n_jobs)(
                 delayed(func)(
