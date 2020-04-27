@@ -14,7 +14,7 @@ def _mean_plus_2sd(x):
 
 
 class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
-    """NanoStringNorm normalization methods for NanoString count data.
+    """NanoString nSolver/NanoStringNorm standard normalization methods.
 
     Parameters
     ----------
@@ -36,11 +36,12 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
     background : str or None (default = None)
         The method used to estimate the background count level. Background is
         calculated based on negative controls. Options are ``mean``,
-        ``mean_2sd``, ``max``, and None which skips this normalization step.
-        ``mean`` is the least is the least conservative, while ``mean_2sd`` and
-        ``max`` are the most robust to false positives. The calculated
-        background is subtracted from each sample. Background is calculated
-        after Code Count normalization.
+        ``mean_2sd``, ``max``, ``geo_mean`` and None which skips this
+        normalization step. ``mean`` and ``geo_mean`` are the least
+        conservative, while ``mean_2sd``, ``max`` are the most robust to false
+        positives. The calculated background is subtracted or used as a
+        minimum threshold depending on the ``background_threshold`` flag.
+        Background is calculated after Code Count normalization.
 
     sample_content : str or None (default = None)
         The method used to normalize for sample or RNA content. Options are
@@ -50,6 +51,10 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
         housekeeping genes then ``hk_geo_mean`` is recommended. Sample Content
         normalization is applied after Code Count normalization and Background
         correction.
+
+    background_threshold : bool (default = True)
+        Flag whether calculated ``background`` should used as a minimum
+        threshold or subtracted.
 
     round_values : bool (default = True)
         Whether final normalized data should be rounded to the nearest integer.
@@ -78,12 +83,13 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
     """
 
     def __init__(self, probe='adjust', code_count=None, background=None,
-                 sample_content=None, round_values=True,
-                 meta_col='Code.Class'):
+                 sample_content=None, background_threshold=True,
+                 round_values=True, meta_col='Code.Class'):
         self.probe = probe
         self.code_count = code_count
         self.background = background
         self.sample_content = sample_content
+        self.background_threshold = background_threshold
         self.round_values = round_values
         self.meta_col = meta_col
 
@@ -108,53 +114,7 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y, feature_meta)
-        if np.any(X < 0):
-            raise ValueError('X should have only non-negative values.')
-        Xt = X.copy()
-        if self.code_count is not None:
-            pos_mask = (feature_meta[self.meta_col].isin(['Positive'])
-                        .to_numpy())
-            Xt_pos = Xt[:, safe_mask(Xt, pos_mask)]
-            if self.code_count == 'geo_mean':
-                Xt_pos[Xt_pos < 1] = 1
-                pos_control = stats.gmean(Xt_pos, axis=1)
-            elif self.code_count == 'sum':
-                pos_control = np.sum(Xt_pos, axis=1)
-            pos_norm_factor = np.mean(pos_control) / pos_control
-            Xt = Xt * pos_norm_factor[:, np.newaxis]
-            self.pos_control_ = pos_control
-            self.pos_norm_factor_ = pos_norm_factor
-        if self.background is not None:
-            neg_mask = (feature_meta[self.meta_col].isin(['Negative'])
-                        .to_numpy())
-            Xt_neg = Xt[:, safe_mask(Xt, neg_mask)]
-            if self.background == 'mean':
-                bkgrd_level = np.mean(Xt_neg, axis=1)
-            elif self.background == 'mean_2sd':
-                bkgrd_level = np.apply_along_axis(_mean_plus_2sd, 1, Xt_neg)
-            elif self.background == 'max':
-                bkgrd_level = np.max(Xt_neg, axis=1)
-            Xt = Xt - bkgrd_level[:, np.newaxis]
-            Xt[Xt < 0] = 0
-            self.bkgrd_level_ = bkgrd_level
-        if self.sample_content is not None:
-            if self.sample_content.startswith('hk'):
-                hk_mask = feature_meta[self.meta_col].isin(
-                    ['Control', 'Housekeeping', 'housekeeping']).to_numpy()
-                Xt_hk = Xt[:, safe_mask(Xt, hk_mask)]
-                if self.sample_content == 'hk_geo_mean':
-                    Xt_hk[Xt_hk < 1] = 1
-                    rna_content = stats.gmean(Xt_hk, axis=1)
-                elif self.sample_content == 'hk_sum':
-                    rna_content = np.sum(Xt_hk, axis=1)
-                rna_content[rna_content < 1] = 1
-                rna_norm_factor = np.mean(rna_content) / rna_content
-                Xt = Xt * rna_norm_factor[:, np.newaxis]
-                self.rna_content_ = rna_content
-                self.rna_norm_factor_ = rna_norm_factor
-        if self.round_values:
-            Xt = np.round(Xt).astype(int)
-        self.Xt_ = Xt
+        self.Xt_ = self._fit_transform(X.copy(), feature_meta, in_fit=True)
         return self
 
     def transform(self, X, feature_meta):
@@ -171,56 +131,12 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
         Returns
         -------
         Xt : array of shape (n_samples, n_features)
-            NanoStringNorm normalized data matrix.
+            Normalized data matrix.
         """
         check_is_fitted(self)
         X = check_array(X, dtype=int)
-        if np.any(X < 0):
-            raise ValueError('X should have only non-negative values.')
         if hasattr(self, '_train_done'):
-            if self.code_count is not None:
-                pos_mask = (feature_meta[self.meta_col].isin(['Positive'])
-                            .to_numpy())
-                X_pos = X[:, safe_mask(X, pos_mask)]
-                if self.code_count == 'geo_mean':
-                    X_pos[X_pos < 1] = 1
-                    pos_control = stats.gmean(X_pos, axis=1)
-                elif self.code_count == 'sum':
-                    pos_control = np.sum(X_pos, axis=1)
-                pos_norm_factor = np.array(
-                    [np.mean(np.append(self.pos_control_, p)) / p
-                     for p in pos_control])
-                X = X * pos_norm_factor[:, np.newaxis]
-            if self.background is not None:
-                neg_mask = (feature_meta[self.meta_col].isin(['Negative'])
-                            .to_numpy())
-                X_neg = X[:, safe_mask(X, neg_mask)]
-                if self.background == 'mean':
-                    bkgrd_level = np.mean(X_neg, axis=1)
-                elif self.background == 'mean_2sd':
-                    bkgrd_level = np.apply_along_axis(_mean_plus_2sd, 1, X_neg)
-                elif self.background == 'max':
-                    bkgrd_level = np.max(X_neg, axis=1)
-                X = X - bkgrd_level[:, np.newaxis]
-                X[X < 0] = 0
-            if self.sample_content is not None:
-                if self.sample_content.startswith('hk'):
-                    hk_mask = feature_meta[self.meta_col].isin(
-                        ['Control', 'Housekeeping', 'housekeeping']).to_numpy()
-                    X_hk = X[:, safe_mask(X, hk_mask)]
-                    if self.sample_content == 'hk_geo_mean':
-                        X_hk[X_hk < 1] = 1
-                        rna_content = stats.gmean(X_hk, axis=1)
-                    elif self.sample_content == 'hk_sum':
-                        rna_content = np.sum(X_hk, axis=1)
-                    rna_content[rna_content < 1] = 1
-                    rna_norm_factor = np.array(
-                        [np.mean(np.append(self.rna_content_, r)) / r
-                         for r in rna_content])
-                    X = X * rna_norm_factor[:, np.newaxis]
-            if self.round_values:
-                X = np.round(X).astype(int)
-            return X
+            return self._fit_transform(X, feature_meta, in_fit=False)
         self._train_done = True
         return self.Xt_
 
@@ -241,6 +157,71 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
 
     def _more_tags(self):
         return {'requires_positive_X': True}
+
+    def _fit_transform(self, X, feature_meta, in_fit):
+        if np.any(X < 0):
+            raise ValueError('X should have only non-negative values.')
+        if self.code_count is not None:
+            pos_mask = (feature_meta[self.meta_col].isin(['Positive'])
+                        .to_numpy())
+            X_pos = X[:, safe_mask(X, pos_mask)]
+            if self.code_count == 'geo_mean':
+                X_pos[X_pos < 1] = 1
+                pos_control = stats.gmean(X_pos, axis=1)
+            elif self.code_count == 'sum':
+                pos_control = np.sum(X_pos, axis=1)
+            if in_fit:
+                pos_norm_factor = np.mean(pos_control) / pos_control
+                self.pos_control_ = pos_control
+                self.pos_norm_factor_ = pos_norm_factor
+            else:
+                pos_norm_factor = np.array(
+                    [np.mean(np.append(self.pos_control_, p)) / p
+                     for p in pos_control])
+            X = X * pos_norm_factor[:, np.newaxis]
+        if self.background is not None:
+            neg_mask = (feature_meta[self.meta_col].isin(['Negative'])
+                        .to_numpy())
+            X_neg = X[:, safe_mask(X, neg_mask)]
+            if self.background == 'mean':
+                bkgrd_level = np.mean(X_neg, axis=1)
+            elif self.background == 'mean_2sd':
+                bkgrd_level = np.apply_along_axis(_mean_plus_2sd, 1, X_neg)
+            elif self.background == 'max':
+                bkgrd_level = np.max(X_neg, axis=1)
+            elif self.background == 'geo_mean':
+                X_neg[X_neg < 1] = 1
+                bkgrd_level = stats.gmean(X_neg, axis=1)
+            if self.background_threshold:
+                X = X.clip(bkgrd_level[:, np.newaxis])
+            else:
+                X = X - bkgrd_level[:, np.newaxis]
+                X[X < 0] = 0
+            if in_fit:
+                self.bkgrd_level_ = bkgrd_level
+        if self.sample_content is not None:
+            if self.sample_content.startswith('hk'):
+                hk_mask = feature_meta[self.meta_col].isin(
+                    ['Control', 'Housekeeping', 'housekeeping']).to_numpy()
+                X_hk = X[:, safe_mask(X, hk_mask)]
+                if self.sample_content == 'hk_geo_mean':
+                    X_hk[X_hk < 1] = 1
+                    rna_content = stats.gmean(X_hk, axis=1)
+                elif self.sample_content == 'hk_sum':
+                    rna_content = np.sum(X_hk, axis=1)
+                rna_content[rna_content < 1] = 1
+                if in_fit:
+                    rna_norm_factor = np.mean(rna_content) / rna_content
+                    self.rna_content_ = rna_content
+                    self.rna_norm_factor_ = rna_norm_factor
+                else:
+                    rna_norm_factor = np.array(
+                        [np.mean(np.append(self.rna_content_, r)) / r
+                         for r in rna_content])
+                X = X * rna_norm_factor[:, np.newaxis]
+        if self.round_values:
+            X = np.round(X).astype(int)
+        return X
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
