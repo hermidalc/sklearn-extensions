@@ -1,10 +1,23 @@
 import numpy as np
 from scipy import stats
-
+import rpy2.robjects as robjects
+from rpy2.robjects import numpy2ri, pandas2ri
+from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y, safe_mask
 from ..base import ExtendedTransformerMixin
 from ..utils.validation import check_is_fitted
+
+numpy2ri.deactivate()
+pandas2ri.deactivate()
+numpy2ri.activate()
+pandas2ri.activate()
+
+if 'nanostringdiff_fit' not in robjects.globalenv:
+    r_base = importr('base')
+    r_base.source(os.path.dirname(__file__) + '/_nanostring.R')
+r_nanostringdiff_fit = robjects.globalenv['nanostringdiff_fit']
+r_nanostringdiff_transform = robjects.globalenv['nanostringdiff_transform']
 
 
 def _mean_plus_2sd(x):
@@ -248,6 +261,126 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
                 and self.sample_content.startswith('hk')
                 and not feature_meta[self.meta_col].isin(
                     ['Control', 'Housekeeping', 'housekeeping']).any()):
+            raise ValueError('Sample Content correction cannot be performed '
+                             'because {} feature_meta column does not have '
+                             'any Housekeeping features'.format(self.meta_col))
+
+
+class NanoStringDiffNormalizer(ExtendedTransformerMixin, BaseEstimator):
+    """NanoStringDiff normalization method.
+
+    Parameters
+    ----------
+    background_threshold : bool (default = True)
+        Flag whether calculated ``background`` should used as a minimum
+        threshold or subtracted.
+
+    meta_col : str (default = "Code.Class")
+        Feature metadata column name holding Code Class information.
+
+    Attributes
+    ----------
+    positive_factor_ : float, shape = (n_samples,)
+        Positive control normalization factors.
+
+    negative_factor_ : float, shape = (n_samples,)
+        Negative control normalization factors.
+
+    housekeeping_factor_ : float, shape = (n_samples,)
+        Housekeeping control normalization factors.
+    """
+
+    def __init__(self, background_threshold=True, meta_col='Code.Class'):
+        self.background_threshold = background_threshold
+        self.meta_col = meta_col
+
+    def fit(self, X, y, feature_meta):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Training counts data matrix.
+
+        y : array-like, shape = (n_samples,)
+            Training class labels.
+
+        feature_meta : pandas.DataFrame, pandas.Series \
+            shape = (n_features, n_metadata)
+            Feature metadata.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        X, y = check_X_y(X, y, dtype=int)
+        self._check_params(X, y, feature_meta)
+        (self.positive_factor_, self.negative_factor_,
+         self.housekeeping_factor_) = r_nanostringdiff_fit(
+             X, y, feature_meta, meta_col=self.meta_col)
+        return self
+
+    def transform(self, X, feature_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input counts data matrix.
+
+        feature_meta : ignored
+
+        Returns
+        -------
+        Xt : array of shape (n_samples, n_features)
+            Normalized data matrix.
+        """
+        check_is_fitted(self)
+        X = check_array(X, dtype=int)
+        X = np.array(r_nanostringdiff_transform(
+            X, self.positive_factor_, self.negative_factor_,
+            self.housekeeping_factor_,
+            background_threshold=self.background_threshold), dtype=int)
+        return X
+
+    def inverse_transform(self, X, feature_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input transformed data matrix.
+
+        feature_meta : Ignored.
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_original_features)
+        """
+        raise NotImplementedError('inverse_transform not implemented.')
+
+    def _more_tags(self):
+        return {'requires_positive_X': True}
+
+    def _check_params(self, X, y, feature_meta):
+        if X.shape[1] != feature_meta.shape[0]:
+            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
+                             'different feature dimensions'
+                             .format(X.shape[1], feature_meta.shape[0]))
+        if self.meta_col not in feature_meta.columns:
+            raise ValueError('{} feature_meta column does not exist.'
+                             .format(self.meta_col))
+        if not feature_meta[self.meta_col].isin(['Endogenous']).any():
+            raise ValueError('{} feature_meta column does not have any '
+                             'Endogenous features'.format(self.meta_col))
+        if not feature_meta[self.meta_col].isin(['Positive']).any():
+            raise ValueError('Code Count normalization cannot be performed '
+                             'because {} feature_meta column does not have '
+                             'any Positive features'.format(self.meta_col))
+        if not feature_meta[self.meta_col].isin(['Negative']).any():
+            raise ValueError('Background correction cannot be performed '
+                             'because {} feature_meta column does not have '
+                             'any Negative features'.format(self.meta_col))
+        if not feature_meta[self.meta_col].isin(
+                ['Control', 'Housekeeping', 'housekeeping']).any():
             raise ValueError('Sample Content correction cannot be performed '
                              'because {} feature_meta column does not have '
                              'any Housekeeping features'.format(self.meta_col))
