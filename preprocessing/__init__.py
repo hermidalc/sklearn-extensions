@@ -6,7 +6,7 @@ normalization, binarization methods.
 from ._batch_effect import (LimmaBatchEffectRemover, stICABatchEffectRemover,
                             SVDBatchEffectRemover)
 from ._data import LogTransformer
-from ._nanostring import NanoStringNormalizer
+from ._nanostring import NanoStringNormalizer, NanoStringDiffNormalizer
 from ._rna_seq import DESeq2RLEVST, EdgeRTMMLogCPM
 
 
@@ -15,5 +15,6 @@ __all__ = ['DESeq2RLEVST',
            'LimmaBatchEffectRemover',
            'LogTransformer',
            'NanoStringNormalizer',
+           'NanoStringDiffNormalizer',
            'stICABatchEffectRemover',
            'SVDBatchEffectRemover']
