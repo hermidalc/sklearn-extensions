@@ -191,8 +191,7 @@ class SelectFromModel(MetaEstimatorMixin, ExtendedSelectorMixin,
         X, y = check_X_y(X, y, dtype=None)
         self._check_params(X, y)
         if self.prefit:
-            raise NotFittedError(
-                "Since 'prefit=True', call transform directly")
+            raise NotFittedError("Since prefit=True, call transform directly")
         self.estimator_ = clone(self.estimator)
         self.estimator_.fit(X, y, **fit_params)
         return self
