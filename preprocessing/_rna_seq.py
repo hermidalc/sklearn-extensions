@@ -22,10 +22,10 @@ r_edger_tmm_logcpm_fit = robjects.globalenv['edger_tmm_logcpm_fit']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
 
-def deseq2_vst_fit(X, y, sample_meta, blind, fit_type, model_batch,
+def deseq2_vst_fit(X, y, sample_meta, fit_type, blind, model_batch,
                    is_classif):
     xt, gm, df = r_deseq2_vst_fit(
-        X, y, sample_meta=sample_meta, blind=blind, fit_type=fit_type,
+        X, y, sample_meta=sample_meta, fit_type=fit_type, blind=blind,
         model_batch=model_batch, is_classif=is_classif)
     return np.array(xt, dtype=float), np.array(gm, dtype=float), df
 
@@ -51,11 +51,11 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
 
     Parameters
     ----------
-    blind : bool (default = False)
-        varianceStabilizingTransformation blind option.
-
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
+
+    blind : bool (default = False)
+        varianceStabilizingTransformation blind option.
 
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and Batch column
@@ -78,10 +78,10 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, blind=False, fit_type='parametric', model_batch=False,
+    def __init__(self, fit_type='parametric', blind=False, model_batch=False,
                  is_classif=True, memory=None):
-        self.blind = blind
         self.fit_type = fit_type
+        self.blind = blind
         self.model_batch = model_batch
         self.is_classif = is_classif
         self.memory = memory
@@ -111,8 +111,8 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
             sample_meta = robjects.NULL
         self._vst_data, self.geo_means_, self.disp_func_ = (
             memory.cache(deseq2_vst_fit)(
-                X, y, sample_meta=sample_meta, blind=self.blind,
-                fit_type=self.fit_type, model_batch=self.model_batch,
+                X, y, sample_meta=sample_meta, fit_type=self.fit_type,
+                blind=self.blind, model_batch=self.model_batch,
                 is_classif=self.is_classif))
         return self
 

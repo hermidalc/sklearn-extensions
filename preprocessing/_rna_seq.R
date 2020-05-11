@@ -1,12 +1,11 @@
 # RNA-seq transformer functions
 
 deseq2_vst_fit <- function(
-    X, y, sample_meta=NULL, blind=FALSE, fit_type="parametric",
+    X, y, sample_meta=NULL, fit_type="parametric", blind=FALSE,
     model_batch=FALSE, is_classif=TRUE
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     counts <- t(X)
-    geo_means <- exp(rowMeans(log(counts)))
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -36,9 +35,8 @@ deseq2_vst_fit <- function(
         dds <- estimateDispersions(dds, fitType=fit_type, quiet=TRUE)
     )
     vsd <- varianceStabilizingTransformation(dds, blind=blind)
-    return(list(
-        t(as.matrix(assay(vsd))), geo_means, dispersionFunction(dds)
-    ))
+    geo_means <- exp(rowMeans(log(counts)))
+    return(list(t(assay(vsd)), geo_means, dispersionFunction(dds)))
 }
 
 deseq2_vst_transform <- function(X, geo_means, disp_func) {

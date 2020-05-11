@@ -1,8 +1,8 @@
 # RNA-seq feature selection and scoring functions
 
 deseq2_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, blind=FALSE, fit_type="parametric",
-    model_batch=FALSE, n_threads=1
+    X, y, sample_meta=NULL, lfc=0, fit_type="parametric", lfc_shrink=TRUE,
+    blind=FALSE, model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     suppressPackageStartupMessages(library("BiocParallel"))
@@ -14,7 +14,6 @@ deseq2_feature_score <- function(
         parallel <- FALSE
     }
     counts <- t(X)
-    geo_means <- exp(rowMeans(log(counts)))
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -32,19 +31,26 @@ deseq2_feature_score <- function(
     suppressMessages(
         dds <- DESeq(dds, fitType=fit_type, parallel=parallel, quiet=TRUE)
     )
-    suppressMessages(results <- as.data.frame(lfcShrink(
-        dds, coef=length(resultsNames(dds)), type="apeglm", lfcThreshold=lfc,
-        svalue=TRUE, parallel=parallel, quiet=TRUE
-    )))
-    # results <- as.data.frame(results(
-    #     dds, name=resultsNames(dds)[length(resultsNames(dds))],
-    #     lfcThreshold=lfc, altHypothesis="greaterAbs", pAdjustMethod="BH"
-    # ))
+    if (lfc_shrink) {
+        suppressMessages(results <- as.data.frame(lfcShrink(
+            dds, coef=length(resultsNames(dds)), type="apeglm",
+            lfcThreshold=lfc, svalue=TRUE, parallel=parallel, quiet=TRUE
+        )))
+        results$svalue[is.na(results$svalue)] <- 1
+        results$pvalue <- results$svalue
+        results$padj <- results$svalue
+    } else {
+        results <- as.data.frame(results(
+            dds, name=resultsNames(dds)[length(resultsNames(dds))],
+            lfcThreshold=lfc, altHypothesis="greaterAbs", pAdjustMethod="BH"
+        ))
+        results$padj[is.na(results$padj)] <- 1
+    }
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
-    results$svalue[is.na(results$svalue)] <- 1
     vsd <- varianceStabilizingTransformation(dds, blind=blind)
+    geo_means <- exp(rowMeans(log(counts)))
     return(list(
-        results$svalue, t(as.matrix(assay(vsd))), geo_means,
+        results$pvalue, results$padj, t(assay(vsd)), geo_means,
         dispersionFunction(dds)
     ))
 }
@@ -61,8 +67,6 @@ edger_feature_score <- function(
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
-    dge <- DGEList(counts=counts)
-    dge <- calcNormFactors(dge, method="TMM")
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -73,6 +77,8 @@ edger_feature_score <- function(
     } else {
         design <- model.matrix(~factor(y))
     }
+    dge <- DGEList(counts=counts)
+    dge <- calcNormFactors(dge, method="TMM")
     dge <- estimateDisp(dge, design, robust=robust)
     fit <- glmQLFit(dge, design, robust=robust)
     if (lfc == 0) {

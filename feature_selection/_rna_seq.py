@@ -28,13 +28,14 @@ r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
 
-def deseq2_feature_score(X, y, sample_meta, lfc, blind, fit_type, model_batch,
-                         n_threads):
-    sv, xt, gm, df = r_deseq2_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, blind=blind, fit_type=fit_type,
-        model_batch=model_batch, n_threads=n_threads)
-    return (np.array(sv, dtype=float), np.array(xt, dtype=float),
-            np.array(gm, dtype=float), df)
+def deseq2_feature_score(X, y, sample_meta, lfc, fit_type, lfc_shrink, blind,
+                         model_batch, n_threads):
+    pv, pa, xt, gm, df = r_deseq2_feature_score(
+        X, y, sample_meta=sample_meta, lfc=lfc, fit_type=fit_type,
+        lfc_shrink=lfc_shrink, blind=blind, model_batch=model_batch,
+        n_threads=n_threads)
+    return (np.array(pv, dtype=float), np.array(pa, dtype=float),
+            np.array(xt, dtype=float), np.array(gm, dtype=float), df)
 
 
 def deseq2_vst_transform(X, geo_means, disp_func):
@@ -89,24 +90,27 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     Parameters
     ----------
     k : int or "all" (default = "all")
-        Number of top features to select. Specifying k = "all" and sv = 1.0
-        bypasses selection, for use in a parameter search. When sv is also
+        Number of top features to select. Specifying k = "all" and pv = 1.0
+        bypasses selection, for use in a parameter search. When pv is also
         specified then returns the intersection of both parameter results.
 
-    sv : float (default = 1.0)
-        Select top features below an adjusted s-value threshold. Specifying
-        k = "all" and sv = 1.0 bypasses selection, for use in a parameter
+    pv : float (default = 1.0)
+        Select top features below an adjusted p-value threshold. Specifying
+        k = "all" and pv = 1.0 bypasses selection, for use in a parameter
         search. When k is also specified returns the intersection of both
         parameter results.
 
     fc : float (default = 1.0)
         lfcShrink absolute fold change minimum threshold.
 
-    blind : bool (default = False)
-        varianceStabilizingTransformation blind option.
-
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
+
+    lfc_shrink : bool (default = True)
+        Run lfcShrink after differential expression testing.
+
+    blind : bool (default = False)
+        varianceStabilizingTransformation blind option.
 
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and Batch column
@@ -124,8 +128,11 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
 
     Attributes
     ----------
-    svals_ : array, shape (n_features,)
-        Feature s-values.
+    pvals_ : array, shape (n_features,)
+        Feature raw p-values.
+
+    padjs_ : array, shape (n_features,)
+        Feature adjusted p-values.
 
     geo_means_ : array, shape (n_features,)
         Feature geometric means.
@@ -134,13 +141,15 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, k='all', sv=1, fc=1, blind=False, fit_type='parametric',
-                 model_batch=False, n_threads=1, memory=None):
+    def __init__(self, k='all', pv=1, fc=1, fit_type='parametric',
+                 lfc_shrink=True, blind=False, model_batch=False,
+                 n_threads=1, memory=None):
         self.k = k
-        self.sv = sv
+        self.pv = pv
         self.fc = fc
-        self.blind = blind
         self.fit_type = fit_type
+        self.lfc_shrink = lfc_shrink
+        self.blind = blind
         self.model_batch = model_batch
         self.n_threads = n_threads
         self.memory = memory
@@ -169,11 +178,12 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.svals_, self._vst_data, self.geo_means_, self.disp_func_ = (
-            memory.cache(deseq2_feature_score)(
-                X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-                blind=self.blind, fit_type=self.fit_type,
-                model_batch=self.model_batch, n_threads=self.n_threads))
+        (self.pvals_, self.padjs_, self._vst_data, self.geo_means_,
+         self.disp_func_) = memory.cache(deseq2_feature_score)(
+             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
+             fit_type=self.fit_type, lfc_shrink=self.lfc_shrink,
+             blind=self.blind, model_batch=self.model_batch,
+             n_threads=self.n_threads)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -227,24 +237,24 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k)
-        if not 0 <= self.sv <= 1:
-            raise ValueError('sv should be 0 <= sv <= 1; got %r.' % self.sv)
+        if not 0 <= self.pv <= 1:
+            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
         if self.fc < 1:
             raise ValueError(
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'svals_')
-        mask = np.zeros_like(self.svals_, dtype=bool)
-        if self.sv > 0:
+        check_is_fitted(self, 'pvals_')
+        mask = np.zeros_like(self.pvals_, dtype=bool)
+        if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.svals_, dtype=bool)
-                if self.sv < 1:
-                    mask[self.svals_ > self.sv] = False
+                mask = np.ones_like(self.pvals_, dtype=bool)
+                if self.pv < 1:
+                    mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.svals_, kind='mergesort')[:self.k]] = True
-                if self.sv < 1:
-                    mask[self.svals_ > self.sv] = False
+                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                if self.pv < 1:
+                    mask[self.padjs_ > self.pv] = False
         return mask
 
 
@@ -397,15 +407,15 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'padjs_')
-        mask = np.zeros_like(self.padjs_, dtype=bool)
+        check_is_fitted(self, 'pvals_')
+        mask = np.zeros_like(self.pvals_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.padjs_, dtype=bool)
+                mask = np.ones_like(self.pvals_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -653,15 +663,15 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'padjs_')
-        mask = np.zeros_like(self.padjs_, dtype=bool)
+        check_is_fitted(self, 'pvals_')
+        mask = np.zeros_like(self.pvals_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.padjs_, dtype=bool)
+                mask = np.ones_like(self.pvals_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -815,15 +825,15 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'padjs_')
-        mask = np.zeros_like(self.padjs_, dtype=bool)
+        check_is_fitted(self, 'pvals_')
+        mask = np.zeros_like(self.pvals_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.padjs_, dtype=bool)
+                mask = np.ones_like(self.pvals_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -926,7 +936,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         Xr : array of shape (n_samples, n_selected_features)
             Gene expression data matrix with only the selected features.
         """
-        check_is_fitted(self, 'padjs_')
+        check_is_fitted(self, 'pvals_')
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -958,15 +968,15 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'padjs_')
-        mask = np.zeros_like(self.padjs_, dtype=bool)
+        check_is_fitted(self, 'pvals_')
+        mask = np.zeros_like(self.pvals_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.padjs_, dtype=bool)
+                mask = np.ones_like(self.pvals_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.padjs_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
