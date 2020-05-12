@@ -7,7 +7,15 @@ from sklearn.utils import check_X_y
 from sklearn.utils.metaestimators import if_delegate_has_method
 
 from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted
+from ..utils.validation import check_is_fitted, check_memory
+
+
+def _get_scores(estimator, X, y, **fit_params):
+    scores = np.zeros(X.shape[1])
+    for j in range(X.shape[1]):
+        Xj = X[:, [j]]
+        scores[j] = estimator.fit(Xj, y, **fit_params).score(Xj, y)
+    return scores
 
 
 class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
@@ -20,9 +28,14 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
     estimator : object
         The external estimator used to calculate univariate feature scores.
 
-    k : int or "all", optional, default=10
+    k : int or "all" (default = "all")
         Number of top features to select.
         The "all" option bypasses selection, for use in a parameter search.
+
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
 
     Attributes
     ----------
@@ -33,9 +46,10 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         Feature scores.
     """
 
-    def __init__(self, estimator, k=10):
+    def __init__(self, estimator, k='all', memory=None):
         self.estimator = estimator
         self.k = k
+        self.memory = memory
 
     @property
     def _estimator_type(self):
@@ -65,12 +79,9 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         """
         X, y = check_X_y(X, y)
         self._check_params(X, y)
+        memory = check_memory(self.memory)
         estimator = clone(self.estimator)
-        scores = np.zeros(X.shape[1])
-        for j in range(X.shape[1]):
-            Xj = X[:, [j]]
-            scores[j] = estimator.fit(Xj, y, **fit_params).score(Xj, y)
-        self.scores_ = scores
+        self.scores_ = memory.cache(_get_scores)(estimator, X, y, **fit_params)
         self.estimator_ = clone(self.estimator)
         self.estimator_.fit(self.transform(X), y, **fit_params)
         return self
