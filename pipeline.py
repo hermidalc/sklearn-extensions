@@ -303,18 +303,26 @@ class ExtendedPipeline(Pipeline):
                             trf_feature_meta = trf_feature_meta.loc[
                                 trf_transformer.get_support()]
                         elif hasattr(trf_transformer, 'get_feature_names'):
-                            trf_new_feature_names = (
+                            new_trf_feature_names = (
                                 trf_transformer.get_feature_names(
                                     input_features=(trf_feature_meta.index
                                                     .values)).astype(str))
-                            trf_feature_meta = pd.DataFrame(
-                                np.repeat(trf_feature_meta.values, [
-                                    np.sum(np.char.startswith(
-                                        trf_new_feature_names,
-                                        '{}_'.format(feature_name)))
-                                    for feature_name in trf_feature_meta.index
-                                ], axis=0), columns=trf_feature_meta.columns,
-                                index=trf_new_feature_names)
+                            new_trf_feature_meta = None
+                            for feature_name in trf_feature_meta.index:
+                                f_feature_meta = pd.concat(
+                                    [trf_feature_meta.loc[[feature_name]]]
+                                    * np.sum(np.char.startswith(
+                                        new_trf_feature_names,
+                                        '{}_'.format(feature_name))),
+                                    axis=0, ignore_index=True)
+                                if new_trf_feature_meta is None:
+                                    new_trf_feature_meta = f_feature_meta
+                                else:
+                                    new_trf_feature_meta = pd.concat(
+                                        [new_trf_feature_meta, f_feature_meta],
+                                        axis=0, ignore_index=True)
+                            trf_feature_meta = new_trf_feature_meta.set_index(
+                                new_trf_feature_names)
                 if transformed_feature_meta is None:
                     transformed_feature_meta = trf_feature_meta
                 else:
@@ -330,13 +338,21 @@ class ExtendedPipeline(Pipeline):
                 new_feature_names = transformer.get_feature_names(
                     input_features=transformed_feature_meta.index.values
                 ).astype(str)
-                transformed_feature_meta = pd.DataFrame(
-                    np.repeat(transformed_feature_meta.values, [
-                        np.sum(np.char.startswith(
-                            new_feature_names, '{}_'.format(feature_name)))
-                        for feature_name in transformed_feature_meta.index
-                    ], axis=0), columns=transformed_feature_meta.columns,
-                    index=new_feature_names)
+                new_transformed_feature_meta = None
+                for feature_name in transformed_feature_meta.index:
+                    f_feature_meta = pd.concat(
+                        [transformed_feature_meta.loc[[feature_name]]]
+                        * np.sum(np.char.startswith(
+                            new_feature_names, '{}_'.format(feature_name))),
+                        axis=0, ignore_index=True)
+                    if new_transformed_feature_meta is None:
+                        new_transformed_feature_meta = f_feature_meta
+                    else:
+                        new_transformed_feature_meta = pd.concat(
+                            [new_transformed_feature_meta, f_feature_meta],
+                            axis=0, ignore_index=True)
+                transformed_feature_meta = (new_transformed_feature_meta
+                                            .set_index(new_feature_names))
         return transformed_feature_meta
 
     def _transform_pipeline(self, caller_name, X, params):
