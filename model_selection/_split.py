@@ -3,10 +3,13 @@
 # License: BSD 3 clause
 
 from collections import Counter, defaultdict
+
 import numpy as np
-from sklearn.model_selection import StratifiedShuffleSplit
+import pandas as pd
+
+from sklearn.model_selection import StratifiedKFold, StratifiedShuffleSplit
 from sklearn.model_selection._split import _BaseKFold, _RepeatedSplits
-from sklearn.utils.validation import check_array, check_random_state
+from sklearn.utils.validation import check_array, check_random_state, indexable
 
 
 class StratifiedGroupKFold(_BaseKFold):
@@ -190,6 +193,28 @@ class RepeatedStratifiedGroupKFold(_RepeatedSplits):
 
     def __init__(self, n_splits=5, n_repeats=10, random_state=None):
         super().__init__(StratifiedGroupKFold, n_splits=n_splits,
+                         n_repeats=n_repeats, random_state=random_state)
+
+
+class StratifiedSampleFromGroupKFold(StratifiedKFold):
+
+    def split(self, X, y, groups):
+        X, y, groups = indexable(X, y, groups)
+        indices = pd.DataFrame(groups).groupby(0).apply(
+            pd.DataFrame.sample, n=1, random_state=self.random_state
+            ).reset_index(level=0, drop=True).sort_index().index.values
+        X = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
+        y = y[indices]
+        for test_mask in self._iter_test_masks(X, y, groups):
+            train_index = indices[np.logical_not(test_mask)]
+            test_index = indices[test_mask]
+            yield train_index, test_index
+
+
+class RepeatedStratifiedSampleFromGroupKFold(_RepeatedSplits):
+
+    def __init__(self, n_splits=5, n_repeats=10, random_state=None):
+        super().__init__(StratifiedSampleFromGroupKFold, n_splits=n_splits,
                          n_repeats=n_repeats, random_state=random_state)
 
 
