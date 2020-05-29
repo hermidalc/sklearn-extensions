@@ -332,5 +332,7 @@ class StratifiedSampleFromGroupShuffleSplit(StratifiedShuffleSplit):
             ).reset_index(level=0, drop=True).sort_index().index.values
         X = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
         y = y[indices]
-        for train_index, test_index in self._iter_indices(X, y, groups):
+        for train, test in self._iter_indices(X, y, groups):
+            train_index = indices[train]
+            test_index = indices[test]
             yield train_index, test_index
