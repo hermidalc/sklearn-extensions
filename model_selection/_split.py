@@ -205,7 +205,7 @@ class StratifiedSampleFromGroupKFold(StratifiedKFold):
             ).reset_index(level=0, drop=True).sort_index().index.values
         X = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
         y = y[indices]
-        for test_mask in self._iter_test_masks(X, y, groups):
+        for test_mask in self._iter_test_masks(X, y):
             train_index = indices[np.logical_not(test_mask)]
             test_index = indices[test_mask]
             yield train_index, test_index
@@ -332,7 +332,7 @@ class StratifiedSampleFromGroupShuffleSplit(StratifiedShuffleSplit):
             ).reset_index(level=0, drop=True).sort_index().index.values
         X = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
         y = y[indices]
-        for train, test in self._iter_indices(X, y, groups):
+        for train, test in self._iter_indices(X, y):
             train_index = indices[train]
             test_index = indices[test]
             yield train_index, test_index
