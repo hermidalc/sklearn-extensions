@@ -5,7 +5,7 @@ The :mod:`sklearn.model_selection` module.
 from ._split import (
     StratifiedGroupKFold, RepeatedStratifiedGroupKFold,
     StratifiedSampleFromGroupKFold, RepeatedStratifiedSampleFromGroupKFold,
-    StratifiedGroupShuffleSplit)
+    StratifiedGroupShuffleSplit, StratifiedSampleFromGroupShuffleSplit)
 
 from ._validation import cross_val_score
 from ._validation import cross_val_predict
@@ -24,6 +24,7 @@ __all__ = ['ExtendedGridSearchCV',
            'StratifiedGroupKFold',
            'StratifiedSampleFromGroupKFold',
            'StratifiedGroupShuffleSplit',
+           'StratifiedSampleFromGroupShuffleSplit',
            'RepeatedStratifiedGroupKFold',
            'RepeatedStratifiedSampleFromGroupKFold',
            'cross_val_predict',

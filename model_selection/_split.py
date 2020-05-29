@@ -321,3 +321,16 @@ class StratifiedGroupShuffleSplit(StratifiedShuffleSplit):
             train = np.flatnonzero(np.in1d(group_indices, group_train))
             test = np.flatnonzero(np.in1d(group_indices, group_test))
             yield train, test
+
+
+class StratifiedSampleFromGroupShuffleSplit(StratifiedShuffleSplit):
+
+    def split(self, X, y, groups):
+        X, y, groups = indexable(X, y, groups)
+        indices = pd.DataFrame(groups).groupby(0).apply(
+            pd.DataFrame.sample, n=1, random_state=self.random_state
+            ).reset_index(level=0, drop=True).sort_index().index.values
+        X = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
+        y = y[indices]
+        for train_index, test_index in self._iter_indices(X, y, groups):
+            yield train_index, test_index
