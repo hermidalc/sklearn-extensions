@@ -1,6 +1,6 @@
 from ._univariate_selection import (
     ANOVAFScorerClassification, Chi2Scorer, MutualInfoScorerClassification)
-from .._cached import CachedFitMixin
+from ..cached import CachedFitMixin
 
 
 class CachedANOVAFScorerClassification(CachedFitMixin,
@@ -21,7 +21,7 @@ class CachedMutualInfoScorerClassification(CachedFitMixin,
 
     def __init__(self, memory, discrete_features='auto', n_neighbors=3,
                  copy=True, random_state=None):
-        self.memory = memory
         super().__init__(discrete_features=discrete_features,
                          n_neighbors=n_neighbors, copy=copy,
                          random_state=random_state)
+        self.memory = memory

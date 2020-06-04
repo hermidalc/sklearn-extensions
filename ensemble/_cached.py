@@ -1,6 +1,6 @@
 from sklearn.ensemble import (
     ExtraTreesClassifier, GradientBoostingClassifier, RandomForestClassifier)
-from .._cached import CachedFitMixin
+from ..cached import CachedFitMixin
 
 
 class CachedGradientBoostingClassifier(CachedFitMixin,
@@ -15,7 +15,6 @@ class CachedGradientBoostingClassifier(CachedFitMixin,
                  max_leaf_nodes=None, warm_start=False, presort='deprecated',
                  validation_fraction=0.1, n_iter_no_change=None, tol=1e-4,
                  ccp_alpha=0.0):
-        self.memory = memory
         super().__init__(loss=loss, learning_rate=learning_rate,
                          n_estimators=n_estimators, criterion=criterion,
                          min_samples_split=min_samples_split,
@@ -30,6 +29,7 @@ class CachedGradientBoostingClassifier(CachedFitMixin,
                          validation_fraction=validation_fraction,
                          n_iter_no_change=n_iter_no_change, tol=tol,
                          ccp_alpha=ccp_alpha)
+        self.memory = memory
 
 
 class CachedRandomForestClassifier(CachedFitMixin, RandomForestClassifier):
@@ -41,7 +41,6 @@ class CachedRandomForestClassifier(CachedFitMixin, RandomForestClassifier):
                  min_impurity_split=None, bootstrap=True, oob_score=False,
                  n_jobs=None, random_state=None, verbose=0, warm_start=False,
                  class_weight=None, ccp_alpha=0.0, max_samples=None):
-        self.memory = memory
         super().__init__(n_estimators=n_estimators, criterion=criterion,
                          max_depth=max_depth,
                          min_samples_split=min_samples_split,
@@ -56,6 +55,7 @@ class CachedRandomForestClassifier(CachedFitMixin, RandomForestClassifier):
                          verbose=verbose, warm_start=warm_start,
                          class_weight=class_weight, ccp_alpha=ccp_alpha,
                          max_samples=max_samples)
+        self.memory = memory
 
 
 class CachedExtraTreesClassifier(CachedFitMixin, ExtraTreesClassifier):
@@ -67,7 +67,6 @@ class CachedExtraTreesClassifier(CachedFitMixin, ExtraTreesClassifier):
                  min_impurity_split=None, bootstrap=False, oob_score=False,
                  n_jobs=None, random_state=None, verbose=0, warm_start=False,
                  class_weight=None, ccp_alpha=0.0, max_samples=None):
-        self.memory = memory
         super().__init__(n_estimators=n_estimators, criterion=criterion,
                          max_depth=max_depth,
                          min_samples_split=min_samples_split,
@@ -82,3 +81,4 @@ class CachedExtraTreesClassifier(CachedFitMixin, ExtraTreesClassifier):
                          verbose=verbose, warm_start=warm_start,
                          class_weight=class_weight, ccp_alpha=ccp_alpha,
                          max_samples=max_samples)
+        self.memory = memory
