@@ -335,11 +335,11 @@ class ExtendedPipeline(Pipeline):
         else:
             if transformed_feature_meta is None:
                 transformed_feature_meta = feature_meta
-            if hasattr(transformer, 'get_support'):
+            if hasattr(estimator, 'get_support'):
                 transformed_feature_meta = (
-                    transformed_feature_meta.loc[transformer.get_support()])
-            elif hasattr(transformer, 'get_feature_names'):
-                new_feature_names = transformer.get_feature_names(
+                    transformed_feature_meta.loc[estimator.get_support()])
+            elif hasattr(estimator, 'get_feature_names'):
+                new_feature_names = estimator.get_feature_names(
                     input_features=transformed_feature_meta.index.values
                 ).astype(str)
                 new_transformed_feature_meta = None
