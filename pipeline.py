@@ -283,10 +283,10 @@ class ExtendedPipeline(Pipeline):
                     remainder.add(k)
         return [step_params[name] for name in names], remainder
 
-    def _transform_feature_meta(self, transformer, feature_meta):
+    def _transform_feature_meta(self, estimator, feature_meta):
         transformed_feature_meta = None
-        if isinstance(transformer, ColumnTransformer):
-            for _, ctf_transformer, ctf_columns in transformer.transformers_:
+        if isinstance(estimator, ColumnTransformer):
+            for _, ctf_transformer, ctf_columns in estimator.transformers_:
                 if (isinstance(ctf_transformer, str)
                         and ctf_transformer == 'drop'):
                     ctf_feature_meta = feature_meta.iloc[
