@@ -298,7 +298,7 @@ class ExtendedPipeline(Pipeline):
                     ctf_feature_meta = feature_meta.loc[ctf_columns]
                 else:
                     ctf_feature_meta = feature_meta.iloc[ctf_columns]
-                if isinstance(ctf_transformer, BaseEstimator):
+                if isinstance(ctf_transformer, Pipeline):
                     for transformer in ctf_transformer:
                         if hasattr(transformer, 'get_support'):
                             ctf_feature_meta = ctf_feature_meta.loc[
