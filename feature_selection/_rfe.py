@@ -283,7 +283,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
                                    '"feature_importances_" attributes.')
 
             # Get ranks
-            coef_idxs = np.where(np.in1d(fit_feature_idxs,
+            coef_idxs = np.where(np.isin(fit_feature_idxs,
                                          remaining_feature_idxs))[0]
             if coefs.ndim > 1:
                 coefs = coefs[:, coef_idxs]
