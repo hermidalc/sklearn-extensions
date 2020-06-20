@@ -211,15 +211,16 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
         self._check_params(X, y, feature_meta)
 
         # Initialization
+        keep_features = []
         n_features = X.shape[1]
-        remaining_feature_idxs = np.arange(n_features)
+        remaining_features = np.arange(n_features)
         if self.penalty_factor_meta_col is not None:
             penalty_factor = (feature_meta[self.penalty_factor_meta_col]
                               .to_numpy(dtype=float))
-            keep_feature_idxs = np.where(penalty_factor == 0)[0]
-            n_features -= keep_feature_idxs.size
-            remaining_feature_idxs = np.setdiff1d(
-                remaining_feature_idxs, keep_feature_idxs, assume_unique=True)
+            keep_features = np.where(penalty_factor == 0)[0]
+            n_features -= keep_features.size
+            remaining_features = np.setdiff1d(
+                remaining_features, keep_features, assume_unique=True)
 
         if self.n_features_to_select is None:
             n_features_to_select = n_features // 2
@@ -262,8 +263,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
         self.n_remaining_feature_steps_ = [n_remaining_features]
         while n_remaining_features > n_features_to_select:
             # Remaining features
-            fit_feature_idxs = np.union1d(remaining_feature_idxs,
-                                          keep_feature_idxs)
+            fit_features = np.union1d(remaining_features, keep_features)
 
             # Rank the remaining features
             if self.verbose > 0:
@@ -271,7 +271,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
                       .format(n_remaining_features))
 
             estimator = clone(self.estimator)
-            estimator.fit(X[:, fit_feature_idxs], y, **fit_params)
+            estimator.fit(X[:, fit_features], y, **fit_params)
 
             # Get coefs
             if hasattr(estimator, 'coef_'):
@@ -283,15 +283,14 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
                                    '"feature_importances_" attributes.')
 
             # Get ranks
-            coef_idxs = np.where(np.isin(
-                fit_feature_idxs, remaining_feature_idxs,
-                assume_unique=True))[0]
+            remaining_idxs = np.where(np.isin(
+                fit_features, remaining_features, assume_unique=True))[0]
             if coefs.ndim > 1:
-                coefs = coefs[:, coef_idxs]
-                ranks = np.argsort(safe_sqr(coefs).sum(axis=0))
+                ranks = np.argsort(safe_sqr(coefs[:, remaining_idxs])
+                                   .sum(axis=0))
             else:
-                coefs = coefs[coef_idxs]
-                ranks = np.argsort(safe_sqr(coefs))
+                ranks = np.argsort(safe_sqr(coefs[remaining_idxs]))
+
             # for sparse case ranks is matrix
             ranks = np.ravel(ranks)
 
@@ -321,29 +320,29 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
             # Compute step score on the previous selection iteration because
             # 'estimator' must use features that have not been eliminated yet
             if step_score:
-                self.scores_.append(step_score(estimator, fit_feature_idxs))
+                self.scores_.append(step_score(estimator, fit_features))
 
             # Eliminate worst features
-            eliminate_feature_idxs, remaining_feature_idxs = np.split(
-                remaining_feature_idxs[ranks], [step])
-            support[eliminate_feature_idxs] = False
+            eliminate_features, remaining_features = np.split(
+                remaining_features[ranks], [step])
+            support[eliminate_features] = False
             ranking[np.logical_not(support)] += 1
             n_remaining_features -= step
             self.n_remaining_feature_steps_.append(n_remaining_features)
 
         # Set final attributes
-        fit_feature_idxs = np.union1d(remaining_feature_idxs,
-                                      keep_feature_idxs)
+        fit_features = np.union1d(remaining_features, keep_features)
+
         if self.verbose > 0:
             print('Fitting estimator with {:d} features'
                   .format(n_remaining_features))
 
         estimator = clone(self.estimator)
-        estimator.fit(X[:, fit_feature_idxs], y, **fit_params)
+        estimator.fit(X[:, fit_features], y, **fit_params)
 
         # Compute step score when only n_features_to_select features left
         if step_score:
-            self.scores_.append(step_score(estimator, fit_feature_idxs))
+            self.scores_.append(step_score(estimator, fit_features))
 
         self.n_features_ = np.count_nonzero(support)
         self.support_ = support
