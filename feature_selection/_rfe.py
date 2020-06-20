@@ -206,18 +206,21 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
         # fit() method
 
         tags = self._get_tags()
-        X, y = check_X_y(X, y, "csc", ensure_min_features=2,
+        X, y = check_X_y(X, y, 'csc', ensure_min_features=2,
                          force_all_finite=not tags.get('allow_nan', True))
         self._check_params(X, y, feature_meta)
 
         # Initialization
         n_features = X.shape[1]
-        penalty_factor = (feature_meta[self.penalty_factor_meta_col]
-                          .to_numpy(dtype=float)
-                          if self.penalty_factor_meta_col is not None
-                          else None)
-        if penalty_factor is not None:
-            n_features -= np.count_nonzero(penalty_factor == 0)
+        remaining_feature_idxs = np.arange(n_features)
+        if self.penalty_factor_meta_col is not None:
+            penalty_factor = (feature_meta[self.penalty_factor_meta_col]
+                              .to_numpy(dtype=float))
+            keep_feature_idxs = np.where(penalty_factor == 0)[0]
+            n_features -= keep_feature_idxs.size
+            remaining_feature_idxs = np.setdiff1d(remaining_feature_idxs,
+                                                  keep_feature_idxs)
+
         if self.n_features_to_select is None:
             n_features_to_select = n_features // 2
         elif self.n_features_to_select >= 1:
@@ -248,9 +251,8 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
             elif self.tuning_step <= 0:
                 raise ValueError("tuning_step must be > 0")
 
-        all_features = np.arange(X.shape[1])
-        support = np.ones_like(all_features, dtype=np.bool)
-        ranking = np.ones_like(all_features, dtype=np.int)
+        support = np.ones(X.shape[1], dtype=np.bool)
+        ranking = np.ones(X.shape[1], dtype=np.int)
 
         if step_score:
             self.scores_ = []
@@ -260,15 +262,16 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
         self.n_remaining_feature_steps_ = [n_remaining_features]
         while n_remaining_features > n_features_to_select:
             # Remaining features
-            features = all_features[support]
+            fit_feature_idxs = np.union1d(remaining_feature_idxs,
+                                          keep_feature_idxs)
 
             # Rank the remaining features
-            estimator = clone(self.estimator)
             if self.verbose > 0:
-                print("Fitting estimator with %d features."
-                      % n_remaining_features)
+                print('Fitting estimator with {:d} features'
+                      .format(n_remaining_features))
 
-            estimator.fit(X[:, features], y, **fit_params)
+            estimator = clone(self.estimator)
+            estimator.fit(X[:, fit_feature_idxs], y, **fit_params)
 
             # Get coefs
             if hasattr(estimator, 'coef_'):
@@ -280,11 +283,14 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
                                    '"feature_importances_" attributes.')
 
             # Get ranks
+            coef_idxs = np.where(np.in1d(fit_feature_idxs,
+                                         remaining_feature_idxs))[0]
             if coefs.ndim > 1:
+                coefs = coefs[:, coef_idxs]
                 ranks = np.argsort(safe_sqr(coefs).sum(axis=0))
             else:
+                coefs = coefs[coef_idxs]
                 ranks = np.argsort(safe_sqr(coefs))
-
             # for sparse case ranks is matrix
             ranks = np.ravel(ranks)
 
@@ -314,26 +320,34 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
             # Compute step score on the previous selection iteration because
             # 'estimator' must use features that have not been eliminated yet
             if step_score:
-                self.scores_.append(step_score(estimator, features))
+                self.scores_.append(step_score(estimator, fit_feature_idxs))
+
             # Eliminate worst features
-            support[features[ranks][:step]] = False
-            if penalty_factor is not None:
-                support[penalty_factor == 0] = True
-            ranking[np.logical_not(support)] += 1
+            eliminate_feature_idxs, remaining_feature_idxs = np.split(
+                remaining_feature_idxs, [step])
+            support[eliminate_feature_idxs] = False
+            ranking[eliminate_feature_idxs] += 1
             n_remaining_features -= step
             self.n_remaining_feature_steps_.append(n_remaining_features)
 
         # Set final attributes
-        features = all_features[support]
-        self.estimator_ = clone(self.estimator)
-        self.estimator_.fit(X[:, features], y, **fit_params)
+        fit_feature_idxs = np.union1d(remaining_feature_idxs,
+                                      keep_feature_idxs)
+        if self.verbose > 0:
+            print('Fitting estimator with {:d} features'
+                  .format(n_remaining_features))
+
+        estimator = clone(self.estimator)
+        estimator.fit(X[:, fit_feature_idxs], y, **fit_params)
 
         # Compute step score when only n_features_to_select features left
         if step_score:
-            self.scores_.append(step_score(self.estimator_, features))
+            self.scores_.append(step_score(estimator, fit_feature_idxs))
+
         self.n_features_ = np.count_nonzero(support)
         self.support_ = support
         self.ranking_ = ranking
+        self.estimator_ = estimator
 
         return self
 
@@ -345,6 +359,10 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
             if self.penalty_factor_meta_col not in feature_meta.columns:
                 raise ValueError('%s feature_meta column does not exist.'
                                  % self.penalty_factor_meta_col)
+            if X.shape[1] != feature_meta.shape[0]:
+                raise ValueError('X ({:d}) and feature_meta ({:d}) have '
+                                 'different feature dimensions'
+                                 .format(X.shape[1], feature_meta.shape[0]))
 
     def _get_support_mask(self):
         check_is_fitted(self)
@@ -636,7 +654,7 @@ class RFECV(RFE):
                 {'cv': 'groups', 'estimator': '-groups'})
         return self
 
-    def fit(self, X, y, **fit_params):
+    def fit(self, X, y, groups=None, feature_meta=None, **fit_params):
         """Fit the RFE model and automatically tune the number of selected
            features.
 
@@ -655,6 +673,10 @@ class RFECV(RFE):
             train/test set. Only used in conjunction with a "Group" :term:`cv`
             instance (e.g., :class:`~sklearn.model_selection.GroupKFold`).
 
+        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
+            shape = (n_features, n_metadata)
+            Feature metadata.
+
         **fit_params : dict of string -> object
             Parameters passed to the ``fit`` method of the estimator
         """
@@ -664,7 +686,12 @@ class RFECV(RFE):
         # Initialization
         cv = check_cv(self.cv, y, is_classifier(self.estimator))
         scorer = check_scoring(self.estimator, scoring=self.scoring)
+
         n_features = X.shape[1]
+        if self.penalty_factor_meta_col is not None:
+            penalty_factor = (feature_meta[self.penalty_factor_meta_col]
+                              .to_numpy(dtype=float))
+            n_features -= np.count_nonzero(penalty_factor == 0)
 
         # Build an RFE object, which will evaluate and score each possible
         # feature count, down to self.min_features_to_select
