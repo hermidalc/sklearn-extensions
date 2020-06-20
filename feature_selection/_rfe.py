@@ -324,7 +324,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
 
             # Eliminate worst features
             eliminate_feature_idxs, remaining_feature_idxs = np.split(
-                remaining_feature_idxs, [step])
+                remaining_feature_idxs[ranks], [step])
             support[eliminate_feature_idxs] = False
             ranking[eliminate_feature_idxs] += 1
             n_remaining_features -= step
