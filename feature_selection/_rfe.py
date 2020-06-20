@@ -218,8 +218,8 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
                               .to_numpy(dtype=float))
             keep_feature_idxs = np.where(penalty_factor == 0)[0]
             n_features -= keep_feature_idxs.size
-            remaining_feature_idxs = np.setdiff1d(remaining_feature_idxs,
-                                                  keep_feature_idxs)
+            remaining_feature_idxs = np.setdiff1d(
+                remaining_feature_idxs, keep_feature_idxs, assume_unique=True)
 
         if self.n_features_to_select is None:
             n_features_to_select = n_features // 2
@@ -283,8 +283,9 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
                                    '"feature_importances_" attributes.')
 
             # Get ranks
-            coef_idxs = np.where(np.isin(fit_feature_idxs,
-                                         remaining_feature_idxs))[0]
+            coef_idxs = np.where(np.isin(
+                fit_feature_idxs, remaining_feature_idxs,
+                assume_unique=True))[0]
             if coefs.ndim > 1:
                 coefs = coefs[:, coef_idxs]
                 ranks = np.argsort(safe_sqr(coefs).sum(axis=0))
