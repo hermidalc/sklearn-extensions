@@ -327,7 +327,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
             eliminate_feature_idxs, remaining_feature_idxs = np.split(
                 remaining_feature_idxs[ranks], [step])
             support[eliminate_feature_idxs] = False
-            ranking[eliminate_feature_idxs] += 1
+            ranking[np.logical_not(support)] += 1
             n_remaining_features -= step
             self.n_remaining_feature_steps_.append(n_remaining_features)
 
