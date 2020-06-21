@@ -211,7 +211,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
         self._check_params(X, y, feature_meta)
 
         # Initialization
-        keep_features = []
+        keep_features = np.array([], dtype=np.int)
         n_features = X.shape[1]
         remaining_features = np.arange(n_features)
         if self.penalty_factor_meta_col is not None:
@@ -325,6 +325,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
             # Eliminate worst features
             eliminate_features, remaining_features = np.split(
                 remaining_features[ranks], [step])
+            remaining_features = np.sort(remaining_features)
             support[eliminate_features] = False
             ranking[np.logical_not(support)] += 1
             n_remaining_features -= step
