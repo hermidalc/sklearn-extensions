@@ -13,7 +13,7 @@ from ._multivariate import CFS, FCBF, ReliefF
 from ._nanostring import NanoStringEndogenousSelector
 from ._rna_seq import (DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr, Limma,
                        LimmaVoom)
-from ._rfe import RFE, RFECV
+from ._rfe import ExtendedRFE, ExtendedRFECV
 from ._univariate_model import SelectFromUnivariateModel
 from ._univariate_selection import (
     ANOVAFScorerClassification, ANOVAFScorerRegression, Chi2Scorer,
@@ -42,8 +42,8 @@ __all__ = ['ANOVAFScorerClassification',
            'MutualInfoScorerClassification',
            'MutualInfoScorerRegression',
            'NanoStringEndogenousSelector',
-           'RFE',
-           'RFECV',
+           'ExtendedRFE',
+           'ExtendedRFECV',
            'SelectFdr',
            'SelectFpr',
            'SelectFromModel',

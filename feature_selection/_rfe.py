@@ -12,10 +12,8 @@ from joblib import Parallel, delayed, effective_n_jobs
 
 from sklearn.utils import check_X_y, safe_sqr
 from sklearn.utils.metaestimators import if_delegate_has_method, _safe_split
-from sklearn.base import BaseEstimator
-from sklearn.base import MetaEstimatorMixin
-from sklearn.base import clone
-from sklearn.base import is_classifier
+from sklearn.base import clone, is_classifier
+from sklearn.feature_selection import RFE
 from sklearn.model_selection import check_cv
 
 from ._base import ExtendedSelectorMixin
@@ -112,7 +110,7 @@ def _rfe_single_fit(rfe, estimator, X, y, train, test, scorer, fit_params,
     return rfe.scores_, rfe.n_remaining_feature_steps_
 
 
-class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
+class ExtendedRFE(ExtendedSelectorMixin, RFE):
     """Feature ranking with recursive feature elimination.
 
     Given an external estimator that assigns weights to features (e.g., the
@@ -526,7 +524,7 @@ class RFE(ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator):
                 'allow_nan': estimator_tags.get('allow_nan', True)}
 
 
-class RFECV(RFE):
+class ExtendedRFECV(ExtendedRFE):
     """Feature ranking with recursive feature elimination and cross-validated
     selection of the best number of features.
 
