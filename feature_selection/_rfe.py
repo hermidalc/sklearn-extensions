@@ -294,7 +294,7 @@ class ExtendedRFE(ExtendedSelectorMixin, RFE):
                     features = np.where(support)[0]
                     remaining_features = np.setdiff1d(features, keep_features,
                                                       assume_unique=True)
-                elif n_remaining_features < n_features_to_select:
+                else:
                     support = supports[rfe_idx - 1]
                     ranking = rankings[rfe_idx - 1]
                     features = np.where(support)[0]
