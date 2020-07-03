@@ -101,8 +101,10 @@ def fit_grid_point(X, y, estimator, parameters, train, test, scorer,
     n_samples_test : int
         Number of test samples in this split.
     """
-    router = check_routing(param_routing, ['estimator', 'cv', 'scoring'],
-                           {'cv': 'groups', 'estimator': '-groups'})
+    router = check_routing(
+        param_routing, ['estimator', 'cv', 'scoring'],
+        {'cv': {'groups': 'groups', 'weights': 'group_weights'},
+         'estimator': ['-groups', '-group_weights']})
 
     # so feature metadata/properties can work
     feature_params = {k: v for k, v in fit_params.items()
@@ -175,9 +177,10 @@ class ExtendedBaseSearchCV(BaseSearchCV):
         self.error_score = error_score
         self.return_train_score = return_train_score
         self.param_routing = param_routing
-        self.router = check_routing(self.param_routing,
-                                    ['estimator', 'cv', 'scoring'],
-                                    {'cv': 'groups', 'estimator': '-groups'})
+        self.router = check_routing(
+            self.param_routing, ['estimator', 'cv', 'scoring'],
+            {'cv': {'groups': 'groups', 'weights': 'group_weights'},
+             'estimator': ['-groups', '-group_weights']})
 
     @property
     def _estimator_type(self):
@@ -193,7 +196,8 @@ class ExtendedBaseSearchCV(BaseSearchCV):
         if 'param_routing' in params:
             self.router = check_routing(
                 self.param_routing, ['estimator', 'cv', 'scoring'],
-                {'cv': 'groups', 'estimator': '-groups'})
+                {'cv': {'groups': 'groups', 'weights': 'group_weights'},
+                 'estimator': ['-groups', '-group_weights']})
         return self
 
     def score(self, X, y=None, **score_params):
