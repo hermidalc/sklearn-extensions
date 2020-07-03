@@ -207,7 +207,6 @@ class StratifiedSampleFromGroupKFold(StratifiedKFold):
         if groups is None:
             raise ValueError('The groups parameter should not be None')
         groups = check_array(groups, ensure_2d=False, dtype=None)
-        weights = check_array(weights, ensure_2d=False, dtype=None)
         if weights is None:
             indices = (pd.DataFrame({'group': groups}).groupby('group')
                        .apply(pd.DataFrame.sample, n=1,
@@ -215,6 +214,7 @@ class StratifiedSampleFromGroupKFold(StratifiedKFold):
                        .reset_index(level=0, drop=True).sort_index()
                        .index.values)
         else:
+            weights = check_array(weights, ensure_2d=False, dtype=None)
             indices = (pd.DataFrame({'group': groups, 'weight': weights})
                        .groupby('group')
                        .apply(pd.DataFrame.sample, n=1,
@@ -351,7 +351,8 @@ class StratifiedSampleFromGroupShuffleSplit(StratifiedShuffleSplit):
         if groups is None:
             raise ValueError('The groups parameter should not be None')
         groups = check_array(groups, ensure_2d=False, dtype=None)
-        weights = check_array(weights, ensure_2d=False, dtype=None)
+        if weights is not None:
+            weights = check_array(weights, ensure_2d=False, dtype=None)
 
         rng = check_random_state(self.random_state)
         for _ in range(self.n_splits):
