@@ -201,13 +201,27 @@ class RepeatedStratifiedGroupKFold(_RepeatedSplits):
 
 class StratifiedSampleFromGroupKFold(StratifiedKFold):
 
-    def split(self, X, y, groups):
+    def split(self, X, y, groups, weights=None):
+        X, y, groups, weights = indexable(X, y, groups, weights)
+        y = check_array(y, ensure_2d=False, dtype=None)
         if groups is None:
             raise ValueError('The groups parameter should not be None')
-        X, y, groups = indexable(X, y, groups)
-        indices = pd.DataFrame(groups).groupby(0).apply(
-            pd.DataFrame.sample, n=1, random_state=self.random_state
-            ).reset_index(level=0, drop=True).sort_index().index.values
+        groups = check_array(groups, ensure_2d=False, dtype=None)
+        weights = check_array(weights, ensure_2d=False, dtype=None)
+        if weights is None:
+            indices = (pd.DataFrame({'group': groups}).groupby('group')
+                       .apply(pd.DataFrame.sample, n=1,
+                              random_state=self.random_state)
+                       .reset_index(level=0, drop=True).sort_index()
+                       .index.values)
+        else:
+            indices = (pd.DataFrame({'group': groups, 'weight': weights})
+                       .groupby('group')
+                       .apply(pd.DataFrame.sample, n=1,
+                              random_state=self.random_state,
+                              weights='weight')
+                       .reset_index(level=0, drop=True).sort_index()
+                       .index.values)
         X = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
         y = y[indices]
         for test_mask in self._iter_test_masks(X, y):
@@ -309,7 +323,9 @@ class StratifiedGroupShuffleSplit(StratifiedShuffleSplit):
                          train_size=train_size, random_state=random_state)
         self._default_test_size = 0.1
 
-    def _iter_indices(self, X, y, groups):
+    def split(self, X, y, groups):
+        X, y, groups = indexable(X, y, groups)
+        y = check_array(y, ensure_2d=False, dtype=None)
         if groups is None:
             raise ValueError('The groups parameter should not be None')
         groups = check_array(groups, ensure_2d=False, dtype=None)
@@ -329,16 +345,29 @@ class StratifiedGroupShuffleSplit(StratifiedShuffleSplit):
 
 class StratifiedSampleFromGroupShuffleSplit(StratifiedShuffleSplit):
 
-    def _iter_indices(self, X, y, groups):
+    def split(self, X, y, groups, weights=None):
+        X, y, groups, weights = indexable(X, y, groups, weights)
+        y = check_array(y, ensure_2d=False, dtype=None)
         if groups is None:
             raise ValueError('The groups parameter should not be None')
+        groups = check_array(groups, ensure_2d=False, dtype=None)
+        weights = check_array(weights, ensure_2d=False, dtype=None)
 
         rng = check_random_state(self.random_state)
-
         for _ in range(self.n_splits):
-            indices = pd.DataFrame(groups).groupby(0).apply(
-                pd.DataFrame.sample, n=1, random_state=rng
-                ).reset_index(level=0, drop=True).sort_index().index.values
+            if weights is None:
+                indices = (pd.DataFrame({'group': groups}).groupby('group')
+                           .apply(pd.DataFrame.sample, n=1, random_state=rng)
+                           .reset_index(level=0, drop=True).sort_index()
+                           .index.values)
+            else:
+                indices = (pd.DataFrame({'group': groups, 'weight': weights})
+                           .groupby('group')
+                           .apply(pd.DataFrame.sample, n=1, random_state=rng,
+                                  weights='weight')
+                           .reset_index(level=0, drop=True).sort_index()
+                           .index.values)
+
             Xr = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
             yr = y[indices]
 
