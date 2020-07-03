@@ -161,7 +161,7 @@ class RepeatedStratifiedGroupKFold(_RepeatedSplits):
     >>> groups = np.array([1, 1, 2, 2, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 7, 8, 8])
     >>> cv = RepeatedStratifiedGroupKFold(n_splits=2, n_repeats=2,
     ...                                   random_state=36851234)
-    >>> for train_index, test_index in cv.split(X, y, groups):
+    >>> for train_idxs, test_idxs in cv.split(X, y, groups):
     ...     print("TRAIN:", groups[train_idxs])
     ...     print("      ", y[train_idxs])
     ...     print(" TEST:", groups[test_idxs])
