@@ -229,12 +229,20 @@ class StratifiedSampleFromGroupKFold(StratifiedKFold):
             test_index = indices[test_mask]
             yield train_index, test_index
 
+    def get_n_splits(self, X=None, y=None, groups=None, weights=None):
+        return self.n_splits
+
 
 class RepeatedStratifiedSampleFromGroupKFold(_RepeatedSplits):
 
     def __init__(self, n_splits=5, n_repeats=10, random_state=None):
         super().__init__(StratifiedSampleFromGroupKFold, n_splits=n_splits,
                          n_repeats=n_repeats, random_state=random_state)
+
+    def get_n_splits(self, X=None, y=None, groups=None, weights=None):
+        rng = check_random_state(self.random_state)
+        cv = self.cv(random_state=rng, shuffle=True, **self.cvargs)
+        return cv.get_n_splits(X, y, groups, weights) * self.n_repeats
 
 
 class StratifiedGroupShuffleSplit(StratifiedShuffleSplit):
@@ -431,3 +439,6 @@ class StratifiedSampleFromGroupShuffleSplit(StratifiedShuffleSplit):
             test_index = indices[test]
 
             yield train_index, test_index
+
+    def get_n_splits(self, X=None, y=None, groups=None, weights=None):
+        return self.n_splits
