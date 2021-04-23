@@ -4,6 +4,7 @@ algorithms. It currently includes univariate filter selection methods and the
 recursive feature elimination algorithm.
 """
 
+from ._average_threshold import MeanThreshold, MedianThreshold
 from ._cached import (
     CachedANOVAFScorerClassification, CachedChi2Scorer,
     CachedMutualInfoScorerClassification)
@@ -41,6 +42,8 @@ __all__ = ['ANOVAFScorerClassification',
            'GenericUnivariateSelect',
            'Limma',
            'LimmaVoom',
+           'MeanThreshold',
+           'MedianThreshold',
            'MutualInfoScorerClassification',
            'MutualInfoScorerRegression',
            'NanoStringEndogenousSelector',
