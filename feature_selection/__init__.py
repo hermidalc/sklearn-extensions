@@ -8,6 +8,7 @@ from ._cached import (
     CachedANOVAFScorerClassification, CachedChi2Scorer,
     CachedMutualInfoScorerClassification)
 from ._column import ColumnSelector
+from ._confidence_threshold import ConfidenceThreshold
 from ._from_model import SelectFromModel
 from ._multivariate import CFS, FCBF, ReliefF
 from ._nanostring import NanoStringEndogenousSelector
@@ -31,6 +32,7 @@ __all__ = ['ANOVAFScorerClassification',
            'CFS',
            'Chi2Scorer',
            'ColumnSelector',
+           'ConfidenceThreshold',
            'DESeq2',
            'DreamVoom',
            'EdgeR',
