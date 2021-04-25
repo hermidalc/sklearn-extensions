@@ -163,7 +163,7 @@ class ExtendedBaseSearchCV(BaseSearchCV):
     @abstractmethod
     def __init__(self, estimator, scoring=None, n_jobs=None, iid='deprecated',
                  refit=True, cv=None, verbose=0, pre_dispatch='2*n_jobs',
-                 error_score=np.nan, return_train_score=True,
+                 max_nbytes='1M', error_score=np.nan, return_train_score=True,
                  param_routing=None):
 
         self.scoring = scoring
@@ -176,6 +176,7 @@ class ExtendedBaseSearchCV(BaseSearchCV):
         self.pre_dispatch = pre_dispatch
         self.error_score = error_score
         self.return_train_score = return_train_score
+        self.max_nbytes = max_nbytes
         self.param_routing = param_routing
         self.router = check_routing(
             self.param_routing, ['estimator', 'cv', 'scoring'],
@@ -449,7 +450,8 @@ class ExtendedBaseSearchCV(BaseSearchCV):
         base_estimator = clone(self.estimator)
 
         parallel = Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
-                            pre_dispatch=self.pre_dispatch)
+                            pre_dispatch=self.pre_dispatch,
+                            max_nbytes=self.max_nbytes)
 
         fit_and_score_kwargs = dict(scorer=scorers,
                                     fit_params=fit_params,
@@ -932,13 +934,14 @@ class ExtendedGridSearchCV(ExtendedBaseSearchCV, GridSearchCV):
 
     def __init__(self, estimator, param_grid, scoring=None, n_jobs=None,
                  iid='deprecated', refit=True, cv=None, verbose=0,
-                 pre_dispatch='2*n_jobs', error_score=np.nan,
+                 pre_dispatch='2*n_jobs', max_nbytes='1M', error_score=np.nan,
                  return_train_score=False, param_routing=None):
         super().__init__(
             estimator=estimator, scoring=scoring,
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
-            pre_dispatch=pre_dispatch, error_score=error_score,
-            return_train_score=return_train_score, param_routing=param_routing)
+            pre_dispatch=pre_dispatch, max_nbytes=max_nbytes,
+            error_score=error_score, return_train_score=return_train_score,
+            param_routing=param_routing)
         self.param_grid = param_grid
         _check_param_grid(param_grid)
 
@@ -1261,7 +1264,7 @@ class ExtendedRandomizedSearchCV(ExtendedBaseSearchCV, RandomizedSearchCV):
 
     def __init__(self, estimator, param_distributions, n_iter=10, scoring=None,
                  n_jobs=None, iid='deprecated', refit=True,
-                 cv=None, verbose=0, pre_dispatch='2*n_jobs',
+                 cv=None, verbose=0, pre_dispatch='2*n_jobs', max_nbytes='1M',
                  random_state=None, error_score=np.nan,
                  return_train_score=False, param_routing=None):
         self.param_distributions = param_distributions
@@ -1270,8 +1273,9 @@ class ExtendedRandomizedSearchCV(ExtendedBaseSearchCV, RandomizedSearchCV):
         super().__init__(
             estimator=estimator, scoring=scoring,
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
-            pre_dispatch=pre_dispatch, error_score=error_score,
-            return_train_score=return_train_score, param_routing=param_routing)
+            pre_dispatch=pre_dispatch, max_nbytes=max_nbytes,
+            error_score=error_score, return_train_score=return_train_score,
+            param_routing=param_routing)
 
     def _run_search(self, evaluate_candidates):
         """Search n_iter candidates from param_distributions"""
