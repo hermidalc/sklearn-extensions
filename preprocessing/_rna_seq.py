@@ -282,7 +282,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         self.meta_col = meta_col
         self.memory = memory
 
-    def fit(self, X, y, feature_meta, sample_meta=None):
+    def fit(self, X, y, feature_meta):
         """
         Parameters
         ----------
@@ -294,8 +294,6 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         feature_meta : pandas.DataFrame, pandas.Series \
             shape = (n_features, n_metadata)
             Feature metadata.
-
-        sample_meta: ignored
         """
         X = check_array(X, dtype=int)
         self._check_params(X, y, feature_meta)
@@ -304,7 +302,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
             X, feature_meta, meta_col=self.meta_col)
         return self
 
-    def transform(self, X, feature_meta, sample_meta=None):
+    def transform(self, X, feature_meta):
         """
         Parameters
         ----------
@@ -314,8 +312,6 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         feature_meta : pandas.DataFrame, pandas.Series \
             shape = (n_features, n_metadata)
             Feature metadata.
-
-        sample_meta : ignored
 
         Returns
         -------
@@ -334,7 +330,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
             self._train_done = True
         return X
 
-    def inverse_transform(self, X, feature_meta=None, sample_meta=None):
+    def inverse_transform(self, X, feature_meta=None):
         """
         Parameters
         ----------
@@ -342,8 +338,6 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
             Input transformed data matrix.
 
         feature_meta : ignored
-
-        sample_meta : ignored
 
         Returns
         -------
