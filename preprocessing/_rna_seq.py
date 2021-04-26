@@ -20,6 +20,8 @@ r_deseq2_vst_fit = robjects.globalenv['deseq2_vst_fit']
 r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
 r_edger_tmm_logcpm_fit = robjects.globalenv['edger_tmm_logcpm_fit']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
+r_edger_tmm_tpm_fit = robjects.globalenv['edger_tmm_tpm_fit']
+r_edger_tmm_tpm_transform = robjects.globalenv['edger_tmm_tpm_transform']
 
 
 def deseq2_vst_fit(X, y, sample_meta, fit_type, blind, model_batch,
@@ -43,6 +45,16 @@ def edger_tmm_logcpm_fit(X, prior_count):
 def edger_tmm_logcpm_transform(X, ref_sample, prior_count):
     return np.array(r_edger_tmm_logcpm_transform(
         X, ref_sample=ref_sample, prior_count=prior_count), dtype=float)
+
+
+def edger_tmm_tpm_fit(X):
+    xt, rs = r_edger_tmm_tpm_fit(X)
+    return np.array(xt, dtype=float), np.array(rs, dtype=float)
+
+
+def edger_tmm_tpm_transform(X, ref_sample):
+    return np.array(r_edger_tmm_tpm_transform(
+        X, ref_sample=ref_sample), dtype=float)
 
 
 class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
@@ -224,6 +236,85 @@ class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
                 X, ref_sample=self.ref_sample_, prior_count=self.prior_count)
         else:
             X = self._log_cpms
+            self._train_done = True
+        return X
+
+    def inverse_transform(self, X, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input transformed data matrix.
+
+        sample_meta: ignored
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_original_features)
+        """
+        raise NotImplementedError('inverse_transform not implemented.')
+
+    def _more_tags(self):
+        return {'requires_positive_X': True}
+
+
+class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
+    """edgeR TMM normalization and TPM transformation for count data
+
+    Parameters
+    ----------
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
+    Attributes
+    ----------
+    ref_sample_ : array, shape (n_features,)
+        TMM normalization reference sample feature vector.
+    """
+
+    def __init__(self, memory=None):
+        self.memory = memory
+
+    def fit(self, X, y=None, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input counts data matrix.
+
+        y : ignored
+
+        sample_meta: ignored
+        """
+        X = check_array(X, dtype=int)
+        memory = check_memory(self.memory)
+        self._tpms, self.ref_sample_ = memory.cache(edger_tmm_tpm_fit)(X)
+        return self
+
+    def transform(self, X, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input counts data matrix.
+
+        sample_meta : ignored
+
+        Returns
+        -------
+        Xt : array of shape (n_samples, n_features)
+            edgeR TMM normalized TPM transformed data matrix.
+        """
+        check_is_fitted(self, '_tpms')
+        X = check_array(X, dtype=int)
+        if hasattr(self, '_train_done'):
+            memory = check_memory(self.memory)
+            X = memory.cache(edger_tmm_tpm_transform)(
+                X, ref_sample=self.ref_sample_)
+        else:
+            X = self._tpms
             self._train_done = True
         return X
 

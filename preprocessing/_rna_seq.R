@@ -83,3 +83,27 @@ edger_tmm_logcpm_transform <- function(X, ref_sample, prior_count=1) {
     log_cpm <- log_cpm[, -ncol(log_cpm)]
     return(t(log_cpm))
 }
+
+edger_tmm_tpm_fit <- function(X) {
+    suppressPackageStartupMessages(library("edgeR"))
+    counts <- t(X)
+    dge <- DGEList(counts=counts)
+    dge <- calcNormFactors(dge, method="TMM")
+    rpkm <- rpkm(dge)
+    tpm <- t(t(rpkm) / colSums(rpkm)) * 1e6
+    ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    return(list(t(tpm), ref_sample))
+}
+
+edger_tmm_tpm_transform <- function(X, ref_sample) {
+    suppressPackageStartupMessages(library("edgeR"))
+    counts <- t(X)
+    counts <- cbind(counts, ref_sample)
+    colnames(counts) <- NULL
+    dge <- DGEList(counts=counts)
+    dge <- calcNormFactors(dge, method="TMM", refColumn=ncol(dge))
+    rpkm <- rpkm(dge)
+    tpm <- t(t(rpkm) / colSums(rpkm)) * 1e6
+    tpm <- tpm[, -ncol(tpm)]
+    return(t(tpm))
+}
