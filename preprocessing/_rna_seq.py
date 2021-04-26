@@ -47,14 +47,15 @@ def edger_tmm_logcpm_transform(X, ref_sample, prior_count):
         X, ref_sample=ref_sample, prior_count=prior_count), dtype=float)
 
 
-def edger_tmm_tpm_fit(X):
-    xt, rs = r_edger_tmm_tpm_fit(X)
+def edger_tmm_tpm_fit(X, feature_meta, meta_col):
+    xt, rs = r_edger_tmm_tpm_fit(X, feature_meta, meta_col=meta_col)
     return np.array(xt, dtype=float), np.array(rs, dtype=float)
 
 
-def edger_tmm_tpm_transform(X, ref_sample):
+def edger_tmm_tpm_transform(X, feature_meta, ref_sample, meta_col):
     return np.array(r_edger_tmm_tpm_transform(
-        X, ref_sample=ref_sample), dtype=float)
+        X, feature_meta, ref_sample=ref_sample, meta_col=meta_col),
+                    dtype=float)
 
 
 class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
@@ -246,7 +247,7 @@ class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
         X : array-like, shape = (n_samples, n_features)
             Input transformed data matrix.
 
-        sample_meta: ignored
+        sample_meta : ignored
 
         Returns
         -------
@@ -263,6 +264,9 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
 
     Parameters
     ----------
+    meta_col : str (default = "Length")
+        Feature metadata column name holding CDS lengths.
+
     memory : None, str or object with the joblib.Memory interface \
         (default = None)
         Used for internal caching. By default, no caching is done.
@@ -274,10 +278,11 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, memory=None):
+    def __init__(self, meta_col='Length', memory=None):
+        self.meta_col = meta_col
         self.memory = memory
 
-    def fit(self, X, y=None, sample_meta=None):
+    def fit(self, X, y, feature_meta, sample_meta=None):
         """
         Parameters
         ----------
@@ -286,19 +291,29 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
 
         y : ignored
 
+        feature_meta : pandas.DataFrame, pandas.Series \
+            shape = (n_features, n_metadata)
+            Feature metadata.
+
         sample_meta: ignored
         """
         X = check_array(X, dtype=int)
+        self._check_params(X, y, feature_meta)
         memory = check_memory(self.memory)
-        self._tpms, self.ref_sample_ = memory.cache(edger_tmm_tpm_fit)(X)
+        self._tpms, self.ref_sample_ = memory.cache(edger_tmm_tpm_fit)(
+            X, feature_meta, meta_col=self.meta_col)
         return self
 
-    def transform(self, X, sample_meta=None):
+    def transform(self, X, feature_meta, sample_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Input counts data matrix.
+
+        feature_meta : pandas.DataFrame, pandas.Series \
+            shape = (n_features, n_metadata)
+            Feature metadata.
 
         sample_meta : ignored
 
@@ -312,26 +327,38 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         if hasattr(self, '_train_done'):
             memory = check_memory(self.memory)
             X = memory.cache(edger_tmm_tpm_transform)(
-                X, ref_sample=self.ref_sample_)
+                X, feature_meta, ref_sample=self.ref_sample_,
+                meta_col=self.meta_col)
         else:
             X = self._tpms
             self._train_done = True
         return X
 
-    def inverse_transform(self, X, sample_meta=None):
+    def inverse_transform(self, X, feature_meta=None, sample_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Input transformed data matrix.
 
-        sample_meta: ignored
+        feature_meta : ignored
+
+        sample_meta : ignored
 
         Returns
         -------
         Xr : array of shape (n_samples, n_original_features)
         """
         raise NotImplementedError('inverse_transform not implemented.')
+
+    def _check_params(self, X, y, feature_meta):
+        if X.shape[1] != feature_meta.shape[0]:
+            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
+                             'different feature dimensions'
+                             .format(X.shape[1], feature_meta.shape[0]))
+        if self.meta_col not in feature_meta.columns:
+            raise ValueError('{} feature_meta column does not exist.'
+                             .format(self.meta_col))
 
     def _more_tags(self):
         return {'requires_positive_X': True}
