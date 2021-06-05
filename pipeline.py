@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.utils._joblib import Parallel, delayed
@@ -764,7 +764,7 @@ def transform_feature_meta(estimator, feature_meta):
                 trf_feature_meta = feature_meta.loc[trf_columns]
             else:
                 trf_feature_meta = feature_meta.iloc[trf_columns]
-            if isinstance(trf_transformer, BaseEstimator):
+            if isinstance(trf_transformer, Pipeline):
                 for transformer in trf_transformer:
                     trf_feature_meta = transform_feature_meta(transformer,
                                                               trf_feature_meta)
