@@ -754,8 +754,7 @@ def transform_feature_meta(estimator, feature_meta):
     if isinstance(estimator, ColumnTransformer):
         transformed_feature_meta = None
         for _, trf_transformer, trf_columns in estimator.transformers_:
-            if (isinstance(trf_transformer, str)
-                    and trf_transformer == 'drop'):
+            if isinstance(trf_transformer, str) and trf_transformer == 'drop':
                 trf_feature_meta = feature_meta.iloc[
                     ~feature_meta.index.isin(trf_columns)]
             elif ((isinstance(trf_columns, slice)
@@ -774,28 +773,28 @@ def transform_feature_meta(estimator, feature_meta):
             else:
                 transformed_feature_meta = pd.concat(
                     [transformed_feature_meta, trf_feature_meta], axis=0)
-    else:
-        if hasattr(estimator, 'get_support'):
-            transformed_feature_meta = feature_meta.loc[estimator
-                                                        .get_support()]
-        elif hasattr(estimator, 'get_feature_names'):
-            transformed_feature_meta = None
-            feature_names = estimator.get_feature_names(
-                input_features=feature_meta.index.values).astype(str)
-            for feature_name in feature_meta.index:
-                f_feature_meta = pd.concat(
-                    [feature_meta.loc[[feature_name]]] * np.sum(
-                        np.char.startswith(feature_names,
-                                           '{}_'.format(feature_name))),
+    elif hasattr(estimator, 'get_support'):
+        transformed_feature_meta = feature_meta.loc[estimator.get_support()]
+    elif hasattr(estimator, 'get_feature_names'):
+        transformed_feature_meta = None
+        feature_names = estimator.get_feature_names(
+            input_features=feature_meta.index.values).astype(str)
+        for feature_name in feature_meta.index:
+            f_feature_meta = pd.concat(
+                [feature_meta.loc[[feature_name]]] * np.sum(
+                    np.char.startswith(feature_names,
+                                       '{}_'.format(feature_name))),
+                axis=0, ignore_index=True)
+            if transformed_feature_meta is None:
+                transformed_feature_meta = f_feature_meta
+            else:
+                transformed_feature_meta = pd.concat(
+                    [transformed_feature_meta, f_feature_meta],
                     axis=0, ignore_index=True)
-                if transformed_feature_meta is None:
-                    transformed_feature_meta = f_feature_meta
-                else:
-                    transformed_feature_meta = pd.concat(
-                        [transformed_feature_meta, f_feature_meta],
-                        axis=0, ignore_index=True)
-            transformed_feature_meta = (transformed_feature_meta
-                                        .set_index(feature_names))
+        transformed_feature_meta = (transformed_feature_meta
+                                    .set_index(feature_names))
+    else:
+        transformed_feature_meta = feature_meta
     return transformed_feature_meta
 
 
