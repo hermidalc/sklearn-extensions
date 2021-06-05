@@ -703,6 +703,53 @@ def _name_estimators(estimators):
     return list(zip(names, estimators))
 
 
+def _transform_one(transformer, X, y, weight, message_clsname='',
+                   message=None, **transform_params):
+    res = transformer.transform(X, **transform_params)
+    # if we have a weight for this transformer, multiply output
+    if weight is None:
+        return res
+    return res * weight
+
+
+def _fit_transform_one(transformer,
+                       X,
+                       y,
+                       weight,
+                       message_clsname='',
+                       message=None,
+                       **fit_params):
+    """
+    Fits ``transformer`` to ``X`` and ``y``. The transformed result is returned
+    with the fitted transformer. If ``weight`` is not ``None``, the result will
+    be multiplied by ``weight``.
+    """
+    with _print_elapsed_time(message_clsname, message):
+        if hasattr(transformer, 'fit_transform'):
+            res = transformer.fit_transform(X, y, **fit_params)
+        else:
+            res = transformer.fit(X, y, **fit_params).transform(
+                X, **fit_params)
+
+    if weight is None:
+        return res, transformer
+    return res * weight, transformer
+
+
+def _fit_one(transformer,
+             X,
+             y,
+             weight,
+             message_clsname='',
+             message=None,
+             **fit_params):
+    """
+    Fits ``transformer`` to ``X`` and ``y``.
+    """
+    with _print_elapsed_time(message_clsname, message):
+        return transformer.fit(X, y, **fit_params)
+
+
 def transform_feature_meta(estimator, feature_meta):
     if isinstance(estimator, ColumnTransformer):
         transformed_feature_meta = None
@@ -802,53 +849,6 @@ def make_extended_pipeline(*steps, **kwargs):
                         .format(list(kwargs.keys())[0]))
     return ExtendedPipeline(_name_estimators(steps), memory=memory,
                             verbose=verbose, param_routing=param_routing)
-
-
-def _transform_one(transformer, X, y, weight, message_clsname='',
-                   message=None, **transform_params):
-    res = transformer.transform(X, **transform_params)
-    # if we have a weight for this transformer, multiply output
-    if weight is None:
-        return res
-    return res * weight
-
-
-def _fit_transform_one(transformer,
-                       X,
-                       y,
-                       weight,
-                       message_clsname='',
-                       message=None,
-                       **fit_params):
-    """
-    Fits ``transformer`` to ``X`` and ``y``. The transformed result is returned
-    with the fitted transformer. If ``weight`` is not ``None``, the result will
-    be multiplied by ``weight``.
-    """
-    with _print_elapsed_time(message_clsname, message):
-        if hasattr(transformer, 'fit_transform'):
-            res = transformer.fit_transform(X, y, **fit_params)
-        else:
-            res = transformer.fit(X, y, **fit_params).transform(
-                X, **fit_params)
-
-    if weight is None:
-        return res, transformer
-    return res * weight, transformer
-
-
-def _fit_one(transformer,
-             X,
-             y,
-             weight,
-             message_clsname='',
-             message=None,
-             **fit_params):
-    """
-    Fits ``transformer`` to ``X`` and ``y``.
-    """
-    with _print_elapsed_time(message_clsname, message):
-        return transformer.fit(X, y, **fit_params)
 
 
 class ExtendedFeatureUnion(ExtendedTransformerMixin, FeatureUnion):
