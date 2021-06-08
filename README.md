@@ -1,1 +1,3 @@
-# scikit-learn extensions
+# sklearn-extensions
+
+scikit-learn extensions
