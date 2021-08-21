@@ -1,8 +1,8 @@
 # RNA-seq feature selection and scoring functions
 
 deseq2_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, fit_type="parametric", lfc_shrink=TRUE,
-    blind=FALSE, model_batch=FALSE, n_threads=1
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", fit_type="parametric",
+    lfc_shrink=TRUE, model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     suppressPackageStartupMessages(library("BiocParallel"))
@@ -47,23 +47,17 @@ deseq2_feature_score <- function(
         results$padj[is.na(results$padj)] <- 1
     }
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
-    vsd <- varianceStabilizingTransformation(dds, blind=blind)
-    geo_means <- exp(rowMeans(log(counts)))
-    return(list(
-        results$pvalue, results$padj, t(assay(vsd)), geo_means,
-        dispersionFunction(dds)
-    ))
-}
-
-# adapted from edgeR::calcNormFactors source code
-edger_tmm_ref_column <- function(counts, lib.size=colSums(counts), p=0.75) {
-    y <- t(t(counts) / lib.size)
-    f <- apply(y, 2, function(x) quantile(x, p=p))
-    ref_column <- which.min(abs(f - mean(f)))
+    if (scoring_meth == "lfc_pv") {
+        scores <- abs(results$log2FoldChange) * -log10(results$pvalue)
+    } else {
+        scores <- results$pvalue
+    }
+    return(list(scores, results$padj))
 }
 
 edger_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, robust=TRUE, prior_count=1, model_batch=FALSE
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=TRUE,
+    prior_count=2, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
@@ -90,9 +84,12 @@ edger_feature_score <- function(
         glt, n=Inf, adjust.method="BH", sort.by="none"
     ))
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
-    log_cpm <- cpm(dge, log=TRUE, prior.count=prior_count)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
-    return(list(results$PValue, results$FDR, t(log_cpm), ref_sample))
+    if (scoring_meth == "lfc_pv") {
+        scores <- abs(results$logFC) * -log10(results$PValue)
+    } else {
+        scores <- results$PValue
+    }
+    return(list(scores, results$FDR))
 }
 
 edger_filterbyexpr_mask <- function(
@@ -120,8 +117,8 @@ edger_filterbyexpr_mask <- function(
 }
 
 limma_voom_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, robust=TRUE, prior_count=1,
-    model_batch=FALSE, model_dupcor=FALSE
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=TRUE,
+    prior_count=2, model_batch=FALSE, model_dupcor=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
@@ -167,13 +164,17 @@ limma_voom_feature_score <- function(
         fit, coef=ncol(design), number=Inf, adjust.method="BH", sort.by="none"
     )
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
-    log_cpm <- cpm(dge, log=TRUE, prior.count=prior_count)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
-    return(list(results$P.Value, results$adj.P.Val, t(log_cpm), ref_sample))
+    if (scoring_meth == "lfc_pv") {
+        scores <- abs(results$logFC) * -log10(results$P.Value)
+    } else {
+        scores <- results$P.Value
+    }
+    return(list(scores, results$adj.P.Val))
 }
 
 dream_voom_feature_score <- function(
-    X, y, sample_meta, lfc=0, prior_count=1, model_batch=FALSE, n_threads=1
+    X, y, sample_meta, lfc=0, scoring_meth="lfc_pv", prior_count=2,
+    model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
@@ -206,13 +207,17 @@ dream_voom_feature_score <- function(
         sort.by="none"
     )
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
-    log_cpm <- cpm(dge, log=TRUE, prior.count=prior_count)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
-    return(list(results$P.Value, results$adj.P.Val, t(log_cpm), ref_sample))
+    if (scoring_meth == "lfc_pv") {
+        scores <- abs(results$logFC) * -log10(results$P.Value)
+    } else {
+        scores <- results$P.Value
+    }
+    return(list(scores, results$adj.P.Val))
 }
 
 limma_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, robust=FALSE, trend=FALSE, model_batch=FALSE
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=FALSE,
+    trend=FALSE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("limma"))
     if (
@@ -231,5 +236,10 @@ limma_feature_score <- function(
         fit, coef=ncol(design), number=Inf, adjust.method="BH", sort.by="none"
     )
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
-    return(list(results$P.Value, results$adj.P.Val))
+    if (scoring_meth == "lfc_pv") {
+        scores <- abs(results$logFC) * -log10(results$P.Value)
+    } else {
+        scores <- results$P.Value
+    }
+    return(list(scores, results$adj.P.Val))
 }

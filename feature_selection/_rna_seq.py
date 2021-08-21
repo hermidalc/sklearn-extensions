@@ -6,7 +6,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted, check_memory
+from ..utils.validation import check_is_fitted
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -24,63 +24,59 @@ r_dream_voom_feature_score = robjects.globalenv['dream_voom_feature_score']
 r_limma_feature_score = robjects.globalenv['limma_feature_score']
 if 'deseq2_vst_fit' not in robjects.globalenv:
     r_base.source(os.path.dirname(__file__) + '/../preprocessing/_rna_seq.R')
+r_deseq2_vst_fit = robjects.globalenv['deseq2_vst_fit']
 r_deseq2_vst_transform = robjects.globalenv['deseq2_vst_transform']
+r_edger_tmm_fit = robjects.globalenv['edger_tmm_fit']
 r_edger_tmm_logcpm_transform = robjects.globalenv['edger_tmm_logcpm_transform']
 
 
-def deseq2_feature_score(X, y, sample_meta, lfc, fit_type, lfc_shrink, blind,
-                         model_batch, n_threads):
-    pv, pa, xt, gm, df = r_deseq2_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, fit_type=fit_type,
-        lfc_shrink=lfc_shrink, blind=blind, model_batch=model_batch,
+def deseq2_feature_score(X, y, sample_meta, lfc, scoring_meth, fit_type,
+                         lfc_shrink, model_batch, n_threads):
+    sc, pa = r_deseq2_feature_score(
+        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
+        fit_type=fit_type, lfc_shrink=lfc_shrink, model_batch=model_batch,
         n_threads=n_threads)
-    return (np.array(pv, dtype=float), np.array(pa, dtype=float),
-            np.array(xt, dtype=float), np.array(gm, dtype=float), df)
+    return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def deseq2_vst_transform(X, geo_means, disp_func):
-    return np.array(r_deseq2_vst_transform(
-        X, geo_means=geo_means, disp_func=disp_func), dtype=float)
+def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust,
+                        prior_count, model_batch):
+    sc, pa = r_edger_feature_score(
+        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
+        robust=robust, prior_count=prior_count, model_batch=model_batch)
+    return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def edger_feature_score(X, y, sample_meta, lfc, robust, prior_count,
-                        model_batch):
-    pv, pa, xt, rs = r_edger_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, robust=robust,
-        prior_count=prior_count, model_batch=model_batch)
-    return (np.array(pv, dtype=float), np.array(pa, dtype=float),
-            np.array(xt, dtype=float), np.array(rs, dtype=float))
-
-
-def edger_tmm_logcpm_transform(X, ref_sample, prior_count):
-    return np.array(r_edger_tmm_logcpm_transform(
-        X, ref_sample=ref_sample, prior_count=prior_count), dtype=float)
-
-
-def limma_voom_feature_score(X, y, sample_meta, lfc, robust, prior_count,
-                             model_batch, model_dupcor):
-    pv, pa, xt, rs = r_limma_voom_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, robust=robust,
-        prior_count=prior_count, model_batch=model_batch,
+def limma_voom_feature_score(X, y, sample_meta, lfc, scoring_meth, robust,
+                             prior_count, model_batch, model_dupcor):
+    sc, pa = r_limma_voom_feature_score(
+        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
+        robust=robust, prior_count=prior_count, model_batch=model_batch,
         model_dupcor=model_dupcor)
-    return (np.array(pv, dtype=float), np.array(pa, dtype=float),
-            np.array(xt, dtype=float), np.array(rs, dtype=float))
+    return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def dream_voom_feature_score(X, y, sample_meta, lfc, prior_count, model_batch,
-                             n_threads):
-    pv, pa, xt, rs = r_dream_voom_feature_score(
-        X, y, sample_meta, lfc=lfc, prior_count=prior_count,
-        model_batch=model_batch, n_threads=n_threads)
-    return (np.array(pv, dtype=float), np.array(pa, dtype=float),
-            np.array(xt, dtype=float), np.array(rs, dtype=float))
+def dream_voom_feature_score(X, y, sample_meta, lfc, scoring_meth, prior_count,
+                             model_batch, n_threads):
+    sc, pa = r_dream_voom_feature_score(
+        X, y, sample_meta, lfc=lfc, scoring_meth=scoring_meth,
+        prior_count=prior_count, model_batch=model_batch, n_threads=n_threads)
+    return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def limma_feature_score(X, y, sample_meta, lfc, robust, trend, model_batch):
-    pv, pa = r_limma_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, robust=robust,
-        trend=trend, model_batch=model_batch)
-    return (np.array(pv, dtype=float), np.array(pa, dtype=float))
+def limma_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, trend,
+                        model_batch):
+    sc, pa = r_limma_feature_score(
+        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
+        robust=robust, trend=trend, model_batch=model_batch)
+    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+
+
+def deseq2_vst_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
+    gm, df = r_deseq2_vst_fit(
+        X, y, sample_meta=sample_meta, fit_type=fit_type,
+        model_batch=model_batch, is_classif=is_classif)
+    return np.array(gm, dtype=float), df
 
 
 class DESeq2(ExtendedSelectorMixin, BaseEstimator):
@@ -103,33 +99,32 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     fc : float (default = 1.0)
         lfcShrink absolute fold change minimum threshold.
 
+    scoring_meth : str (default = "lfc_pv")
+        Differential expression analysis feature scoring method. Available
+        methods are "lfc_pv" or "pv".
+
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
 
     lfc_shrink : bool (default = True)
         Run lfcShrink after differential expression testing.
 
-    blind : bool (default = False)
-        varianceStabilizingTransformation blind option.
-
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
+
+    is_classif : bool (default = True)
+        Whether this is a classification design.
 
     n_threads : int (default = 1)
         Number of DESeq2 parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
-    memory : None, str or object with the joblib.Memory interface \
-        (default = None)
-        Used for internal caching. By default, no caching is done.
-        If a string is given, it is the path to the caching directory.
-
     Attributes
     ----------
-    pvals_ : array, shape (n_features,)
-        Feature raw p-values.
+    scores_ : array, shape (n_features,)
+        Feature scores.
 
     padjs_ : array, shape (n_features,)
         Feature adjusted p-values.
@@ -141,18 +136,18 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, fit_type='parametric',
-                 lfc_shrink=True, blind=False, model_batch=False,
-                 n_threads=1, memory=None):
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
+                 fit_type='parametric', lfc_shrink=True, model_batch=False,
+                 is_classif=True, n_threads=1):
         self.k = k
         self.pv = pv
         self.fc = fc
+        self.scoring_meth = scoring_meth
         self.fit_type = fit_type
         self.lfc_shrink = lfc_shrink
-        self.blind = blind
         self.model_batch = model_batch
+        self.is_classif = is_classif
         self.n_threads = n_threads
-        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -175,15 +170,16 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
-        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        (self.pvals_, self.padjs_, self._vst_data, self.geo_means_,
-         self.disp_func_) = memory.cache(deseq2_feature_score)(
+        self.scores_, self.padjs_ = deseq2_feature_score(
              X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-             fit_type=self.fit_type, lfc_shrink=self.lfc_shrink,
-             blind=self.blind, model_batch=self.model_batch,
+             scoring_meth=self.scoring_meth, fit_type=self.fit_type,
+             lfc_shrink=self.lfc_shrink, model_batch=self.model_batch,
              n_threads=self.n_threads)
+        self.geo_means_, self.disp_func_ = deseq2_vst_fit(
+                X, y, sample_meta=sample_meta, fit_type=self.fit_type,
+                model_batch=self.model_batch, is_classif=self.is_classif)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -201,15 +197,11 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             DESeq2 median-of-ratios normalized VST transformed data matrix
             with only the selected features.
         """
-        check_is_fitted(self, '_vst_data')
+        check_is_fitted(self, 'geo_means_')
         X = check_array(X, dtype=int)
-        if hasattr(self, '_train_done'):
-            memory = check_memory(self.memory)
-            X = memory.cache(deseq2_vst_transform)(
-                X, geo_means=self.geo_means_, disp_func=self.disp_func_)
-        else:
-            X = self._vst_data
-            self._train_done = True
+        X = np.array(r_deseq2_vst_transform(
+            X, geo_means=self.geo_means_, disp_func=self.disp_func_),
+                     dtype=float)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -244,15 +236,16 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'scores_')
+        mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_,
+                                kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -279,10 +272,14 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         glmTreat absolute fold change minimum threshold. Default value of 1.0
         gives glmQLFTest results.
 
+    scoring_meth : str (default = "lfc_pv")
+        Differential expression analysis feature scoring method. Available
+        methods are "lfc_pv" or "pv".
+
     robust : bool (default = True)
         estimateDisp and glmQLFit robust option.
 
-    prior_count : int (default = 1)
+    prior_count : int (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.
@@ -291,15 +288,10 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
 
-    memory : None, str or object with the joblib.Memory interface \
-        (default = None)
-        Used for internal caching. By default, no caching is done.
-        If a string is given, it is the path to the caching directory.
-
     Attributes
     ----------
-    pvals_ : array, shape (n_features,)
-        Feature raw p-values.
+    scores_ : array, shape (n_features,)
+        Feature scores.
 
     padjs_ : array, shape (n_features,)
         Feature adjusted p-values.
@@ -308,15 +300,15 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, robust=True, prior_count=1,
-                 model_batch=False, memory=None):
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv', robust=True,
+                 prior_count=2, model_batch=False):
         self.k = k
         self.pv = pv
         self.fc = fc
+        self.scoring_meth = scoring_meth
         self.robust = robust
         self.prior_count = prior_count
         self.model_batch = model_batch
-        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -339,14 +331,13 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
-        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.pvals_, self.padjs_, self._log_cpms, self.ref_sample_ = (
-            memory.cache(edger_feature_score)(
-                X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-                robust=self.robust, prior_count=self.prior_count,
-                model_batch=self.model_batch))
+        self.scores_, self.padjs_ = edger_feature_score(
+            X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
+            scoring_meth=self.scoring_meth, robust=self.robust,
+            prior_count=self.prior_count, model_batch=self.model_batch)
+        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -364,15 +355,11 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             edgeR TMM normalized log-CPM transformed data matrix with only the
             selected features.
         """
-        check_is_fitted(self, '_log_cpms')
+        check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        if hasattr(self, '_train_done'):
-            memory = check_memory(self.memory)
-            X = memory.cache(edger_tmm_logcpm_transform)(
-                X, ref_sample=self.ref_sample_, prior_count=self.prior_count)
-        else:
-            X = self._log_cpms
-            self._train_done = True
+        X = np.array(r_edger_tmm_logcpm_transform(
+            X, ref_sample=self.ref_sample_, prior_count=self.prior_count),
+                     dtype=float)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -407,15 +394,16 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'scores_')
+        mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_,
+                                kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -530,10 +518,14 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
+    scoring_meth : str (default = "lfc_pv")
+        Differential expression analysis feature scoring method. Available
+        methods are "lfc_pv" or "pv".
+
     robust : bool (default = True)
         limma treat/eBayes robust option.
 
-    prior_count : int (default = 1)
+    prior_count : int (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.
@@ -546,15 +538,10 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         Model limma duplicateCorrelation if sample_meta passed to fit and Group
         column exists.
 
-    memory : None, str or object with the joblib.Memory interface \
-        (default = None)
-        Used for internal caching. By default, no caching is done.
-        If a string is given, it is the path to the caching directory.
-
     Attributes
     ----------
-    pvals_ : array, shape (n_features,)
-        Feature raw p-values.
+    scores_ : array, shape (n_features,)
+        Feature scores.
 
     padjs_ : array, shape (n_features,)
         Feature adjusted p-values.
@@ -563,16 +550,16 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, robust=True, prior_count=1,
-                 model_batch=False, model_dupcor=False, memory=None):
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv', robust=True,
+                 prior_count=2, model_batch=False, model_dupcor=False):
         self.k = k
         self.pv = pv
         self.fc = fc
+        self.scoring_meth = scoring_meth
         self.robust = robust
         self.prior_count = prior_count
         self.model_batch = model_batch
         self.model_dupcor = model_dupcor
-        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -595,14 +582,14 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
-        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.pvals_, self.padjs_, self._log_cpms, self.ref_sample_ = (
-            memory.cache(limma_voom_feature_score)(
+        self.scores_, self.padjs_ = limma_voom_feature_score(
                 X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-                robust=self.robust, prior_count=self.prior_count,
-                model_batch=self.model_batch, model_dupcor=self.model_dupcor))
+                scoring_meth=self.scoring_meth, robust=self.robust,
+                prior_count=self.prior_count, model_batch=self.model_batch,
+                model_dupcor=self.model_dupcor)
+        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -620,15 +607,11 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             edgeR TMM normalized log-CPM transformed data matrix with only the
             selected features.
         """
-        check_is_fitted(self, '_log_cpms')
+        check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        if hasattr(self, '_train_done'):
-            memory = check_memory(self.memory)
-            X = memory.cache(edger_tmm_logcpm_transform)(
-                X, ref_sample=self.ref_sample_, prior_count=self.prior_count)
-        else:
-            X = self._log_cpms
-            self._train_done = True
+        X = np.array(r_edger_tmm_logcpm_transform(
+            X, ref_sample=self.ref_sample_, prior_count=self.prior_count),
+                     dtype=float)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -663,15 +646,16 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'scores_')
+        mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_,
+                                kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -697,7 +681,11 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
     fc : float (default = 1.0)
         Absolute fold-change minimum threshold.
 
-    prior_count : int (default = 1)
+    scoring_meth : str (default = "lfc_pv")
+        Differential expression analysis feature scoring method. Available
+        methods are "lfc_pv" or "pv".
+
+    prior_count : int (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.
@@ -711,15 +699,10 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
-    memory : None, str or object with the joblib.Memory interface \
-        (default = None)
-        Used for internal caching. By default, no caching is done.
-        If a string is given, it is the path to the caching directory.
-
     Attributes
     ----------
-    pvals_ : array, shape (n_features,)
-        Feature raw p-values.
+    scores_ : array, shape (n_features,)
+        Feature scores.
 
     padjs_ : array, shape (n_features,)
         Feature adjusted p-values.
@@ -728,15 +711,15 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, prior_count=1, model_batch=False,
-                 n_threads=1, memory=None):
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
+                 prior_count=2, model_batch=False, n_threads=1):
         self.k = k
         self.pv = pv
         self.fc = fc
+        self.scoring_meth = scoring_meth
         self.prior_count = prior_count
         self.model_batch = model_batch
         self.n_threads = n_threads
-        self.memory = memory
 
     def fit(self, X, y, sample_meta):
         """
@@ -759,12 +742,11 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
-        memory = check_memory(self.memory)
-        self.pvals_, self.padjs_, self._log_cpms, self.ref_sample_ = (
-            memory.cache(dream_voom_feature_score)(
+        self.scores_, self.padjs_ = dream_voom_feature_score(
                 X, y, sample_meta, lfc=np.log2(self.fc),
-                prior_count=self.prior_count, model_batch=self.model_batch,
-                n_threads=self.n_threads))
+                scoring_meth=self.scoring_meth, prior_count=self.prior_count,
+                model_batch=self.model_batch, n_threads=self.n_threads)
+        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -782,15 +764,11 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             edgeR TMM normalized log-CPM transformed data matrix with only the
             selected features.
         """
-        check_is_fitted(self, '_log_cpms')
+        check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        if hasattr(self, '_train_done'):
-            memory = check_memory(self.memory)
-            X = memory.cache(edger_tmm_logcpm_transform)(
-                X, ref_sample=self.ref_sample_, prior_count=self.prior_count)
-        else:
-            X = self._log_cpms
-            self._train_done = True
+        X = np.array(r_edger_tmm_logcpm_transform(
+            X, ref_sample=self.ref_sample_, prior_count=self.prior_count),
+                     dtype=float)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -825,15 +803,16 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'scores_')
+        mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_,
+                                kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -859,6 +838,10 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
+    scoring_meth : str (default = "lfc_pv")
+        Differential expression analysis feature scoring method. Available
+        methods are "lfc_pv" or "pv".
+
     robust : bool (default = False)
         limma treat/eBayes robust option.
 
@@ -869,29 +852,24 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
 
-    memory : None, str or object with the joblib.Memory interface \
-        (default = None)
-        Used for internal caching. By default, no caching is done.
-        If a string is given, it is the path to the caching directory.
-
     Attributes
     ----------
-    pvals_ : array, shape (n_features,)
-        Feature raw p-values.
+    scores_ : array, shape (n_features,)
+        Feature scores.
 
     padjs_ : array, shape (n_features,)
         Feature adjusted p-values.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, robust=False, trend=False,
-                 model_batch=False, memory=None):
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
+                 robust=False, trend=False, model_batch=False):
         self.k = k
         self.pv = pv
         self.fc = fc
+        self.scoring_meth = scoring_meth
         self.robust = robust
         self.trend = trend
         self.model_batch = model_batch
-        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -914,12 +892,12 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y)
         self._check_params(X, y)
-        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.pvals_, self.padjs_ = memory.cache(limma_feature_score)(
+        self.scores_, self.padjs_ = limma_feature_score(
             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-            robust=self.robust, trend=self.trend, model_batch=self.model_batch)
+            scoring_meth=self.scoring_meth, robust=self.robust,
+            trend=self.trend, model_batch=self.model_batch)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -936,7 +914,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         Xr : array of shape (n_samples, n_selected_features)
             Gene expression data matrix with only the selected features.
         """
-        check_is_fitted(self, 'pvals_')
+        check_is_fitted(self, 'scores_')
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -968,15 +946,16 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
                 'fold change threshold should be >= 1; got %r.' % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'pvals_')
-        mask = np.zeros_like(self.pvals_, dtype=bool)
+        check_is_fitted(self, 'scores_')
+        mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
             if self.k == 'all':
-                mask = np.ones_like(self.pvals_, dtype=bool)
+                mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.pvals_, kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_,
+                                kind='mergesort')[:self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
