@@ -113,9 +113,6 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
 
-    is_classif : bool (default = True)
-        Whether this is a classification design.
-
     n_threads : int (default = 1)
         Number of DESeq2 parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
@@ -138,7 +135,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
                  fit_type='parametric', lfc_shrink=True, model_batch=False,
-                 is_classif=True, n_threads=1):
+                 n_threads=1):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -146,7 +143,6 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         self.fit_type = fit_type
         self.lfc_shrink = lfc_shrink
         self.model_batch = model_batch
-        self.is_classif = is_classif
         self.n_threads = n_threads
 
     def fit(self, X, y, sample_meta=None):
@@ -179,7 +175,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
              n_threads=self.n_threads)
         self.geo_means_, self.disp_func_ = deseq2_vst_fit(
                 X, y, sample_meta=sample_meta, fit_type=self.fit_type,
-                model_batch=self.model_batch, is_classif=self.is_classif)
+                model_batch=self.model_batch, is_classif=True)
         return self
 
     def transform(self, X, sample_meta=None):
