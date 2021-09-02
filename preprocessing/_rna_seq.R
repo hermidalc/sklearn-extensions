@@ -67,9 +67,12 @@ edger_tmm_fit <- function(X) {
 edger_tmm_logcpm_transform <- function(X, ref_sample, prior_count=2) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
-    if (any(apply(counts, 2, function(c) all(c == ref_sample)))) {
+    ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
+    if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts)
-        dge <- calcNormFactors(dge, method="TMM")
+        dge <- calcNormFactors(
+            dge, method="TMM", refColumn=which.min(ref_sample_mask)
+        )
         log_cpm <- cpm(dge, log=TRUE, prior.count=prior_count)
     } else {
         counts <- cbind(counts, ref_sample)
@@ -87,9 +90,12 @@ edger_tmm_tpm_transform <- function(
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
-    if (any(apply(counts, 2, function(c) all(c == ref_sample)))) {
+    ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
+    if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts, genes=feature_meta)
-        dge <- calcNormFactors(dge, method="TMM", refColumn=ncol(dge))
+        dge <- calcNormFactors(
+            dge, method="TMM", refColumn=which.min(ref_sample_mask)
+        )
         rpkm <- rpkm(dge, gene.length=meta_col, log=FALSE)
         tpm <- t(t(rpkm) / colSums(rpkm)) * 1e6
     } else {
