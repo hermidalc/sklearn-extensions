@@ -741,11 +741,13 @@ class ExtendedRFECV(ExtendedRFE):
 
         # Build an RFE object, which will evaluate and score each possible
         # feature count, down to self.min_features_to_select
-        rfe = RFE(estimator=self.estimator,
-                  n_features_to_select=self.min_features_to_select,
-                  step=self.step, tune_step_at=self.tune_step_at,
-                  tuning_step=self.tuning_step,
-                  reducing_step=self.reducing_step, verbose=self.verbose)
+        rfe = ExtendedRFE(estimator=self.estimator,
+                          n_features_to_select=self.min_features_to_select,
+                          step=self.step, tune_step_at=self.tune_step_at,
+                          tuning_step=self.tuning_step,
+                          reducing_step=self.reducing_step,
+                          verbose=self.verbose,
+                          penalty_factor_meta_col=self.penalty_factor_meta_col)
 
         # Determine the number of subsets of features by fitting across the
         # train folds and choosing the "features_to_select" parameter that
@@ -807,11 +809,13 @@ class ExtendedRFECV(ExtendedRFE):
             tune_step_at = None
 
         # Re-execute an elimination with best_k over the whole set
-        rfe = RFE(estimator=self.estimator,
-                  n_features_to_select=n_features_to_select, step=self.step,
-                  tune_step_at=tune_step_at, tuning_step=self.tuning_step,
-                  reducing_step=self.reducing_step, verbose=self.verbose,
-                  penalty_factor_meta_col=self.penalty_factor_meta_col)
+        rfe = ExtendedRFE(estimator=self.estimator,
+                          n_features_to_select=n_features_to_select,
+                          step=self.step, tune_step_at=tune_step_at,
+                          tuning_step=self.tuning_step,
+                          reducing_step=self.reducing_step,
+                          verbose=self.verbose,
+                          penalty_factor_meta_col=self.penalty_factor_meta_col)
 
         rfe.fit(X, y, **fit_params, **feature_params)
 
