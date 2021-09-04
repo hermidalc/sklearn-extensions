@@ -40,27 +40,26 @@ def deseq2_feature_score(X, y, sample_meta, lfc, scoring_meth, fit_type,
 
 
 def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust,
-                        prior_count, model_batch):
+                        model_batch):
     sc, pa = r_edger_feature_score(
         X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        robust=robust, prior_count=prior_count, model_batch=model_batch)
+        robust=robust, model_batch=model_batch)
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def limma_voom_feature_score(X, y, sample_meta, lfc, scoring_meth, robust,
-                             prior_count, model_batch, model_dupcor):
+                             model_batch, model_dupcor):
     sc, pa = r_limma_voom_feature_score(
         X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        robust=robust, prior_count=prior_count, model_batch=model_batch,
-        model_dupcor=model_dupcor)
+        robust=robust, model_batch=model_batch, model_dupcor=model_dupcor)
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def dream_voom_feature_score(X, y, sample_meta, lfc, scoring_meth, prior_count,
-                             model_batch, n_threads):
+def dream_voom_feature_score(X, y, sample_meta, lfc, scoring_meth, model_batch,
+                             n_threads):
     sc, pa = r_dream_voom_feature_score(
         X, y, sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        prior_count=prior_count, model_batch=model_batch, n_threads=n_threads)
+        model_batch=model_batch, n_threads=n_threads)
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
@@ -332,7 +331,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         self.scores_, self.padjs_ = edger_feature_score(
             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
             scoring_meth=self.scoring_meth, robust=self.robust,
-            prior_count=self.prior_count, model_batch=self.model_batch)
+            model_batch=self.model_batch)
         self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
         return self
 
@@ -583,8 +582,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         self.scores_, self.padjs_ = limma_voom_feature_score(
                 X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
                 scoring_meth=self.scoring_meth, robust=self.robust,
-                prior_count=self.prior_count, model_batch=self.model_batch,
-                model_dupcor=self.model_dupcor)
+                model_batch=self.model_batch, model_dupcor=self.model_dupcor)
         self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
         return self
 
@@ -740,8 +738,8 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         self.scores_, self.padjs_ = dream_voom_feature_score(
                 X, y, sample_meta, lfc=np.log2(self.fc),
-                scoring_meth=self.scoring_meth, prior_count=self.prior_count,
-                model_batch=self.model_batch, n_threads=self.n_threads)
+                scoring_meth=self.scoring_meth, model_batch=self.model_batch,
+                n_threads=self.n_threads)
         self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
         return self
 

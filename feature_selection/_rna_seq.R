@@ -57,7 +57,7 @@ deseq2_feature_score <- function(
 
 edger_feature_score <- function(
     X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=TRUE,
-    prior_count=2, model_batch=FALSE
+    model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
@@ -118,7 +118,7 @@ edger_filterbyexpr_mask <- function(
 
 limma_voom_feature_score <- function(
     X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=TRUE,
-    prior_count=2, model_batch=FALSE, model_dupcor=FALSE
+    model_batch=FALSE, model_dupcor=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
@@ -173,8 +173,8 @@ limma_voom_feature_score <- function(
 }
 
 dream_voom_feature_score <- function(
-    X, y, sample_meta, lfc=0, scoring_meth="lfc_pv", prior_count=2,
-    model_batch=FALSE, n_threads=1
+    X, y, sample_meta, lfc=0, scoring_meth="lfc_pv", model_batch=FALSE,
+    n_threads=1
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
