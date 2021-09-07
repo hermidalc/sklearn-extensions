@@ -6,7 +6,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted
+from ..utils.validation import check_is_fitted, check_memory
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -78,6 +78,20 @@ def deseq2_vst_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
     return np.array(gm, dtype=float), df
 
 
+def deseq2_vst_transform(X, geo_means, disp_func):
+    return np.array(r_deseq2_vst_transform(
+        X, geo_means=geo_means, disp_func=disp_func), dtype=float)
+
+
+def edger_tmm_fit(X):
+    return np.array(r_edger_tmm_fit(X), dtype=int)
+
+
+def edger_tmm_logcpm_transform(X, ref_sample, prior_count):
+    return np.array(r_edger_tmm_logcpm_transform(
+        X, ref_sample=ref_sample, prior_count=prior_count), dtype=float)
+
+
 class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     """DESeq2 differential expression feature selector and
     normalizer/transformer for RNA-seq count data
@@ -117,6 +131,11 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     scores_ : array, shape (n_features,)
@@ -134,7 +153,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
                  fit_type='parametric', lfc_shrink=True, model_batch=False,
-                 n_threads=1):
+                 n_threads=1, memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -143,6 +162,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         self.lfc_shrink = lfc_shrink
         self.model_batch = model_batch
         self.n_threads = n_threads
+        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -165,14 +185,15 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
+        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.scores_, self.padjs_ = deseq2_feature_score(
+        self.scores_, self.padjs_ = memory.cache(deseq2_feature_score)(
              X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
              scoring_meth=self.scoring_meth, fit_type=self.fit_type,
              lfc_shrink=self.lfc_shrink, model_batch=self.model_batch,
              n_threads=self.n_threads)
-        self.geo_means_, self.disp_func_ = deseq2_vst_fit(
+        self.geo_means_, self.disp_func_ = memory.cache(deseq2_vst_fit)(
                 X, y, sample_meta=sample_meta, fit_type=self.fit_type,
                 model_batch=self.model_batch, is_classif=True)
         return self
@@ -194,9 +215,9 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         """
         check_is_fitted(self, 'geo_means_')
         X = check_array(X, dtype=int)
-        X = np.array(r_deseq2_vst_transform(
-            X, geo_means=self.geo_means_, disp_func=self.disp_func_),
-                     dtype=float)
+        memory = check_memory(self.memory)
+        X = memory.cache(deseq2_vst_transform)(
+            X, geo_means=self.geo_means_, disp_func=self.disp_func_)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -283,6 +304,11 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     scores_ : array, shape (n_features,)
@@ -296,7 +322,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
     """
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv', robust=True,
-                 prior_count=2, model_batch=False):
+                 prior_count=2, model_batch=False, memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -304,6 +330,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         self.robust = robust
         self.prior_count = prior_count
         self.model_batch = model_batch
+        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -326,13 +353,14 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
+        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.scores_, self.padjs_ = edger_feature_score(
+        self.scores_, self.padjs_ = memory.cache(edger_feature_score)(
             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
             scoring_meth=self.scoring_meth, robust=self.robust,
             model_batch=self.model_batch)
-        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
+        self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -352,9 +380,9 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         """
         check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        X = np.array(r_edger_tmm_logcpm_transform(
-            X, ref_sample=self.ref_sample_, prior_count=self.prior_count),
-                     dtype=float)
+        memory = check_memory(self.memory)
+        X = memory.cache(edger_tmm_logcpm_transform)(
+            X, ref_sample=self.ref_sample_, prior_count=self.prior_count)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -533,6 +561,11 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         Model limma duplicateCorrelation if sample_meta passed to fit and Group
         column exists.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     scores_ : array, shape (n_features,)
@@ -546,7 +579,8 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
     """
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv', robust=True,
-                 prior_count=2, model_batch=False, model_dupcor=False):
+                 prior_count=2, model_batch=False, model_dupcor=False,
+                 memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -555,6 +589,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         self.prior_count = prior_count
         self.model_batch = model_batch
         self.model_dupcor = model_dupcor
+        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -577,13 +612,14 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
+        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.scores_, self.padjs_ = limma_voom_feature_score(
+        self.scores_, self.padjs_ = memory.cache(limma_voom_feature_score)(
                 X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
                 scoring_meth=self.scoring_meth, robust=self.robust,
                 model_batch=self.model_batch, model_dupcor=self.model_dupcor)
-        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
+        self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -603,9 +639,9 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         """
         check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        X = np.array(r_edger_tmm_logcpm_transform(
-            X, ref_sample=self.ref_sample_, prior_count=self.prior_count),
-                     dtype=float)
+        memory = check_memory(self.memory)
+        X = memory.cache(edger_tmm_logcpm_transform)(
+            X, ref_sample=self.ref_sample_, prior_count=self.prior_count)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -693,6 +729,11 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     scores_ : array, shape (n_features,)
@@ -706,7 +747,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
     """
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
-                 prior_count=2, model_batch=False, n_threads=1):
+                 prior_count=2, model_batch=False, n_threads=1, memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -714,6 +755,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         self.prior_count = prior_count
         self.model_batch = model_batch
         self.n_threads = n_threads
+        self.memory = memory
 
     def fit(self, X, y, sample_meta):
         """
@@ -736,11 +778,12 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=int)
         self._check_params(X, y)
-        self.scores_, self.padjs_ = dream_voom_feature_score(
+        memory = check_memory(self.memory)
+        self.scores_, self.padjs_ = memory.cache(dream_voom_feature_score)(
                 X, y, sample_meta, lfc=np.log2(self.fc),
                 scoring_meth=self.scoring_meth, model_batch=self.model_batch,
                 n_threads=self.n_threads)
-        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
+        self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -760,9 +803,9 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         """
         check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        X = np.array(r_edger_tmm_logcpm_transform(
-            X, ref_sample=self.ref_sample_, prior_count=self.prior_count),
-                     dtype=float)
+        memory = check_memory(self.memory)
+        X = memory.cache(edger_tmm_logcpm_transform)(
+            X, ref_sample=self.ref_sample_, prior_count=self.prior_count)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -846,6 +889,11 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     scores_ : array, shape (n_features,)
@@ -856,7 +904,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
     """
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
-                 robust=False, trend=False, model_batch=False):
+                 robust=False, trend=False, model_batch=False, memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -864,6 +912,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         self.robust = robust
         self.trend = trend
         self.model_batch = model_batch
+        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -886,9 +935,10 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y)
         self._check_params(X, y)
+        memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.scores_, self.padjs_ = limma_feature_score(
+        self.scores_, self.padjs_ = memory.cache(limma_feature_score)(
             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
             scoring_meth=self.scoring_meth, robust=self.robust,
             trend=self.trend, model_batch=self.model_batch)

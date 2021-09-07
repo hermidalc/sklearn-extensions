@@ -159,7 +159,7 @@ class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
         sample_meta: ignored
         """
         X = check_array(X, dtype=int)
-        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
+        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -231,7 +231,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         feature_meta : ignored
         """
         X = check_array(X, dtype=int)
-        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=float)
+        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
         return self
 
     def transform(self, X, feature_meta):
