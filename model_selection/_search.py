@@ -396,13 +396,8 @@ class ExtendedBaseSearchCV(BaseSearchCV):
             Target relative to X for classification or regression;
             None for unsupervised learning.
 
-        groups : array-like, with shape (n_samples,), optional
-            Group labels for the samples used while splitting the dataset into
-            train/test set. Only used in conjunction with a "Group" :term:`cv`
-            instance (e.g., :class:`~sklearn.model_selection.GroupKFold`).
-
         **fit_params : dict of string -> object
-            Parameters passed to the ``fit`` method of the estimator
+            Parameters to route to fit, cv, scoring.
         """
         estimator = self.estimator
         cv = check_cv(self.cv, y, classifier=is_classifier(estimator))
