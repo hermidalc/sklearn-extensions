@@ -112,9 +112,9 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     fc : float (default = 1.0)
         lfcShrink absolute fold change minimum threshold.
 
-    scoring_meth : str (default = "lfc_pv")
+    scoring_meth : str (default = "pv")
         Differential expression analysis feature scoring method. Available
-        methods are "lfc_pv" or "pv".
+        methods are "pv" or "lfc_pv".
 
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
@@ -151,7 +151,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv',
                  fit_type='parametric', lfc_shrink=True, model_batch=False,
                  n_threads=1, memory=None):
         self.k = k
@@ -288,9 +288,9 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         glmTreat absolute fold change minimum threshold. Default value of 1.0
         gives glmQLFTest results.
 
-    scoring_meth : str (default = "lfc_pv")
+    scoring_meth : str (default = "pv")
         Differential expression analysis feature scoring method. Available
-        methods are "lfc_pv" or "pv".
+        methods are "pv" or "lfc_pv".
 
     robust : bool (default = True)
         estimateDisp and glmQLFit robust option.
@@ -321,7 +321,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv', robust=True,
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv', robust=True,
                  prior_count=2, model_batch=False, memory=None):
         self.k = k
         self.pv = pv
@@ -541,9 +541,9 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
-    scoring_meth : str (default = "lfc_pv")
+    scoring_meth : str (default = "pv")
         Differential expression analysis feature scoring method. Available
-        methods are "lfc_pv" or "pv".
+        methods are "pv" or "lfc_pv".
 
     robust : bool (default = True)
         limma treat/eBayes robust option.
@@ -578,7 +578,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv', robust=True,
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv', robust=True,
                  prior_count=2, model_batch=False, model_dupcor=False,
                  memory=None):
         self.k = k
@@ -711,9 +711,9 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
     fc : float (default = 1.0)
         Absolute fold-change minimum threshold.
 
-    scoring_meth : str (default = "lfc_pv")
+    scoring_meth : str (default = "pv")
         Differential expression analysis feature scoring method. Available
-        methods are "lfc_pv" or "pv".
+        methods are "pv" or "lfc_pv".
 
     prior_count : int (default = 2)
         Average count to add to each observation to avoid taking log of zero.
@@ -746,7 +746,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv',
                  prior_count=2, model_batch=False, n_threads=1, memory=None):
         self.k = k
         self.pv = pv
@@ -875,9 +875,9 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
-    scoring_meth : str (default = "lfc_pv")
+    scoring_meth : str (default = "pv")
         Differential expression analysis feature scoring method. Available
-        methods are "lfc_pv" or "pv".
+        methods are "pv" or "lfc_pv".
 
     robust : bool (default = False)
         limma treat/eBayes robust option.
@@ -903,7 +903,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         Feature adjusted p-values.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='lfc_pv',
+    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv',
                  robust=False, trend=False, model_batch=False, memory=None):
         self.k = k
         self.pv = pv

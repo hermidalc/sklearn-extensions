@@ -1,7 +1,7 @@
 # RNA-seq feature selection and scoring functions
 
 deseq2_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", fit_type="parametric",
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", fit_type="parametric",
     lfc_shrink=TRUE, model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
@@ -56,7 +56,7 @@ deseq2_feature_score <- function(
 }
 
 edger_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=TRUE,
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", robust=TRUE,
     model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
@@ -117,7 +117,7 @@ edger_filterbyexpr_mask <- function(
 }
 
 limma_voom_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=TRUE,
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", robust=TRUE,
     model_batch=FALSE, model_dupcor=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
@@ -173,8 +173,7 @@ limma_voom_feature_score <- function(
 }
 
 dream_voom_feature_score <- function(
-    X, y, sample_meta, lfc=0, scoring_meth="lfc_pv", model_batch=FALSE,
-    n_threads=1
+    X, y, sample_meta, lfc=0, scoring_meth="pv", model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
@@ -216,8 +215,8 @@ dream_voom_feature_score <- function(
 }
 
 limma_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="lfc_pv", robust=FALSE,
-    trend=FALSE, model_batch=FALSE
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", robust=FALSE, trend=FALSE,
+    model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("limma"))
     if (
