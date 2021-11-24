@@ -992,7 +992,7 @@ def _check_is_permutation(indices, n_samples):
     return True
 
 
-def permutation_test_score(estimators, X, y, scoring=None, cv=None,
+def permutation_test_score(estimator, X, y, scoring=None, cv=None,
                            n_permutations=100, n_jobs=None, random_state=0,
                            verbose=0, fit_params=None, param_routing=None):
     """Evaluate the significance of a cross-validated score with permutations
@@ -1001,8 +1001,9 @@ def permutation_test_score(estimators, X, y, scoring=None, cv=None,
 
     Parameters
     ----------
-    estimators : array-like, with shape (n_splits,)
-        The estimator object(s) to use to fit the data.
+    estimator : {list, tuple, set} of estimator instance or a single \
+            estimator instance
+        The estimator or group of estimators used to fit the data.
 
     X : array-like of shape at least 2D
         The data to fit.
@@ -1084,9 +1085,8 @@ def permutation_test_score(estimators, X, y, scoring=None, cv=None,
         vol. 11
 
     """
-    if not estimators:
-        raise ValueError('No estimators passed, must pass array-like of '
-                         'estimator objects')
+    estimator_is_list = bool(type(estimator) in (list, tuple, set, frozenset))
+    base_estimator = estimator[0] if estimator_is_list else estimator
 
     # so feature metadata/properties can work
     feature_params = {k: v for k, v in fit_params.items()
@@ -1108,28 +1108,26 @@ def permutation_test_score(estimators, X, y, scoring=None, cv=None,
         raise TypeError('Got unexpected keyword arguments %r'
                         % sorted(remainder))
 
-    cv = check_cv(cv, y, classifier=is_classifier(estimators[0]))
-    scorer = check_scoring(estimators[0], scoring=scoring)
+    cv = check_cv(cv, y, classifier=is_classifier(base_estimator))
+    scorer = check_scoring(base_estimator, scoring=scoring)
     random_state = check_random_state(random_state)
 
     for cv_param in cv_params.values():
         cv_param = check_array(cv_param, ensure_2d=False, dtype=None)
     groups = cv_params['groups'] if 'groups' in cv_params else None
 
-    if len(estimators) == 1:
-        estimators = estimators * cv.get_n_splits()
-    if len(estimators) != cv.get_n_splits():
+    if estimator_is_list and len(estimator) != cv.get_n_splits():
         raise ValueError('If number of passed estimators > 1 then must equal '
                          'number of CV splits')
 
     # We clone the estimators to make sure that all the folds are independent
     # and that it is pickle-able.
-    estimators = [clone(estimator) for estimator in estimators]
-    score = _permutation_test_score(estimators, X, y, cv, scorer, cv_params,
-                                    fit_params, score_params, feature_params)
+    score = _permutation_test_score(clone(estimator), X, y, cv, scorer,
+                                    cv_params, fit_params, score_params,
+                                    feature_params)
     permutation_scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
         delayed(_permutation_test_score)(
-            estimators, X, _shuffle(y, groups, random_state), cv, scorer,
+            clone(estimator), X, _shuffle(y, groups, random_state), cv, scorer,
             cv_params, fit_params, score_params, feature_params)
         for _ in range(n_permutations))
     permutation_scores = np.array(permutation_scores)
@@ -1137,25 +1135,28 @@ def permutation_test_score(estimators, X, y, scoring=None, cv=None,
     return score, permutation_scores, pvalue
 
 
-def _permutation_test_score(estimators, X, y, cv, scorer, cv_params,
+def _permutation_test_score(estimator, X, y, cv, scorer, cv_params,
                             fit_params, score_params, feature_params):
     """Auxiliary function for permutation_test_score"""
+    estimator_is_list = bool(type(estimator) in (list, tuple, set, frozenset))
     cv_params = cv_params if cv_params is not None else {}
     fit_params = fit_params if fit_params is not None else {}
     score_params = score_params if score_params is not None else {}
     scores = []
-    for estimator, (train, test) in zip(estimators,
-                                        cv.split(X, y, **cv_params)):
+    for cv_idx, (train, test) in enumerate(cv.split(X, y, **cv_params)):
         # Subset fit_params values for train indices
         train_fit_params = _check_fit_params(X, fit_params, train)
         train_fit_params = {**train_fit_params, **feature_params}
         # Subset score_params values for test indices
         test_score_params = _check_fit_params(X, score_params, test)
         test_score_params = {**test_score_params, **feature_params}
-        X_train, y_train = _safe_split(estimator, X, y, train)
-        X_test, y_test = _safe_split(estimator, X, y, test, train)
-        estimator.fit(X_train, y_train, **train_fit_params)
-        scores.append(scorer(estimator, X_test, y_test, **test_score_params))
+        estimator_instance = (estimator[cv_idx] if estimator_is_list else
+                              estimator)
+        X_train, y_train = _safe_split(estimator_instance, X, y, train)
+        X_test, y_test = _safe_split(estimator_instance, X, y, test, train)
+        estimator_instance.fit(X_train, y_train, **train_fit_params)
+        scores.append(scorer(estimator_instance, X_test, y_test,
+                             **test_score_params))
     return np.mean(scores)
 
 
@@ -1163,22 +1164,20 @@ def _shuffle(y, groups, random_state):
     """Return a shuffled copy of y"""
     if groups is None or np.unique(groups).size == len(groups):
         indices = random_state.permutation(len(y))
-    else:
-        (unique_groups, unique_groups_y), group_indices = np.unique(
-            np.vstack((groups, y)), axis=1, return_inverse=True)
-        if unique_groups.size != np.unique(groups).size:
-            indices = np.arange(len(groups))
-            for group in unique_groups:
-                this_mask = groups == group
-                indices[this_mask] = random_state.permutation(
-                    indices[this_mask])
-        else:
-            shuffled_unique_groups_y = unique_groups_y[
-                random_state.permutation(len(unique_groups_y))]
-            if isinstance(y, list):
-                shuffled_unique_groups_y = list(shuffled_unique_groups_y)
-            return _safe_indexing(shuffled_unique_groups_y, group_indices)
-    return _safe_indexing(y, indices)
+        return _safe_indexing(y, indices)
+    (unique_groups, unique_groups_y), group_indices = np.unique(
+        np.vstack((groups, y)), axis=1, return_inverse=True)
+    if unique_groups.size != np.unique(groups).size:
+        indices = np.arange(len(groups))
+        for group in unique_groups:
+            this_mask = groups == group
+            indices[this_mask] = random_state.permutation(indices[this_mask])
+        return _safe_indexing(y, indices)
+    shuffled_unique_groups_y = unique_groups_y[
+        random_state.permutation(len(unique_groups_y))]
+    if isinstance(y, list):
+        shuffled_unique_groups_y = list(shuffled_unique_groups_y)
+    return _safe_indexing(shuffled_unique_groups_y, group_indices)
 
 
 def learning_curve(estimator, X, y, groups=None,
