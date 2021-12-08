@@ -35,7 +35,8 @@ from ..utils.validation import indexable, _check_fit_params, _num_samples
 
 
 __all__ = ['cross_validate', 'cross_val_score', 'cross_val_predict',
-           'permutation_test_score', 'learning_curve', 'validation_curve']
+           'permutation_test_score', 'shuffle_y', 'learning_curve',
+           'validation_curve']
 
 
 def cross_validate(estimator, X, y=None, groups=None, scoring=None, cv=None,
@@ -1127,8 +1128,8 @@ def permutation_test_score(estimator, X, y, scoring=None, cv=None,
                                     feature_params)
     permutation_scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
         delayed(_permutation_test_score)(
-            clone(estimator), X, _shuffle(y, groups, random_state), cv, scorer,
-            cv_params, fit_params, score_params, feature_params)
+            clone(estimator), X, shuffle_y(y, groups, random_state), cv,
+            scorer, cv_params, fit_params, score_params, feature_params)
         for _ in range(n_permutations))
     permutation_scores = np.array(permutation_scores)
     pvalue = (np.sum(permutation_scores >= score) + 1.0) / (n_permutations + 1)
@@ -1160,7 +1161,7 @@ def _permutation_test_score(estimator, X, y, cv, scorer, cv_params,
     return np.mean(scores)
 
 
-def _shuffle(y, groups, random_state):
+def shuffle_y(y, groups, random_state):
     """Return a shuffled copy of y"""
     if groups is None or np.unique(groups).size == len(groups):
         indices = random_state.permutation(len(y))
