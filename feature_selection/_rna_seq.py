@@ -295,7 +295,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
     robust : bool (default = True)
         estimateDisp and glmQLFit robust option.
 
-    prior_count : int (default = 2)
+    prior_count : float (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.
@@ -548,7 +548,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
     robust : bool (default = True)
         limma treat/eBayes robust option.
 
-    prior_count : int (default = 2)
+    prior_count : float (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.
@@ -715,7 +715,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         Differential expression analysis feature scoring method. Available
         methods are "pv" or "lfc_pv".
 
-    prior_count : int (default = 2)
+    prior_count : float (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.

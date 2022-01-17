@@ -133,7 +133,7 @@ class EdgeRTMMLogCPM(ExtendedTransformerMixin, BaseEstimator):
 
     Parameters
     ----------
-    prior_count : int (default = 2)
+    prior_count : float (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.
@@ -207,7 +207,7 @@ class EdgeRTMMLogTPM(ExtendedTransformerMixin, BaseEstimator):
 
     Parameters
     ----------
-    prior_count : int (default = 2)
+    prior_count : float (default = 2)
         Average count to add to each observation to avoid taking log of zero.
         Larger values for produce stronger moderation of the values for low
         counts and more shrinkage of the corresponding log fold changes.
