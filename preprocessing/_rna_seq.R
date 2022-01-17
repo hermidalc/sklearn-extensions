@@ -85,8 +85,8 @@ edger_tmm_logcpm_transform <- function(X, ref_sample, prior_count=2) {
     return(t(log_cpm))
 }
 
-edger_tmm_tpm_transform <- function(
-    X, feature_meta, ref_sample, meta_col="Length"
+edger_tmm_logtpm_transform <- function(
+    X, feature_meta, ref_sample, prior_count=2, meta_col="Length"
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
@@ -96,18 +96,22 @@ edger_tmm_tpm_transform <- function(
         dge <- calcNormFactors(
             dge, method="TMM", refColumn=min(which(ref_sample_mask))
         )
-        rpkm <- rpkm(dge, gene.length=meta_col, log=FALSE)
-        tpm <- t(t(rpkm) / colSums(rpkm)) * 1e6
+        log_rpkm <- rpkm(
+            dge, gene.length=meta_col, log=TRUE, prior.count=prior_count
+        )
     } else {
         counts <- cbind(counts, ref_sample)
         colnames(counts) <- NULL
         dge <- DGEList(counts=counts, genes=feature_meta)
         dge <- calcNormFactors(dge, method="TMM", refColumn=ncol(dge))
-        rpkm <- rpkm(dge, gene.length=meta_col, log=FALSE)
-        tpm <- t(t(rpkm) / colSums(rpkm)) * 1e6
-        tpm <- tpm[, -ncol(tpm)]
+        log_rpkm <- rpkm(
+            dge, gene.length=meta_col, log=TRUE, prior.count=prior_count
+        )
+        log_rpkm <- log_rpkm[, -ncol(log_rpkm)]
     }
-    return(t(tpm))
+    # tpm = t(t(rpkm) / colSums(rpkm)) * 1e6
+    log_tpm <- t(t(log_rpkm) - log2(colSums(2 ^ log_rpkm))) + log2(1e6)
+    return(t(log_tpm))
 }
 
 edger_logcpm_transform <- function(X, prior_count=2) {
