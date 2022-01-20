@@ -55,6 +55,30 @@ deseq2_feature_score <- function(
     return(list(scores, results$padj))
 }
 
+edger_filterbyexpr_mask <- function(
+    X, y, sample_meta=NULL, model_batch=FALSE, is_classif=TRUE
+) {
+    suppressPackageStartupMessages(library("edgeR"))
+    dge <- DGEList(counts=t(X))
+    if (
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
+    ) {
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        if (is_classif) {
+            sample_meta$Class <- factor(sample_meta$Class)
+            design <- model.matrix(~Batch + Class, data=sample_meta)
+        } else {
+            design <- model.matrix(~Batch, data=sample_meta)
+        }
+    } else if (is_classif) {
+        design <- model.matrix(~factor(y))
+    } else {
+        design <- NULL
+    }
+    return(filterByExpr(dge, design))
+}
+
 edger_feature_score <- function(
     X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", robust=TRUE,
     model_batch=FALSE
@@ -90,30 +114,6 @@ edger_feature_score <- function(
         scores <- results$PValue
     }
     return(list(scores, results$FDR))
-}
-
-edger_filterbyexpr_mask <- function(
-    X, y, sample_meta=NULL, model_batch=FALSE, is_classif=TRUE
-) {
-    suppressPackageStartupMessages(library("edgeR"))
-    dge <- DGEList(counts=t(X))
-    if (
-        model_batch && !is.null(sample_meta) &&
-        length(unique(sample_meta$Batch)) > 1
-    ) {
-        sample_meta$Batch <- factor(sample_meta$Batch)
-        if (is_classif) {
-            sample_meta$Class <- factor(sample_meta$Class)
-            design <- model.matrix(~Batch + Class, data=sample_meta)
-        } else {
-            design <- model.matrix(~Batch, data=sample_meta)
-        }
-    } else if (is_classif) {
-        design <- model.matrix(~factor(y))
-    } else {
-        design <- NULL
-    }
-    return(filterByExpr(dge, design))
 }
 
 limma_voom_feature_score <- function(

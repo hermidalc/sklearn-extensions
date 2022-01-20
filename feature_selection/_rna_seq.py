@@ -276,6 +276,94 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         return mask
 
 
+class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
+    """edgeR filterByExpr feature selector for count data
+
+    Parameters
+    ----------
+    model_batch : bool (default = False)
+        Model batch effect if sample_meta passed to fit and Batch column
+        exists.
+
+    is_classif : bool (default = True)
+        Whether this is a classification design.
+    """
+
+    def __init__(self, model_batch=False, is_classif=True):
+        self.model_batch = model_batch
+        self.is_classif = is_classif
+
+    def fit(self, X, y, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Training counts data matrix.
+
+        y : array-like, shape = (n_samples,)
+            Training sample class labels.
+
+        sample_meta : pandas.DataFrame, pandas.Series (default = None), \
+            shape = (n_samples, n_metadata)
+            Training sample metadata.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        X, y = check_X_y(X, y, dtype=int)
+        if sample_meta is None:
+            sample_meta = robjects.NULL
+        self._mask = np.array(r_edger_filterbyexpr_mask(
+            X, y, sample_meta=sample_meta, model_batch=self.model_batch,
+            is_classif=self.is_classif), dtype=bool)
+        return self
+
+    def transform(self, X, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input counts data matrix.
+
+        sample_meta : Ignored.
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_selected_features)
+            edgeR filterByExpr counts data matrix with only the selected
+            features.
+        """
+        check_is_fitted(self, '_mask')
+        X = check_array(X, dtype=int)
+        return super().transform(X)
+
+    def inverse_transform(self, X, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input transformed data matrix.
+
+        sample_meta : Ignored.
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_original_features)
+            `X` with columns of zeros inserted where features would have
+            been removed by :meth:`transform`.
+        """
+        raise NotImplementedError('inverse_transform not implemented.')
+
+    def _more_tags(self):
+        return {'requires_positive_X': True}
+
+    def _get_support_mask(self):
+        check_is_fitted(self, '_mask')
+        return self._mask
+
+
 class EdgeR(ExtendedSelectorMixin, BaseEstimator):
     """edgeR differential expression feature selector and
     normalizer/transformer for RNA-seq count data
@@ -477,94 +565,6 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
-
-
-class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
-    """edgeR filterByExpr feature selector for count data
-
-    Parameters
-    ----------
-    model_batch : bool (default = False)
-        Model batch effect if sample_meta passed to fit and Batch column
-        exists.
-
-    is_classif : bool (default = True)
-        Whether this is a classification design.
-    """
-
-    def __init__(self, model_batch=False, is_classif=True):
-        self.model_batch = model_batch
-        self.is_classif = is_classif
-
-    def fit(self, X, y, sample_meta=None):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Training counts data matrix.
-
-        y : array-like, shape = (n_samples,)
-            Training sample class labels.
-
-        sample_meta : pandas.DataFrame, pandas.Series (default = None), \
-            shape = (n_samples, n_metadata)
-            Training sample metadata.
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        X, y = check_X_y(X, y, dtype=int)
-        if sample_meta is None:
-            sample_meta = robjects.NULL
-        self._mask = np.array(r_edger_filterbyexpr_mask(
-            X, y, sample_meta=sample_meta, model_batch=self.model_batch,
-            is_classif=self.is_classif), dtype=bool)
-        return self
-
-    def transform(self, X, sample_meta=None):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input counts data matrix.
-
-        sample_meta : Ignored.
-
-        Returns
-        -------
-        Xr : array of shape (n_samples, n_selected_features)
-            edgeR filterByExpr counts data matrix with only the selected
-            features.
-        """
-        check_is_fitted(self, '_mask')
-        X = check_array(X, dtype=int)
-        return super().transform(X)
-
-    def inverse_transform(self, X, sample_meta=None):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input transformed data matrix.
-
-        sample_meta : Ignored.
-
-        Returns
-        -------
-        Xr : array of shape (n_samples, n_original_features)
-            `X` with columns of zeros inserted where features would have
-            been removed by :meth:`transform`.
-        """
-        raise NotImplementedError('inverse_transform not implemented.')
-
-    def _more_tags(self):
-        return {'requires_positive_X': True}
-
-    def _get_support_mask(self):
-        check_is_fitted(self, '_mask')
-        return self._mask
 
 
 class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
