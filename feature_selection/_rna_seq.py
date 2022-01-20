@@ -73,8 +73,9 @@ def limma_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, trend,
 
 
 def deseq2_rle_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
-    gm, df = r_deseq2_rle_fit(X, y, sample_meta=sample_meta, fit_type=fit_type,
-                              model_batch=model_batch, is_classif=is_classif)
+    gm, df = r_deseq2_rle_fit(
+        X, y, sample_meta=sample_meta, fit_type=fit_type,
+        model_batch=model_batch, is_classif=is_classif)
     return np.array(gm, dtype=float), df
 
 

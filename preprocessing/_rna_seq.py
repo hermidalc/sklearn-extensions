@@ -6,7 +6,7 @@ from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
 from ..base import ExtendedTransformerMixin
-from ..utils.validation import check_is_fitted
+from ..utils.validation import check_is_fitted, check_memory
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
@@ -24,9 +24,28 @@ r_edger_tmm_tpm_transform = robjects.globalenv['edger_tmm_tpm_transform']
 
 
 def deseq2_rle_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
-    gm, df = r_deseq2_rle_fit(X, y, sample_meta=sample_meta, fit_type=fit_type,
-                              model_batch=model_batch, is_classif=is_classif)
+    gm, df = r_deseq2_rle_fit(
+        X, y, sample_meta=sample_meta, fit_type=fit_type,
+        model_batch=model_batch, is_classif=is_classif)
     return np.array(gm, dtype=float), df
+
+
+def deseq2_rle_vst_transform(X, geo_means, disp_func):
+    return np.array(r_deseq2_rle_vst_transform(
+        X, geo_means=geo_means, disp_func=disp_func), dtype=float)
+
+
+def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
+    return np.array(r_edger_tmm_cpm_transform(
+        X, ref_sample=ref_sample, log=log, prior_count=prior_count),
+                    dtype=float)
+
+
+def edger_tmm_tpm_transform(X, feature_meta, ref_sample, log, prior_count,
+                            meta_col):
+    return np.array(r_edger_tmm_tpm_transform(
+        X, feature_meta=feature_meta, ref_sample=ref_sample, log=log,
+        prior_count=prior_count, meta_col=meta_col), dtype=float)
 
 
 class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
@@ -45,6 +64,11 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
     is_classif : bool (default = True)
         Whether this is a classification design.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     geo_means_ : array, shape (n_features,)
@@ -55,10 +79,11 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
     """
 
     def __init__(self, fit_type='parametric', model_batch=False,
-                 is_classif=True):
+                 is_classif=True, memory=None):
         self.fit_type = fit_type
         self.model_batch = model_batch
         self.is_classif = is_classif
+        self.memory = memory
 
     def fit(self, X, y, sample_meta=None):
         """
@@ -103,9 +128,9 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         """
         check_is_fitted(self, 'geo_means_')
         X = check_array(X, dtype=int)
-        X = np.array(r_deseq2_rle_vst_transform(
-            X, geo_means=self.geo_means_, disp_func=self.disp_func_),
-                     dtype=float)
+        memory = check_memory(self.memory)
+        X = memory.cache(deseq2_rle_vst_transform)(
+            X, geo_means=self.geo_means_, disp_func=self.disp_func_)
         return X
 
     def inverse_transform(self, X, sample_meta=None):
@@ -140,15 +165,21 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
         Larger values produce stronger moderation of low counts and more
         shrinkage of the corresponding log fold changes.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     ref_sample_ : array, shape (n_features,)
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, log=True, prior_count=2):
+    def __init__(self, log=True, prior_count=2, memory=None):
         self.log = log
         self.prior_count = prior_count
+        self.memory = memory
 
     def fit(self, X, y=None, sample_meta=None):
         """
@@ -181,9 +212,10 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
         """
         check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        X = np.array(r_edger_tmm_cpm_transform(
+        memory = check_memory(self.memory)
+        X = memory.cache(edger_tmm_cpm_transform)(
             X, ref_sample=self.ref_sample_, log=self.log,
-            prior_count=self.prior_count), dtype=float)
+            prior_count=self.prior_count)
         return X
 
     def inverse_transform(self, X, sample_meta=None):
@@ -222,16 +254,23 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         Feature metadata column name holding CDS lengths for use with "tpm"
         transformation method.
 
+    memory : None, str or object with the joblib.Memory interface \
+        (default = None)
+        Used for internal caching. By default, no caching is done.
+        If a string is given, it is the path to the caching directory.
+
     Attributes
     ----------
     ref_sample_ : array, shape (n_features,)
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, log=True, prior_count=2, meta_col='Length'):
+    def __init__(self, log=True, prior_count=2, meta_col='Length',
+                 memory=None):
         self.log = log
         self.prior_count = prior_count
         self.meta_col = meta_col
+        self.memory = memory
 
     def fit(self, X, y, feature_meta):
         """
@@ -266,9 +305,10 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         """
         check_is_fitted(self, 'ref_sample_')
         X = check_array(X, dtype=int)
-        X = np.array(r_edger_tmm_tpm_transform(
+        memory = check_memory(self.memory)
+        X = memory.cache(edger_tmm_tpm_transform)(
             X, feature_meta, ref_sample=self.ref_sample_, log=self.log,
-            prior_count=self.prior_count, meta_col=self.meta_col), dtype=float)
+            prior_count=self.prior_count, meta_col=self.meta_col)
         return X
 
     def inverse_transform(self, X, feature_meta=None):
