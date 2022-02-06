@@ -4,12 +4,12 @@ algorithms. It currently includes univariate filter selection methods and the
 recursive feature elimination algorithm.
 """
 
-from ._average_threshold import MeanThreshold, MedianThreshold
 from ._cached import (
     CachedANOVAFScorerClassification, CachedChi2Scorer,
     CachedMutualInfoScorerClassification)
 from ._column import ColumnSelector
-from ._confidence_threshold import ConfidenceThreshold
+from ._custom_threshold import (
+    ConfidenceThreshold, CorrelationThreshold, MeanThreshold, MedianThreshold)
 from ._from_model import SelectFromModel
 from ._multivariate import CFS, FCBF, ReliefF
 from ._nanostring import NanoStringEndogenousSelector
@@ -34,6 +34,7 @@ __all__ = ['ANOVAFScorerClassification',
            'Chi2Scorer',
            'ColumnSelector',
            'ConfidenceThreshold',
+           'CorrelationThreshold',
            'DESeq2',
            'DreamVoom',
            'EdgeR',
