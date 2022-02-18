@@ -97,24 +97,30 @@ edger_tmm_tpm_transform <- function(
         dge <- calcNormFactors(
             dge, method="TMM", refColumn=min(which(ref_sample_mask))
         )
-        rpkms <- rpkm(
-            dge, gene.length=meta_col, log=log, prior.count=prior_count
-        )
     } else {
         counts <- cbind(counts, ref_sample)
         colnames(counts) <- NULL
         dge <- DGEList(counts=counts, genes=feature_meta)
         dge <- calcNormFactors(dge, method="TMM", refColumn=ncol(dge))
-        rpkms <- rpkm(
-            dge, gene.length=meta_col, log=log, prior.count=prior_count
-        )
-        rpkms <- rpkms[, -ncol(rpkms)]
     }
     if (log) {
-        tpms <- t(t(rpkms) - log2(colSums(2 ^ rpkms))) + log2(1e6)
+        # XXX: edgeR doesn't have built-in support for logTPM w/ prior.count
+        #      so do API internal logic manually
+        # TODO: use effectiveLibSizes() in newer edgeR versions
+        lib_size <- dge$samples$lib.size * dge$samples$norm.factors
+        scaled_prior_count <- args$prior_count * lib_size / mean(lib_size)
+        adj_lib_size <- lib_size + 2 * scaled_prior_count
+        fpkms <- t(
+            (t(dge$counts) + scaled_prior_count) / adj_lib_size
+        ) * 1e6 / dge$genes[[meta_col]] * 1e3
+        tpms <- log2(t(t(fpkms) / colSums(fpkms)) * 1e6)
     } else {
-        tpms <- t(t(rpkms) / colSums(rpkms)) * 1e6
+        fpkms <- rpkm(
+            dge, gene.length=meta_col, log=log, prior.count=prior_count
+        )
+        tpms <- t(t(fpkms) / colSums(fpkms)) * 1e6
     }
+    if (!any(ref_sample_mask)) tpms <- tpms[, -ncol(tpms)]
     return(t(tpms))
 }
 
