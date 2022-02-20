@@ -1,7 +1,7 @@
 # RNA-seq transformer functions
 
 deseq2_rle_fit <- function(
-    X, y, sample_meta=NULL, fit_type="parametric", model_batch=FALSE,
+    X, y=NULL, sample_meta=NULL, fit_type="parametric", model_batch=FALSE,
     is_classif=TRUE
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
@@ -22,6 +22,7 @@ deseq2_rle_fit <- function(
             )
         }
     } else if (is_classif) {
+        stopifnot(!is.null(y))
         dds <- DESeqDataSetFromMatrix(
             counts, data.frame(Class=factor(y)), ~Class
         )

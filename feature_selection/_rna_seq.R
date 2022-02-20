@@ -56,7 +56,7 @@ deseq2_feature_score <- function(
 }
 
 edger_filterbyexpr_mask <- function(
-    X, y, sample_meta=NULL, model_batch=FALSE, is_classif=TRUE
+    X, y=NULL, sample_meta=NULL, model_batch=FALSE, is_classif=TRUE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     dge <- DGEList(counts=t(X))
@@ -72,6 +72,7 @@ edger_filterbyexpr_mask <- function(
             design <- model.matrix(~Batch, data=sample_meta)
         }
     } else if (is_classif) {
+        stopifnot(!is.null(y))
         design <- model.matrix(~factor(y))
     } else {
         design <- NULL

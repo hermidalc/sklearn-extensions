@@ -25,7 +25,7 @@ r_edger_tmm_tpm_transform = robjects.globalenv['edger_tmm_tpm_transform']
 
 def deseq2_rle_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
     gm, df = r_deseq2_rle_fit(
-        X, y, sample_meta=sample_meta, fit_type=fit_type,
+        X, y=y, sample_meta=sample_meta, fit_type=fit_type,
         model_batch=model_batch, is_classif=is_classif)
     return np.array(gm, dtype=float), df
 
@@ -85,15 +85,15 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         self.is_classif = is_classif
         self.memory = memory
 
-    def fit(self, X, y, sample_meta=None):
+    def fit(self, X, y=None, sample_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Training counts data matrix.
 
-        y : array-like, shape = (n_samples,)
-            Training class labels.
+        y : array-like (default = None), shape = (n_samples,)
+            Training class labels. Ignored if is_classif=False.
 
         sample_meta : pandas.DataFrame, pandas.Series (default = None) \
             shape = (n_samples, n_metadata)
@@ -104,11 +104,16 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=int)
+        if self.is_classif:
+            X, y = check_X_y(X, y, dtype=int)
+        else:
+            X = check_array(X, dtype=int)
+        if y is None:
+            y = robjects.NULL
         if sample_meta is None:
             sample_meta = robjects.NULL
         self.geo_means_, self.disp_func_ = deseq2_rle_fit(
-                X, y, sample_meta=sample_meta, fit_type=self.fit_type,
+                X, y=y, sample_meta=sample_meta, fit_type=self.fit_type,
                 model_batch=self.model_batch, is_classif=self.is_classif)
         return self
 
@@ -272,7 +277,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         self.meta_col = meta_col
         self.memory = memory
 
-    def fit(self, X, y, feature_meta):
+    def fit(self, X, y=None, feature_meta=None):
         """
         Parameters
         ----------

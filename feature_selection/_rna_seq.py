@@ -74,7 +74,7 @@ def limma_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, trend,
 
 def deseq2_rle_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
     gm, df = r_deseq2_rle_fit(
-        X, y, sample_meta=sample_meta, fit_type=fit_type,
+        X, y=y, sample_meta=sample_meta, fit_type=fit_type,
         model_batch=model_batch, is_classif=is_classif)
     return np.array(gm, dtype=float), df
 
@@ -181,7 +181,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             Training counts data matrix.
 
         y : array-like, shape = (n_samples,)
-            Training sample class labels.
+            Training class labels.
 
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
@@ -293,15 +293,15 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         self.model_batch = model_batch
         self.is_classif = is_classif
 
-    def fit(self, X, y, sample_meta=None):
+    def fit(self, X, y=None, sample_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Training counts data matrix.
 
-        y : array-like, shape = (n_samples,)
-            Training sample class labels.
+        y : array-like (default = None), shape = (n_samples,)
+            Training class labels. Ignored if is_classif=False.
 
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
@@ -312,11 +312,16 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=int)
+        if self.is_classif:
+            X, y = check_X_y(X, y, dtype=int)
+        else:
+            X = check_array(X, dtype=int)
+        if y is None:
+            y = robjects.NULL
         if sample_meta is None:
             sample_meta = robjects.NULL
         self._mask = np.array(r_edger_filterbyexpr_mask(
-            X, y, sample_meta=sample_meta, model_batch=self.model_batch,
+            X, y=y, sample_meta=sample_meta, model_batch=self.model_batch,
             is_classif=self.is_classif), dtype=bool)
         return self
 
@@ -452,7 +457,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             Training counts data matrix.
 
         y : array-like, shape = (n_samples,)
-            Training sample class labels.
+            Training class labels.
 
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
@@ -660,7 +665,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             Training counts data matrix.
 
         y : array-like, shape = (n_samples,)
-            Training sample class labels.
+            Training class labels.
 
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)
@@ -864,7 +869,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             Training counts data matrix.
 
         y : array-like, shape = (n_samples,)
-            Training sample class labels.
+            Training class labels.
 
         sample_meta : pandas.DataFrame, pandas.Series \
             shape = (n_samples, n_metadata)
@@ -1044,7 +1049,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
             Training gene expression data matrix.
 
         y : array-like, shape = (n_samples,)
-            Training sample class labels.
+            Training class labels.
 
         sample_meta : pandas.DataFrame, pandas.Series (default = None), \
             shape = (n_samples, n_metadata)

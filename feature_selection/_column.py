@@ -78,8 +78,7 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
         Returns
         -------
         Xr : array of shape (n_samples, n_selected_features)
-            edgeR filterByExpr counts data matrix with only the selected
-            features.
+            Data matrix with only the selected features.
         """
         check_is_fitted(self, '_mask')
         return super().transform(X)
