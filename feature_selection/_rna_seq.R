@@ -56,7 +56,7 @@ deseq2_feature_score <- function(
 }
 
 edger_filterbyexpr_mask <- function(
-    X, y=NULL, sample_meta=NULL, model_batch=FALSE, is_classif=TRUE
+    X, y=NULL, sample_meta=NULL, is_classif=TRUE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     dge <- DGEList(counts=t(X))

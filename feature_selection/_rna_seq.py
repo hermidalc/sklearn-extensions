@@ -72,10 +72,10 @@ def limma_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, trend,
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def deseq2_rle_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
+def deseq2_rle_fit(X, y, sample_meta, fit_type, is_classif, model_batch):
     gm, df = r_deseq2_rle_fit(
         X, y=y, sample_meta=sample_meta, fit_type=fit_type,
-        model_batch=model_batch, is_classif=is_classif)
+        is_classif=is_classif, model_batch=model_batch)
     return np.array(gm, dtype=float), df
 
 
@@ -204,7 +204,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
              n_threads=self.n_threads)
         self.geo_means_, self.disp_func_ = memory.cache(deseq2_rle_fit)(
                 X, y, sample_meta=sample_meta, fit_type=self.fit_type,
-                model_batch=self.model_batch, is_classif=True)
+                is_classif=True, model_batch=self.model_batch)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -281,17 +281,17 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
 
     Parameters
     ----------
+    is_classif : bool (default = True)
+        Whether this is a classification design.
+
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
-
-    is_classif : bool (default = True)
-        Whether this is a classification design.
     """
 
-    def __init__(self, model_batch=False, is_classif=True):
-        self.model_batch = model_batch
+    def __init__(self, is_classif=True, model_batch=False):
         self.is_classif = is_classif
+        self.model_batch = model_batch
 
     def fit(self, X, y=None, sample_meta=None):
         """

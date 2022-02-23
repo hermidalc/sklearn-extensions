@@ -23,10 +23,10 @@ r_edger_tmm_cpm_transform = robjects.globalenv['edger_tmm_cpm_transform']
 r_edger_tmm_tpm_transform = robjects.globalenv['edger_tmm_tpm_transform']
 
 
-def deseq2_rle_fit(X, y, sample_meta, fit_type, model_batch, is_classif):
+def deseq2_rle_fit(X, y, sample_meta, fit_type, is_classif, model_batch):
     gm, df = r_deseq2_rle_fit(
         X, y=y, sample_meta=sample_meta, fit_type=fit_type,
-        model_batch=model_batch, is_classif=is_classif)
+        is_classif=is_classif, model_batch=model_batch)
     return np.array(gm, dtype=float), df
 
 
@@ -57,12 +57,12 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
 
+    is_classif : bool (default = True)
+        Whether this is a classification design.
+
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and Batch column
         exists.
-
-    is_classif : bool (default = True)
-        Whether this is a classification design.
 
     memory : None, str or object with the joblib.Memory interface \
         (default = None)
@@ -78,11 +78,11 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, fit_type='parametric', model_batch=False,
-                 is_classif=True, memory=None):
+    def __init__(self, fit_type='parametric', is_classif=True,
+                 model_batch=False, memory=None):
         self.fit_type = fit_type
-        self.model_batch = model_batch
         self.is_classif = is_classif
+        self.model_batch = model_batch
         self.memory = memory
 
     def fit(self, X, y=None, sample_meta=None):
@@ -114,7 +114,7 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
             sample_meta = robjects.NULL
         self.geo_means_, self.disp_func_ = deseq2_rle_fit(
                 X, y=y, sample_meta=sample_meta, fit_type=self.fit_type,
-                model_batch=self.model_batch, is_classif=self.is_classif)
+                is_classif=self.is_classif, model_batch=self.model_batch)
         return self
 
     def transform(self, X, sample_meta=None):
