@@ -109,7 +109,7 @@ edger_tmm_tpm_transform <- function(
         #      so do API internal logic manually
         # TODO: use effectiveLibSizes() in newer edgeR versions
         lib_size <- dge$samples$lib.size * dge$samples$norm.factors
-        scaled_prior_count <- args$prior_count * lib_size / mean(lib_size)
+        scaled_prior_count <- prior_count * lib_size / mean(lib_size)
         adj_lib_size <- lib_size + 2 * scaled_prior_count
         fpkms <- t(
             (t(dge$counts) + scaled_prior_count) / adj_lib_size
