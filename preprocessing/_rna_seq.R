@@ -87,7 +87,8 @@ edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
 }
 
 edger_tmm_tpm_transform <- function(
-    X, feature_meta, ref_sample, log=TRUE, prior_count=2, meta_col="Length"
+    X, feature_meta, ref_sample, log=TRUE, prior_count=2,
+    gene_length_col="Length"
 ) {
     if (is.null(feature_meta)) stop("feature_meta cannot be NULL")
     suppressPackageStartupMessages(library("edgeR"))
@@ -113,15 +114,17 @@ edger_tmm_tpm_transform <- function(
         adj_lib_size <- lib_size + 2 * scaled_prior_count
         fpkms <- t(
             (t(dge$counts) + scaled_prior_count) / adj_lib_size
-        ) * 1e6 / dge$genes[[meta_col]] * 1e3
+        ) * 1e6 / dge$genes[[gene_length_col]] * 1e3
         stopifnot(all.equal(
-            log2(fpkms),
-            rpkm(dge, gene.length=meta_col, log=log, prior.count=prior_count)
+            log2(fpkms), rpkm(
+                dge, gene.length=gene_length_col, log=log,
+                prior.count=prior_count
+            )
         ))
         tpms <- log2(t(t(fpkms) / colSums(fpkms)) * 1e6)
     } else {
         fpkms <- rpkm(
-            dge, gene.length=meta_col, log=log, prior.count=prior_count
+            dge, gene.length=gene_length_col, log=log, prior.count=prior_count
         )
         tpms <- t(t(fpkms) / colSums(fpkms)) * 1e6
     }
