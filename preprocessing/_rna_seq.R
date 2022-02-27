@@ -114,6 +114,10 @@ edger_tmm_tpm_transform <- function(
         fpkms <- t(
             (t(dge$counts) + scaled_prior_count) / adj_lib_size
         ) * 1e6 / dge$genes[[meta_col]] * 1e3
+        stopifnot(all.equal(
+            log2(fpkms),
+            rpkm(dge, gene.length=meta_col, log=log, prior.count=prior_count)
+        ))
         tpms <- log2(t(t(fpkms) / colSums(fpkms)) * 1e6)
     } else {
         fpkms <- rpkm(
