@@ -42,10 +42,10 @@ def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
 
 
 def edger_tmm_tpm_transform(X, feature_meta, ref_sample, log, prior_count,
-                            meta_col):
+                            gene_length_col):
     return np.array(r_edger_tmm_tpm_transform(
         X, feature_meta=feature_meta, ref_sample=ref_sample, log=log,
-        prior_count=prior_count, meta_col=meta_col), dtype=float)
+        prior_count=prior_count, gene_length_col=gene_length_col), dtype=float)
 
 
 class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
@@ -255,8 +255,8 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         Larger values produce stronger moderation of low counts and more
         shrinkage of the corresponding log fold changes.
 
-    meta_col : str (default = "Length")
-        Feature metadata column name holding CDS lengths for use with "tpm"
+    gene_length_col : str (default = "Length")
+        Feature metadata column name holding gene CDS lengths for used in TPM
         transformation method.
 
     memory : None, str or object with the joblib.Memory interface \
@@ -270,11 +270,11 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, log=True, prior_count=2, meta_col='Length',
+    def __init__(self, log=True, prior_count=2, gene_length_col='Length',
                  memory=None):
         self.log = log
         self.prior_count = prior_count
-        self.meta_col = meta_col
+        self.gene_length_col = gene_length_col
         self.memory = memory
 
     def fit(self, X, y=None, feature_meta=None):
@@ -313,7 +313,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_tpm_transform)(
             X, feature_meta, ref_sample=self.ref_sample_, log=self.log,
-            prior_count=self.prior_count, meta_col=self.meta_col)
+            prior_count=self.prior_count, gene_length_col=self.gene_length_col)
         return X
 
     def inverse_transform(self, X, feature_meta=None):
@@ -336,9 +336,9 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
             raise ValueError('X ({:d}) and feature_meta ({:d}) have '
                              'different feature dimensions'
                              .format(X.shape[1], feature_meta.shape[0]))
-        if self.meta_col not in feature_meta.columns:
+        if self.gene_length_col not in feature_meta.columns:
             raise ValueError('{} feature_meta column does not exist.'
-                             .format(self.meta_col))
+                             .format(self.gene_length_col))
 
     def _more_tags(self):
         return {'requires_positive_X': True}
