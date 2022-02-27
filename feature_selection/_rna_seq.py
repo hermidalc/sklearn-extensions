@@ -95,10 +95,10 @@ def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
 
 
 def edger_tmm_tpm_transform(X, feature_meta, ref_sample, log, prior_count,
-                            meta_col):
+                            gene_length_col):
     return np.array(r_edger_tmm_tpm_transform(
         X, feature_meta=feature_meta, ref_sample=ref_sample, log=log,
-        prior_count=prior_count, meta_col=meta_col), dtype=float)
+        prior_count=prior_count, gene_length_col=gene_length_col), dtype=float)
 
 
 class DESeq2(ExtendedSelectorMixin, BaseEstimator):
@@ -413,8 +413,8 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         Larger values produce stronger moderation of low counts and more
         shrinkage of the corresponding log fold changes.
 
-    meta_col : str (default = "Length")
-        Feature metadata column name holding CDS lengths for use with "tpm"
+    gene_length_col : str (default = "Length")
+        Feature metadata column name holding gene CDS lengths for used in TPM
         transformation method.
 
     memory : None, str or object with the joblib.Memory interface \
@@ -436,7 +436,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv', robust=True,
                  model_batch=False, transform_meth='cpm', log=True,
-                 prior_count=2, meta_col='Length', memory=None):
+                 prior_count=2, gene_length_col='Length', memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -446,7 +446,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         self.transform_meth = transform_meth
         self.log = log
         self.prior_count = prior_count
-        self.meta_col = meta_col
+        self.gene_length_col = gene_length_col
         self.memory = memory
 
     def fit(self, X, y, sample_meta=None, feature_meta=None):
@@ -514,7 +514,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             X = memory.cache(edger_tmm_tpm_transform)(
                 X, feature_meta=feature_meta, ref_sample=self.ref_sample_,
                 log=self.log, prior_count=self.prior_count,
-                meta_col=self.meta_col)
+                gene_length_col=self.gene_length_col)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
@@ -620,8 +620,8 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         Larger values produce stronger moderation of low counts and more
         shrinkage of the corresponding log fold changes.
 
-    meta_col : str (default = "Length")
-        Feature metadata column name holding CDS lengths for use with "tpm"
+    gene_length_col : str (default = "Length")
+        Feature metadata column name holding gene CDS lengths for used in TPM
         transformation method.
 
     memory : None, str or object with the joblib.Memory interface \
@@ -643,7 +643,8 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv', robust=True,
                  model_batch=False, model_dupcor=False, transform_meth='cpm',
-                 log=True, prior_count=2, meta_col='Length', memory=None):
+                 log=True, prior_count=2, gene_length_col='Length',
+                 memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -654,7 +655,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         self.transform_meth = transform_meth
         self.log = log
         self.prior_count = prior_count
-        self.meta_col = meta_col
+        self.gene_length_col = gene_length_col
         self.memory = memory
 
     def fit(self, X, y, sample_meta=None, feature_meta=None):
@@ -722,7 +723,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             X = memory.cache(edger_tmm_tpm_transform)(
                 X, feature_meta=feature_meta, ref_sample=self.ref_sample_,
                 log=self.log, prior_count=self.prior_count,
-                meta_col=self.meta_col)
+                gene_length_col=self.gene_length_col)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
@@ -825,8 +826,8 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         Larger values produce stronger moderation of low counts and more
         shrinkage of the corresponding log fold changes.
 
-    meta_col : str (default = "Length")
-        Feature metadata column name holding CDS lengths for use with "tpm"
+    gene_length_col : str (default = "Length")
+        Feature metadata column name holding gene CDS lengths for used in TPM
         transformation method.
 
     memory : None, str or object with the joblib.Memory interface \
@@ -848,7 +849,8 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
 
     def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv',
                  model_batch=False, n_threads=1, transform_meth='cpm',
-                 log=True, prior_count=2, meta_col='Length', memory=None):
+                 log=True, prior_count=2, gene_length_col='Length',
+                 memory=None):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -858,7 +860,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         self.transform_meth = transform_meth
         self.log = log
         self.prior_count = prior_count
-        self.meta_col = meta_col
+        self.gene_length_col = gene_length_col
         self.memory = memory
 
     def fit(self, X, y, sample_meta, feature_meta=None):
@@ -924,7 +926,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             X = memory.cache(edger_tmm_tpm_transform)(
                 X, feature_meta=feature_meta, ref_sample=self.ref_sample_,
                 log=self.log, prior_count=self.prior_count,
-                meta_col=self.meta_col)
+                gene_length_col=self.gene_length_col)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
