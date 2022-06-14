@@ -11,25 +11,27 @@ class ExtendedTransformerMixin(TransformerMixin):
     """Mixin class for all transformers in scikit-learn."""
 
     def fit_transform(self, X, y=None, **fit_params):
-        """Fit to data, then transform it.
+        """
+        Fit to data, then transform it.
 
-        Fits transformer to X and y with optional parameters fit_params
-        and returns a transformed version of X.
+        Fits transformer to `X` and `y` with optional parameters `fit_params`
+        and returns a transformed version of `X`.
 
         Parameters
         ----------
-        X : numpy array of shape [n_samples, n_features]
-            Training set.
+        X : array-like of shape (n_samples, n_features)
+            Input samples.
 
-        y : numpy array of shape [n_samples]
-            Target values.
+        y :  array-like of shape (n_samples,) or (n_samples, n_outputs), \
+                default=None
+            Target values (None for unsupervised transformations).
 
         **fit_params : dict
             Additional fit parameters.
 
         Returns
         -------
-        X_new : numpy array of shape [n_samples, n_features_new]
+        X_new : ndarray array of shape (n_samples, n_features_new)
             Transformed array.
         """
         # non-optimized default implementation; override when a better
