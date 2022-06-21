@@ -4,10 +4,14 @@ classification, regression and anomaly detection.
 """
 
 from ._cached import (
-    CachedExtraTreesClassifier, CachedGradientBoostingClassifier,
-    CachedRandomForestClassifier)
+    CachedExtraTreesClassifier,
+    CachedGradientBoostingClassifier,
+    CachedRandomForestClassifier,
+)
 
 
-__all__ = ['CachedExtraTreesClassifier',
-           'CachedRandomForestClassifier',
-           'CachedGradientBoostingClassifier']
+__all__ = [
+    "CachedExtraTreesClassifier",
+    "CachedRandomForestClassifier",
+    "CachedGradientBoostingClassifier",
+]
