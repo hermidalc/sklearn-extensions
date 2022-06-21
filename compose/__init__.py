@@ -5,13 +5,15 @@ refurbished versions of Pipeline and FeatureUnion.
 
 """
 
-from ._column_transformer import (ExtendedColumnTransformer,
-                                  make_extended_column_transformer,
-                                  make_column_selector)
+from ._column_transformer import (
+    ExtendedColumnTransformer,
+    make_extended_column_transformer,
+    make_column_selector,
+)
 
 
 __all__ = [
-    'ExtendedColumnTransformer',
-    'make_extended_column_transformer',
-    'make_column_selector',
+    "ExtendedColumnTransformer",
+    "make_extended_column_transformer",
+    "make_column_selector",
 ]
