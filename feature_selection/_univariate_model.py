@@ -5,9 +5,9 @@ import numpy as np
 from sklearn.base import BaseEstimator, clone, MetaEstimatorMixin
 from sklearn.utils import check_X_y
 from sklearn.utils.metaestimators import if_delegate_has_method
+from sklearn.utils.validation import check_is_fitted, check_memory
 
-from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted, check_memory
+from ..feature_selection import ExtendedSelectorMixin
 
 
 def _get_scores(estimator, X, y, **fit_params):
@@ -18,8 +18,9 @@ def _get_scores(estimator, X, y, **fit_params):
     return scores
 
 
-class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
-                                BaseEstimator):
+class SelectFromUnivariateModel(
+    ExtendedSelectorMixin, MetaEstimatorMixin, BaseEstimator
+):
     """Select features according to scores calculated from model fitting on
     each individual feaure.
 
@@ -46,7 +47,7 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         Feature scores.
     """
 
-    def __init__(self, estimator, k='all', memory=None):
+    def __init__(self, estimator, k="all", memory=None):
         self.estimator = estimator
         self.k = k
         self.memory = memory
@@ -86,7 +87,7 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         self.estimator_.fit(self.transform(X), y, **fit_params)
         return self
 
-    @if_delegate_has_method(delegate='estimator')
+    @if_delegate_has_method(delegate="estimator")
     def predict(self, X):
         """Reduce X to the selected features and then predict using the
            underlying estimator.
@@ -104,7 +105,7 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         check_is_fitted(self)
         return self.estimator_.predict(self.transform(X))
 
-    @if_delegate_has_method(delegate='estimator')
+    @if_delegate_has_method(delegate="estimator")
     def score(self, X, y, sample_weight=None):
         """Reduce X to the selected features and then return the score of the
            underlying estimator.
@@ -124,10 +125,10 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         check_is_fitted(self)
         score_params = {}
         if sample_weight is not None:
-            score_params['sample_weight'] = sample_weight
+            score_params["sample_weight"] = sample_weight
         return self.estimator_.score(self.transform(X), y, **score_params)
 
-    @if_delegate_has_method(delegate='estimator')
+    @if_delegate_has_method(delegate="estimator")
     def decision_function(self, X):
         """Compute the decision function of ``X``.
 
@@ -149,7 +150,7 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         check_is_fitted(self)
         return self.estimator_.decision_function(self.transform(X))
 
-    @if_delegate_has_method(delegate='estimator')
+    @if_delegate_has_method(delegate="estimator")
     def predict_proba(self, X):
         """Predict class probabilities for X.
 
@@ -169,7 +170,7 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
         check_is_fitted(self)
         return self.estimator_.predict_proba(self.transform(X))
 
-    @if_delegate_has_method(delegate='estimator')
+    @if_delegate_has_method(delegate="estimator")
     def predict_log_proba(self, X):
         """Predict class log-probabilities for X.
 
@@ -189,19 +190,20 @@ class SelectFromUnivariateModel(ExtendedSelectorMixin, MetaEstimatorMixin,
 
     def _more_tags(self):
         estimator_tags = self.estimator._get_tags()
-        return {'allow_nan': estimator_tags.get('allow_nan', True)}
+        return {"allow_nan": estimator_tags.get("allow_nan", True)}
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
-            raise ValueError("k should be >=0, <= n_features = %d; got %r. "
-                             "Use k='all' to return all features."
-                             % (X.shape[1], self.k))
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+            raise ValueError(
+                "k should be >=0, <= n_features = %d; got %r. "
+                "Use k='all' to return all features." % (X.shape[1], self.k)
+            )
 
     def _get_support_mask(self):
         check_is_fitted(self)
-        if self.k == 'all':
+        if self.k == "all":
             return np.ones_like(self.scores_, dtype=bool)
         mask = np.zeros_like(self.scores_, dtype=bool)
         if self.k > 0:
-            mask[np.argsort(self.scores_, kind='mergesort')[-self.k:]] = True
+            mask[np.argsort(self.scores_, kind="mergesort")[-self.k :]] = True
         return mask
