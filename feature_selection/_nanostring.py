@@ -1,8 +1,9 @@
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted
+
+from ..feature_selection import ExtendedSelectorMixin
 
 
 class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
@@ -17,7 +18,7 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
         Feature metadata column name holding Code Class information.
     """
 
-    def __init__(self, filter_empty=True, meta_col='Code.Class'):
+    def __init__(self, filter_empty=True, meta_col="Code.Class"):
         self.filter_empty = filter_empty
         self.meta_col = meta_col
 
@@ -42,7 +43,7 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=None)
         self._check_params(X, y, feature_meta)
-        mask = feature_meta[self.meta_col].isin(['Endogenous']).to_numpy()
+        mask = feature_meta[self.meta_col].isin(["Endogenous"]).to_numpy()
         if self.filter_empty:
             mask &= np.any(X, axis=0)
         self.mask_ = mask
@@ -85,15 +86,19 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
-                             'different feature dimensions'
-                             .format(X.shape[1], feature_meta.shape[0]))
+            raise ValueError(
+                "X ({:d}) and feature_meta ({:d}) have "
+                "different feature dimensions".format(X.shape[1], feature_meta.shape[0])
+            )
         if self.meta_col not in feature_meta.columns:
-            raise ValueError('{} feature_meta column does not exist.'
-                             .format(self.meta_col))
-        if not feature_meta[self.meta_col].isin(['Endogenous']).any():
-            raise ValueError('{} feature_meta column does not have any '
-                             'Endogenous features'.format(self.meta_col))
+            raise ValueError(
+                "{} feature_meta column does not exist.".format(self.meta_col)
+            )
+        if not feature_meta[self.meta_col].isin(["Endogenous"]).any():
+            raise ValueError(
+                "{} feature_meta column does not have any "
+                "Endogenous features".format(self.meta_col)
+            )
 
     def _get_support_mask(self):
         check_is_fitted(self)

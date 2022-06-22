@@ -1,14 +1,15 @@
 import warnings
+
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted
+
+from ..feature_selection import ExtendedSelectorMixin
 
 
 class ColumnSelectorWarning(UserWarning):
-    """Warning used to notify when column name does not exist
-    """
+    """Warning used to notify when column name does not exist"""
 
 
 class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
@@ -80,7 +81,7 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
         Xr : array of shape (n_samples, n_selected_features)
             Data matrix with only the selected features.
         """
-        check_is_fitted(self, '_mask')
+        check_is_fitted(self, "_mask")
         return super().transform(X)
 
     def inverse_transform(self, X, feature_meta=None):
@@ -98,38 +99,40 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        check_is_fitted(self, '_mask')
+        check_is_fitted(self, "_mask")
         return super().inverse_transform(X)
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
-                             'different feature dimensions'
-                             .format(X.shape[1], feature_meta.shape[0]))
-        if (isinstance(self.cols, (list, tuple)) and self.cols
-                or self.cols.size > 0):
+            raise ValueError(
+                "X ({:d}) and feature_meta ({:d}) have "
+                "different feature dimensions".format(X.shape[1], feature_meta.shape[0])
+            )
+        if isinstance(self.cols, (list, tuple)) and self.cols or self.cols.size > 0:
             types = {type(i) for i in self.cols}
             if len(types) > 1:
-                raise ValueError('cols should be all names or indices.')
+                raise ValueError("cols should be all names or indices.")
             if isinstance(self.cols[0], str):
                 if feature_meta is None:
-                    raise ValueError('feature_meta must be passed if cols are '
-                                     'names')
+                    raise ValueError("feature_meta must be passed if cols are " "names")
                 if self.meta_col is None:
                     for col in self.cols:
                         if col not in feature_meta.index:
-                            warnings.warn('%s does not exist.' % col,
-                                          ColumnSelectorWarning)
+                            warnings.warn(
+                                "%s does not exist." % col, ColumnSelectorWarning
+                            )
                 elif self.meta_col not in feature_meta.columns:
-                    raise ValueError('%s feature_meta column does not exist.'
-                                     % self.meta_col)
+                    raise ValueError(
+                        "%s feature_meta column does not exist." % self.meta_col
+                    )
             else:
                 for col in self.cols:
                     if not 0 <= col <= X.shape[1]:
                         raise ValueError(
-                            'cols should be 0 <= col <= n_features; got %r.'
-                            'Use cols=None to return all features.' % col)
+                            "cols should be 0 <= col <= n_features; got %r."
+                            "Use cols=None to return all features." % col
+                        )
 
     def _get_support_mask(self):
-        check_is_fitted(self, '_mask')
+        check_is_fitted(self, "_mask")
         return self._mask

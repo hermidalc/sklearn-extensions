@@ -1,7 +1,8 @@
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted
+
+from ..feature_selection import ExtendedSelectorMixin
 
 
 class ConfidenceThreshold(ExtendedSelectorMixin, BaseEstimator):

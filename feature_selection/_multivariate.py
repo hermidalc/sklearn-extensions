@@ -1,5 +1,6 @@
 import os
 import warnings
+
 import numpy as np
 import rpy2.robjects as robjects
 from rpy2.robjects import numpy2ri, pandas2ri
@@ -7,20 +8,21 @@ from rpy2.rinterface import RRuntimeWarning
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_X_y
-from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted, check_memory
+from sklearn.utils.validation import check_is_fitted, check_memory
+
+from ..feature_selection import ExtendedSelectorMixin
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
 numpy2ri.activate()
 pandas2ri.activate()
 
-if 'cfs_feature_idxs' not in robjects.globalenv:
-    r_base = importr('base')
-    r_base.source(os.path.dirname(__file__) + '/_multivariate.R')
-r_cfs_feature_idxs = robjects.globalenv['cfs_feature_idxs']
-r_fcbf_feature_idxs = robjects.globalenv['fcbf_feature_idxs']
-r_relieff_feature_score = robjects.globalenv['relieff_feature_score']
+if "cfs_feature_idxs" not in robjects.globalenv:
+    r_base = importr("base")
+    r_base.source(os.path.dirname(__file__) + "/_multivariate.R")
+r_cfs_feature_idxs = robjects.globalenv["cfs_feature_idxs"]
+r_fcbf_feature_idxs = robjects.globalenv["fcbf_feature_idxs"]
+r_relieff_feature_score = robjects.globalenv["relieff_feature_score"]
 
 
 def fcbf_feature_idxs(X, y, threshold):
@@ -29,9 +31,12 @@ def fcbf_feature_idxs(X, y, threshold):
 
 
 def relieff_feature_score(X, y, num_neighbors, sample_size):
-    return np.array(r_relieff_feature_score(
-        X, y, num_neighbors=num_neighbors, sample_size=sample_size),
-                    dtype=float)
+    return np.array(
+        r_relieff_feature_score(
+            X, y, num_neighbors=num_neighbors, sample_size=sample_size
+        ),
+        dtype=float,
+    )
 
 
 class CFS(ExtendedSelectorMixin, BaseEstimator):
@@ -64,14 +69,15 @@ class CFS(ExtendedSelectorMixin, BaseEstimator):
         """
         X, y = check_X_y(X, y, dtype=None)
         self._n_features = X.shape[1]
-        warnings.filterwarnings('ignore', category=RRuntimeWarning,
-                                message='^Rjava\.init\.warning')
+        warnings.filterwarnings(
+            "ignore", category=RRuntimeWarning, message="^Rjava\.init\.warning"
+        )
         self.selected_idxs_ = np.array(r_cfs_feature_idxs(X, y), dtype=int)
-        warnings.filterwarnings('always', category=RRuntimeWarning)
+        warnings.filterwarnings("always", category=RRuntimeWarning)
         return self
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'selected_idxs_')
+        check_is_fitted(self, "selected_idxs_")
         mask = np.zeros(self._n_features, dtype=bool)
         mask[self.selected_idxs_] = True
         return mask
@@ -102,7 +108,7 @@ class FCBF(ExtendedSelectorMixin, BaseEstimator):
         FCBF selected feature indexes
     """
 
-    def __init__(self, k='all', threshold=0, memory=None):
+    def __init__(self, k="all", threshold=0, memory=None):
         self.k = k
         self.threshold = threshold
         self.memory = memory
@@ -129,31 +135,34 @@ class FCBF(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         self._n_features = X.shape[1]
-        if self.k == 'all' or self.k > 0:
-            warnings.filterwarnings('ignore', category=RRuntimeWarning,
-                                    message='^Rjava\.init\.warning')
+        if self.k == "all" or self.k > 0:
+            warnings.filterwarnings(
+                "ignore", category=RRuntimeWarning, message="^Rjava\.init\.warning"
+            )
             feature_idxs, scores = memory.cache(fcbf_feature_idxs)(
-                X, y, threshold=self.threshold)
-            warnings.filterwarnings('always', category=RRuntimeWarning)
-            if self.k != 'all':
+                X, y, threshold=self.threshold
+            )
+            warnings.filterwarnings("always", category=RRuntimeWarning)
+            if self.k != "all":
                 feature_idxs = feature_idxs[
-                    np.argsort(scores, kind='mergesort')[-self.k:]]
-                scores = np.sort(scores, kind='mergesort')[-self.k:]
-            self.selected_idxs_ = np.sort(feature_idxs, kind='mergesort')
-            self.scores_ = scores[np.argsort(feature_idxs, kind='mergesort')]
+                    np.argsort(scores, kind="mergesort")[-self.k :]
+                ]
+                scores = np.sort(scores, kind="mergesort")[-self.k :]
+            self.selected_idxs_ = np.sort(feature_idxs, kind="mergesort")
+            self.scores_ = scores[np.argsort(feature_idxs, kind="mergesort")]
         return self
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features."
-                % self.k)
+                "Use k='all' to return all features." % self.k
+            )
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'selected_idxs_')
+        check_is_fitted(self, "selected_idxs_")
         mask = np.zeros(self._n_features, dtype=bool)
-        if self.k == 'all' or self.k > 0:
+        if self.k == "all" or self.k > 0:
             mask[self.selected_idxs_] = True
         return mask
 
@@ -184,7 +193,7 @@ class ReliefF(ExtendedSelectorMixin, BaseEstimator):
         Feature scores
     """
 
-    def __init__(self, k='all', n_neighbors=10, sample_size=5, memory=None):
+    def __init__(self, k="all", n_neighbors=10, sample_size=5, memory=None):
         self.k = k
         self.n_neighbors = n_neighbors
         self.sample_size = sample_size
@@ -209,24 +218,25 @@ class ReliefF(ExtendedSelectorMixin, BaseEstimator):
         X, y = check_X_y(X, y, dtype=None)
         self._check_params(X, y)
         memory = check_memory(self.memory)
-        warnings.filterwarnings('ignore', category=RRuntimeWarning,
-                                message='^Rjava\.init\.warning')
+        warnings.filterwarnings(
+            "ignore", category=RRuntimeWarning, message="^Rjava\.init\.warning"
+        )
         self.scores_ = memory.cache(relieff_feature_score)(X, y)
-        warnings.filterwarnings('always', category=RRuntimeWarning)
+        warnings.filterwarnings("always", category=RRuntimeWarning)
         return self
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features."
-                % self.k)
+                "Use k='all' to return all features." % self.k
+            )
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
-        if self.k == 'all':
+        check_is_fitted(self, "scores_")
+        if self.k == "all":
             return np.ones_like(self.scores_, dtype=bool)
         mask = np.zeros_like(self.scores_, dtype=bool)
         if self.k > 0:
-            mask[np.argsort(self.scores_, kind='mergesort')[-self.k:]] = True
+            mask[np.argsort(self.scores_, kind="mergesort")[-self.k :]] = True
         return mask

@@ -1,87 +1,133 @@
 import os
+
 import numpy as np
+
 import rpy2.robjects as robjects
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
+from sklearn.utils.validation import check_is_fitted, check_memory
+
 from ._base import ExtendedSelectorMixin
-from ..utils.validation import check_is_fitted, check_memory
 
 numpy2ri.deactivate()
 pandas2ri.deactivate()
 numpy2ri.activate()
 pandas2ri.activate()
 
-r_base = importr('base')
-if 'deseq2_feature_score' not in robjects.globalenv:
-    r_base.source(os.path.dirname(__file__) + '/_rna_seq.R')
-r_deseq2_feature_score = robjects.globalenv['deseq2_feature_score']
-r_edger_feature_score = robjects.globalenv['edger_feature_score']
-r_edger_filterbyexpr_mask = robjects.globalenv['edger_filterbyexpr_mask']
-r_limma_voom_feature_score = robjects.globalenv['limma_voom_feature_score']
-r_dream_voom_feature_score = robjects.globalenv['dream_voom_feature_score']
-r_limma_feature_score = robjects.globalenv['limma_feature_score']
-if 'deseq2_rle_fit' not in robjects.globalenv:
-    r_base.source(os.path.dirname(__file__) + '/../preprocessing/_rna_seq.R')
-r_deseq2_rle_fit = robjects.globalenv['deseq2_rle_fit']
-r_deseq2_rle_vst_transform = robjects.globalenv['deseq2_rle_vst_transform']
-r_edger_tmm_fit = robjects.globalenv['edger_tmm_fit']
-r_edger_tmm_cpm_transform = robjects.globalenv['edger_tmm_cpm_transform']
-r_edger_tmm_tpm_transform = robjects.globalenv['edger_tmm_tpm_transform']
+r_base = importr("base")
+if "deseq2_feature_score" not in robjects.globalenv:
+    r_base.source(os.path.dirname(__file__) + "/_rna_seq.R")
+r_deseq2_feature_score = robjects.globalenv["deseq2_feature_score"]
+r_edger_feature_score = robjects.globalenv["edger_feature_score"]
+r_edger_filterbyexpr_mask = robjects.globalenv["edger_filterbyexpr_mask"]
+r_limma_voom_feature_score = robjects.globalenv["limma_voom_feature_score"]
+r_dream_voom_feature_score = robjects.globalenv["dream_voom_feature_score"]
+r_limma_feature_score = robjects.globalenv["limma_feature_score"]
+if "deseq2_rle_fit" not in robjects.globalenv:
+    r_base.source(os.path.dirname(__file__) + "/../preprocessing/_rna_seq.R")
+r_deseq2_rle_fit = robjects.globalenv["deseq2_rle_fit"]
+r_deseq2_rle_vst_transform = robjects.globalenv["deseq2_rle_vst_transform"]
+r_edger_tmm_fit = robjects.globalenv["edger_tmm_fit"]
+r_edger_tmm_cpm_transform = robjects.globalenv["edger_tmm_cpm_transform"]
+r_edger_tmm_tpm_transform = robjects.globalenv["edger_tmm_tpm_transform"]
 
 
-def deseq2_feature_score(X, y, sample_meta, lfc, scoring_meth, fit_type,
-                         lfc_shrink, model_batch, n_threads):
+def deseq2_feature_score(
+    X, y, sample_meta, lfc, scoring_meth, fit_type, lfc_shrink, model_batch, n_threads
+):
     sc, pa = r_deseq2_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        fit_type=fit_type, lfc_shrink=lfc_shrink, model_batch=model_batch,
-        n_threads=n_threads)
+        X,
+        y,
+        sample_meta=sample_meta,
+        lfc=lfc,
+        scoring_meth=scoring_meth,
+        fit_type=fit_type,
+        lfc_shrink=lfc_shrink,
+        model_batch=model_batch,
+        n_threads=n_threads,
+    )
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust,
-                        model_batch):
+def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, model_batch):
     sc, pa = r_edger_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        robust=robust, model_batch=model_batch)
+        X,
+        y,
+        sample_meta=sample_meta,
+        lfc=lfc,
+        scoring_meth=scoring_meth,
+        robust=robust,
+        model_batch=model_batch,
+    )
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def limma_voom_feature_score(X, y, sample_meta, lfc, scoring_meth, robust,
-                             model_batch, model_dupcor):
+def limma_voom_feature_score(
+    X, y, sample_meta, lfc, scoring_meth, robust, model_batch, model_dupcor
+):
     sc, pa = r_limma_voom_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        robust=robust, model_batch=model_batch, model_dupcor=model_dupcor)
+        X,
+        y,
+        sample_meta=sample_meta,
+        lfc=lfc,
+        scoring_meth=scoring_meth,
+        robust=robust,
+        model_batch=model_batch,
+        model_dupcor=model_dupcor,
+    )
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def dream_voom_feature_score(X, y, sample_meta, lfc, scoring_meth, model_batch,
-                             n_threads):
+def dream_voom_feature_score(
+    X, y, sample_meta, lfc, scoring_meth, model_batch, n_threads
+):
     sc, pa = r_dream_voom_feature_score(
-        X, y, sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        model_batch=model_batch, n_threads=n_threads)
+        X,
+        y,
+        sample_meta,
+        lfc=lfc,
+        scoring_meth=scoring_meth,
+        model_batch=model_batch,
+        n_threads=n_threads,
+    )
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
-def limma_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, trend,
-                        model_batch):
+def limma_feature_score(
+    X, y, sample_meta, lfc, scoring_meth, robust, trend, model_batch
+):
     sc, pa = r_limma_feature_score(
-        X, y, sample_meta=sample_meta, lfc=lfc, scoring_meth=scoring_meth,
-        robust=robust, trend=trend, model_batch=model_batch)
+        X,
+        y,
+        sample_meta=sample_meta,
+        lfc=lfc,
+        scoring_meth=scoring_meth,
+        robust=robust,
+        trend=trend,
+        model_batch=model_batch,
+    )
     return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def deseq2_rle_fit(X, y, sample_meta, fit_type, is_classif, model_batch):
     gm, df = r_deseq2_rle_fit(
-        X, y=y, sample_meta=sample_meta, fit_type=fit_type,
-        is_classif=is_classif, model_batch=model_batch)
+        X,
+        y=y,
+        sample_meta=sample_meta,
+        fit_type=fit_type,
+        is_classif=is_classif,
+        model_batch=model_batch,
+    )
     return np.array(gm, dtype=float), df
 
 
 def deseq2_rle_vst_transform(X, geo_means, disp_func):
-    return np.array(r_deseq2_rle_vst_transform(
-        X, geo_means=geo_means, disp_func=disp_func), dtype=float)
+    return np.array(
+        r_deseq2_rle_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
+        dtype=float,
+    )
 
 
 def edger_tmm_fit(X):
@@ -89,16 +135,28 @@ def edger_tmm_fit(X):
 
 
 def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
-    return np.array(r_edger_tmm_cpm_transform(
-        X, ref_sample=ref_sample, log=log, prior_count=prior_count),
-                    dtype=float)
+    return np.array(
+        r_edger_tmm_cpm_transform(
+            X, ref_sample=ref_sample, log=log, prior_count=prior_count
+        ),
+        dtype=float,
+    )
 
 
-def edger_tmm_tpm_transform(X, feature_meta, ref_sample, log, prior_count,
-                            gene_length_col):
-    return np.array(r_edger_tmm_tpm_transform(
-        X, feature_meta=feature_meta, ref_sample=ref_sample, log=log,
-        prior_count=prior_count, gene_length_col=gene_length_col), dtype=float)
+def edger_tmm_tpm_transform(
+    X, feature_meta, ref_sample, log, prior_count, gene_length_col
+):
+    return np.array(
+        r_edger_tmm_tpm_transform(
+            X,
+            feature_meta=feature_meta,
+            ref_sample=ref_sample,
+            log=log,
+            prior_count=prior_count,
+            gene_length_col=gene_length_col,
+        ),
+        dtype=float,
+    )
 
 
 class DESeq2(ExtendedSelectorMixin, BaseEstimator):
@@ -160,9 +218,18 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv',
-                 fit_type='parametric', lfc_shrink=True, model_batch=False,
-                 n_threads=1, memory=None):
+    def __init__(
+        self,
+        k="all",
+        pv=1,
+        fc=1,
+        scoring_meth="pv",
+        fit_type="parametric",
+        lfc_shrink=True,
+        model_batch=False,
+        n_threads=1,
+        memory=None,
+    ):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -198,13 +265,24 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self.scores_, self.padjs_ = memory.cache(deseq2_feature_score)(
-             X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-             scoring_meth=self.scoring_meth, fit_type=self.fit_type,
-             lfc_shrink=self.lfc_shrink, model_batch=self.model_batch,
-             n_threads=self.n_threads)
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=np.log2(self.fc),
+            scoring_meth=self.scoring_meth,
+            fit_type=self.fit_type,
+            lfc_shrink=self.lfc_shrink,
+            model_batch=self.model_batch,
+            n_threads=self.n_threads,
+        )
         self.geo_means_, self.disp_func_ = memory.cache(deseq2_rle_fit)(
-                X, y, sample_meta=sample_meta, fit_type=self.fit_type,
-                is_classif=True, model_batch=self.model_batch)
+            X,
+            y,
+            sample_meta=sample_meta,
+            fit_type=self.fit_type,
+            is_classif=True,
+            model_batch=self.model_batch,
+        )
         return self
 
     def transform(self, X, sample_meta=None):
@@ -222,11 +300,12 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             DESeq2 median-of-ratios normalized VST transformed data matrix
             with only the selected features.
         """
-        check_is_fitted(self, 'geo_means_')
+        check_is_fitted(self, "geo_means_")
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_rle_vst_transform)(
-            X, geo_means=self.geo_means_, disp_func=self.disp_func_)
+            X, geo_means=self.geo_means_, disp_func=self.disp_func_
+        )
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -244,33 +323,32 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features." % self.k)
+                "Use k='all' to return all features." % self.k
+            )
         if not 0 <= self.pv <= 1:
-            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
+            raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
-            raise ValueError(
-                'fold change threshold should be >= 1; got %r.' % self.fc)
+            raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self, "scores_")
         mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
-            if self.k == 'all':
+            if self.k == "all":
                 mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.scores_,
-                                kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_, kind="mergesort")[: self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -320,9 +398,16 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             y = robjects.NULL
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self._mask = np.array(r_edger_filterbyexpr_mask(
-            X, y=y, sample_meta=sample_meta, model_batch=self.model_batch,
-            is_classif=self.is_classif), dtype=bool)
+        self._mask = np.array(
+            r_edger_filterbyexpr_mask(
+                X,
+                y=y,
+                sample_meta=sample_meta,
+                model_batch=self.model_batch,
+                is_classif=self.is_classif,
+            ),
+            dtype=bool,
+        )
         return self
 
     def transform(self, X, sample_meta=None):
@@ -340,7 +425,7 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             edgeR filterByExpr counts data matrix with only the selected
             features.
         """
-        check_is_fitted(self, '_mask')
+        check_is_fitted(self, "_mask")
         X = check_array(X, dtype=int)
         return super().transform(X)
 
@@ -359,13 +444,13 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
 
     def _get_support_mask(self):
-        check_is_fitted(self, '_mask')
+        check_is_fitted(self, "_mask")
         return self._mask
 
 
@@ -434,9 +519,20 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv', robust=True,
-                 model_batch=False, transform_meth='cpm', log=True,
-                 prior_count=2, gene_length_col='Length', memory=None):
+    def __init__(
+        self,
+        k="all",
+        pv=1,
+        fc=1,
+        scoring_meth="pv",
+        robust=True,
+        model_batch=False,
+        transform_meth="cpm",
+        log=True,
+        prior_count=2,
+        gene_length_col="Length",
+        memory=None,
+    ):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -476,9 +572,14 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self.scores_, self.padjs_ = memory.cache(edger_feature_score)(
-            X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth, robust=self.robust,
-            model_batch=self.model_batch)
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=np.log2(self.fc),
+            scoring_meth=self.scoring_meth,
+            robust=self.robust,
+            model_batch=self.model_batch,
+        )
         self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
         return self
 
@@ -501,20 +602,27 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             edgeR TMM normalized CPM/TPM transformed data matrix with only the
             selected features.
         """
-        check_is_fitted(self, 'ref_sample_')
+        check_is_fitted(self, "ref_sample_")
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
-        if self.transform_meth == 'cpm':
+        if self.transform_meth == "cpm":
             X = memory.cache(edger_tmm_cpm_transform)(
-                X, ref_sample=self.ref_sample_, log=self.log,
-                prior_count=self.prior_count)
+                X,
+                ref_sample=self.ref_sample_,
+                log=self.log,
+                prior_count=self.prior_count,
+            )
         else:
             X = memory.cache(edger_tmm_tpm_transform)(
-                X, feature_meta=feature_meta, ref_sample=self.ref_sample_,
-                log=self.log, prior_count=self.prior_count,
-                gene_length_col=self.gene_length_col)
+                X,
+                feature_meta=feature_meta,
+                ref_sample=self.ref_sample_,
+                log=self.log,
+                prior_count=self.prior_count,
+                gene_length_col=self.gene_length_col,
+            )
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
@@ -534,39 +642,36 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features." % self.k)
+                "Use k='all' to return all features." % self.k
+            )
         if not 0 <= self.pv <= 1:
-            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
+            raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
-            raise ValueError(
-                'fold change threshold should be >= 1; got %r.' % self.fc)
-        if self.scoring_meth not in ('pv', 'lfc_pv'):
-            raise ValueError('invalid scoring_meth %s'
-                             % self.scoring_meth)
-        if self.transform_meth not in ('cpm', 'tpm'):
-            raise ValueError('invalid transform_meth %s'
-                             % self.transform_meth)
+            raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
+        if self.scoring_meth not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_meth %s" % self.scoring_meth)
+        if self.transform_meth not in ("cpm", "tpm"):
+            raise ValueError("invalid transform_meth %s" % self.transform_meth)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self, "scores_")
         mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
-            if self.k == 'all':
+            if self.k == "all":
                 mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.scores_,
-                                kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_, kind="mergesort")[: self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -641,10 +746,21 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv', robust=True,
-                 model_batch=False, model_dupcor=False, transform_meth='cpm',
-                 log=True, prior_count=2, gene_length_col='Length',
-                 memory=None):
+    def __init__(
+        self,
+        k="all",
+        pv=1,
+        fc=1,
+        scoring_meth="pv",
+        robust=True,
+        model_batch=False,
+        model_dupcor=False,
+        transform_meth="cpm",
+        log=True,
+        prior_count=2,
+        gene_length_col="Length",
+        memory=None,
+    ):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -685,9 +801,15 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self.scores_, self.padjs_ = memory.cache(limma_voom_feature_score)(
-                X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-                scoring_meth=self.scoring_meth, robust=self.robust,
-                model_batch=self.model_batch, model_dupcor=self.model_dupcor)
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=np.log2(self.fc),
+            scoring_meth=self.scoring_meth,
+            robust=self.robust,
+            model_batch=self.model_batch,
+            model_dupcor=self.model_dupcor,
+        )
         self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
         return self
 
@@ -710,20 +832,27 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             edgeR TMM normalized CPM/TPM transformed data matrix with only the
             selected features.
         """
-        check_is_fitted(self, 'ref_sample_')
+        check_is_fitted(self, "ref_sample_")
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
-        if self.transform_meth == 'cpm':
+        if self.transform_meth == "cpm":
             X = memory.cache(edger_tmm_cpm_transform)(
-                X, ref_sample=self.ref_sample_, log=self.log,
-                prior_count=self.prior_count)
+                X,
+                ref_sample=self.ref_sample_,
+                log=self.log,
+                prior_count=self.prior_count,
+            )
         else:
             X = memory.cache(edger_tmm_tpm_transform)(
-                X, feature_meta=feature_meta, ref_sample=self.ref_sample_,
-                log=self.log, prior_count=self.prior_count,
-                gene_length_col=self.gene_length_col)
+                X,
+                feature_meta=feature_meta,
+                ref_sample=self.ref_sample_,
+                log=self.log,
+                prior_count=self.prior_count,
+                gene_length_col=self.gene_length_col,
+            )
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
@@ -743,39 +872,36 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features." % self.k)
+                "Use k='all' to return all features." % self.k
+            )
         if not 0 <= self.pv <= 1:
-            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
+            raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
-            raise ValueError(
-                'fold change threshold should be >= 1; got %r.' % self.fc)
-        if self.scoring_meth not in ('pv', 'lfc_pv'):
-            raise ValueError('invalid scoring_meth %s'
-                             % self.scoring_meth)
-        if self.transform_meth not in ('cpm', 'tpm'):
-            raise ValueError('invalid transform_meth %s'
-                             % self.transform_meth)
+            raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
+        if self.scoring_meth not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_meth %s" % self.scoring_meth)
+        if self.transform_meth not in ("cpm", "tpm"):
+            raise ValueError("invalid transform_meth %s" % self.transform_meth)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self, "scores_")
         mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
-            if self.k == 'all':
+            if self.k == "all":
                 mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.scores_,
-                                kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_, kind="mergesort")[: self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -847,10 +973,20 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv',
-                 model_batch=False, n_threads=1, transform_meth='cpm',
-                 log=True, prior_count=2, gene_length_col='Length',
-                 memory=None):
+    def __init__(
+        self,
+        k="all",
+        pv=1,
+        fc=1,
+        scoring_meth="pv",
+        model_batch=False,
+        n_threads=1,
+        transform_meth="cpm",
+        log=True,
+        prior_count=2,
+        gene_length_col="Length",
+        memory=None,
+    ):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -888,9 +1024,14 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         self.scores_, self.padjs_ = memory.cache(dream_voom_feature_score)(
-                X, y, sample_meta, lfc=np.log2(self.fc),
-                scoring_meth=self.scoring_meth, model_batch=self.model_batch,
-                n_threads=self.n_threads)
+            X,
+            y,
+            sample_meta,
+            lfc=np.log2(self.fc),
+            scoring_meth=self.scoring_meth,
+            model_batch=self.model_batch,
+            n_threads=self.n_threads,
+        )
         self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
         return self
 
@@ -913,20 +1054,27 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             edgeR TMM normalized CPM/TPM transformed data matrix with only the
             selected features.
         """
-        check_is_fitted(self, 'ref_sample_')
+        check_is_fitted(self, "ref_sample_")
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
-        if self.transform_meth == 'cpm':
+        if self.transform_meth == "cpm":
             X = memory.cache(edger_tmm_cpm_transform)(
-                X, ref_sample=self.ref_sample_, log=self.log,
-                prior_count=self.prior_count)
+                X,
+                ref_sample=self.ref_sample_,
+                log=self.log,
+                prior_count=self.prior_count,
+            )
         else:
             X = memory.cache(edger_tmm_tpm_transform)(
-                X, feature_meta=feature_meta, ref_sample=self.ref_sample_,
-                log=self.log, prior_count=self.prior_count,
-                gene_length_col=self.gene_length_col)
+                X,
+                feature_meta=feature_meta,
+                ref_sample=self.ref_sample_,
+                log=self.log,
+                prior_count=self.prior_count,
+                gene_length_col=self.gene_length_col,
+            )
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
@@ -946,39 +1094,36 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features." % self.k)
+                "Use k='all' to return all features." % self.k
+            )
         if not 0 <= self.pv <= 1:
-            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
+            raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
-            raise ValueError(
-                'fold change threshold should be >= 1; got %r.' % self.fc)
-        if self.scoring_meth not in ('pv', 'lfc_pv'):
-            raise ValueError('invalid scoring_meth %s'
-                             % self.scoring_meth)
-        if self.transform_meth not in ('cpm', 'tpm'):
-            raise ValueError('invalid transform_meth %s'
-                             % self.transform_meth)
+            raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
+        if self.scoring_meth not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_meth %s" % self.scoring_meth)
+        if self.transform_meth not in ("cpm", "tpm"):
+            raise ValueError("invalid transform_meth %s" % self.transform_meth)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self, "scores_")
         mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
-            if self.k == 'all':
+            if self.k == "all":
                 mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.scores_,
-                                kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_, kind="mergesort")[: self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
@@ -1032,8 +1177,17 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         Feature adjusted p-values.
     """
 
-    def __init__(self, k='all', pv=1, fc=1, scoring_meth='pv',
-                 robust=False, trend=False, model_batch=False, memory=None):
+    def __init__(
+        self,
+        k="all",
+        pv=1,
+        fc=1,
+        scoring_meth="pv",
+        robust=False,
+        trend=False,
+        model_batch=False,
+        memory=None,
+    ):
         self.k = k
         self.pv = pv
         self.fc = fc
@@ -1068,9 +1222,15 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self.scores_, self.padjs_ = memory.cache(limma_feature_score)(
-            X, y, sample_meta=sample_meta, lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth, robust=self.robust,
-            trend=self.trend, model_batch=self.model_batch)
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=np.log2(self.fc),
+            scoring_meth=self.scoring_meth,
+            robust=self.robust,
+            trend=self.trend,
+            model_batch=self.model_batch,
+        )
         return self
 
     def transform(self, X, sample_meta=None):
@@ -1087,7 +1247,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         Xr : array of shape (n_samples, n_selected_features)
             Gene expression data matrix with only the selected features.
         """
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self, "scores_")
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -1105,30 +1265,29 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
             `X` with columns of zeros inserted where features would have
             been removed by :meth:`transform`.
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, y):
-        if not (self.k == 'all' or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
-                "Use k='all' to return all features." % self.k)
+                "Use k='all' to return all features." % self.k
+            )
         if not 0 <= self.pv <= 1:
-            raise ValueError('pv should be 0 <= pv <= 1; got %r.' % self.pv)
+            raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
-            raise ValueError(
-                'fold change threshold should be >= 1; got %r.' % self.fc)
+            raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
 
     def _get_support_mask(self):
-        check_is_fitted(self, 'scores_')
+        check_is_fitted(self, "scores_")
         mask = np.zeros_like(self.scores_, dtype=bool)
         if self.pv > 0:
-            if self.k == 'all':
+            if self.k == "all":
                 mask = np.ones_like(self.scores_, dtype=bool)
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
             elif self.k > 0:
-                mask[np.argsort(self.scores_,
-                                kind='mergesort')[:self.k]] = True
+                mask[np.argsort(self.scores_, kind="mergesort")[: self.k]] = True
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask

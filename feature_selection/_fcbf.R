@@ -112,9 +112,9 @@ select.fast.filter <- function(
                 Fq <- m3[, val[index.F2]]
                 SUpq <- CalcGain(Fp, Fq, FALSE)
                 if (SUpq >= entropy.sort[index.F2]) {
-                  val <- val[-index.F2]
-                  entropy.sort <- entropy.sort[-index.F2]
-                  index.F2 <- index.F2 - 1
+                    val <- val[-index.F2]
+                    entropy.sort <- entropy.sort[-index.F2]
+                    index.F2 <- index.F2 - 1
                 }
                 index.F2 <- index.F2 + 1
             }
