@@ -13,7 +13,6 @@ from collections import Counter
 import numpy as np
 from scipy import sparse
 from joblib import Parallel, delayed
-
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer
