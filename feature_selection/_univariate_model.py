@@ -4,7 +4,7 @@ import numpy as np
 
 from sklearn.base import BaseEstimator, clone, MetaEstimatorMixin
 from sklearn.utils import check_X_y
-from sklearn.utils.metaestimators import if_delegate_has_method
+from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ..feature_selection import ExtendedSelectorMixin
@@ -16,6 +16,19 @@ def _get_scores(estimator, X, y, **fit_params):
         Xj = X[:, [j]]
         scores[j] = estimator.fit(Xj, y, **fit_params).score(Xj, y)
     return scores
+
+
+def _estimator_has(attr):
+    """Check if we can delegate a method to the underlying estimator.
+
+    First, we check the first fitted estimator if available, otherwise we
+    check the unfitted estimator.
+    """
+    return lambda self: (
+        hasattr(self.estimator_, attr)
+        if hasattr(self, "estimator_")
+        else hasattr(self.estimator, attr)
+    )
 
 
 class SelectFromUnivariateModel(
@@ -87,7 +100,7 @@ class SelectFromUnivariateModel(
         self.estimator_.fit(self.transform(X), y, **fit_params)
         return self
 
-    @if_delegate_has_method(delegate="estimator")
+    @available_if(_estimator_has("predict"))
     def predict(self, X):
         """Reduce X to the selected features and then predict using the
            underlying estimator.
@@ -105,8 +118,8 @@ class SelectFromUnivariateModel(
         check_is_fitted(self)
         return self.estimator_.predict(self.transform(X))
 
-    @if_delegate_has_method(delegate="estimator")
-    def score(self, X, y, sample_weight=None):
+    @available_if(_estimator_has("score"))
+    def score(self, X, y, **score_params):
         """Reduce X to the selected features and then return the score of the
            underlying estimator.
 
@@ -118,17 +131,16 @@ class SelectFromUnivariateModel(
         y : array of shape [n_samples]
             The target values.
 
-        sample_weight : array-like, default=None
-            If not None, this argument is passed as ``sample_weight`` keyword
-            argument to the ``score`` method of the estimator.
+        **score_params : dict
+            Parameters to pass to the `score` method of the underlying
+            estimator.
+
+            .. versionadded:: 1.0
         """
         check_is_fitted(self)
-        score_params = {}
-        if sample_weight is not None:
-            score_params["sample_weight"] = sample_weight
         return self.estimator_.score(self.transform(X), y, **score_params)
 
-    @if_delegate_has_method(delegate="estimator")
+    @available_if(_estimator_has("decision_function"))
     def decision_function(self, X):
         """Compute the decision function of ``X``.
 
@@ -150,7 +162,7 @@ class SelectFromUnivariateModel(
         check_is_fitted(self)
         return self.estimator_.decision_function(self.transform(X))
 
-    @if_delegate_has_method(delegate="estimator")
+    @available_if(_estimator_has("predict_proba"))
     def predict_proba(self, X):
         """Predict class probabilities for X.
 
@@ -170,7 +182,7 @@ class SelectFromUnivariateModel(
         check_is_fitted(self)
         return self.estimator_.predict_proba(self.transform(X))
 
-    @if_delegate_has_method(delegate="estimator")
+    @available_if(_estimator_has("predict_log_proba"))
     def predict_log_proba(self, X):
         """Predict class log-probabilities for X.
 

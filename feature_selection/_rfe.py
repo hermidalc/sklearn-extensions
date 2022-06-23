@@ -139,6 +139,19 @@ def _rfe_single_fit(
     return rfe.scores_, rfe.n_remaining_feature_steps_
 
 
+def _estimator_has(attr):
+    """Check if we can delegate a method to the underlying estimator.
+
+    First, we check the first fitted estimator if available, otherwise we
+    check the unfitted estimator.
+    """
+    return lambda self: (
+        hasattr(self.estimator_, attr)
+        if hasattr(self, "estimator_")
+        else hasattr(self.estimator, attr)
+    )
+
+
 class ExtendedRFE(ExtendedSelectorMixin, RFE):
     """Feature ranking with advanced recursive feature elimination.
 
