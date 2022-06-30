@@ -22,5 +22,9 @@ class LogTransformer(FunctionTransformer):
     def __init__(self, base=2, shift=1):
         self.base = base
         self.shift = shift
-        super().__init__(func=shifted_log, check_inverse=False,
-                         kw_args={'base': base, 'shift': shift}, validate=True)
+        super().__init__(
+            func=shifted_log,
+            check_inverse=False,
+            kw_args={"base": base, "shift": shift},
+            validate=True,
+        )

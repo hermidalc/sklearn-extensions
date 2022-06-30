@@ -13,20 +13,19 @@ pandas2ri.deactivate()
 numpy2ri.activate()
 pandas2ri.activate()
 
-if 'limma_removeba_it' not in robjects.globalenv:
-    r_base = importr('base')
-    r_base.source(os.path.dirname(__file__) + '/_batch_effect.R')
-r_limma_removeba_fit = robjects.globalenv['limma_removeba_fit']
-r_limma_removeba_transform = robjects.globalenv['limma_removeba_transform']
-r_stica_removeba_fit = robjects.globalenv['stica_removeba_fit']
-r_stica_removeba_transform = robjects.globalenv['stica_removeba_transform']
-r_bapred_removeba_fit = robjects.globalenv['bapred_removeba_fit']
-r_bapred_removeba_transform = robjects.globalenv['bapred_removeba_transform']
+if "limma_removeba_it" not in robjects.globalenv:
+    r_base = importr("base")
+    r_base.source(os.path.dirname(__file__) + "/_batch_effect.R")
+r_limma_removeba_fit = robjects.globalenv["limma_removeba_fit"]
+r_limma_removeba_transform = robjects.globalenv["limma_removeba_transform"]
+r_stica_removeba_fit = robjects.globalenv["stica_removeba_fit"]
+r_stica_removeba_transform = robjects.globalenv["stica_removeba_transform"]
+r_bapred_removeba_fit = robjects.globalenv["bapred_removeba_fit"]
+r_bapred_removeba_transform = robjects.globalenv["bapred_removeba_transform"]
 
 
 def stica_removeba_fit(X, sample_meta, method, k, alpha):
-    xt, params = r_stica_removeba_fit(X, sample_meta, method=method, k=k,
-                                      alpha=alpha)
+    xt, params = r_stica_removeba_fit(X, sample_meta, method=method, k=k, alpha=alpha)
     return np.array(xt, dtype=float), params
 
 
@@ -69,7 +68,8 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self.batch_adj_ = r_limma_removeba_fit(
-            X, sample_meta, preserve_design=self.preserve_design)
+            X, sample_meta, preserve_design=self.preserve_design
+        )
         return self
 
     def transform(self, X, sample_meta):
@@ -88,10 +88,11 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             Batched corrected log-transformed input data matrix.
         """
-        check_is_fitted(self, 'batch_adj_')
+        check_is_fitted(self, "batch_adj_")
         X = check_array(X)
-        X = np.array(r_limma_removeba_transform(
-            X, sample_meta, self.batch_adj_), dtype=float)
+        X = np.array(
+            r_limma_removeba_transform(X, sample_meta, self.batch_adj_), dtype=float
+        )
         return X
 
     def inverse_transform(self, X, sample_meta):
@@ -156,7 +157,8 @@ class stICABatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self._Xt, self.params_ = memory.cache(stica_removeba_fit)(
-            X, sample_meta, method='stICA', k=self.k, alpha=self.alpha)
+            X, sample_meta, method="stICA", k=self.k, alpha=self.alpha
+        )
         return self
 
     def transform(self, X, sample_meta):
@@ -173,9 +175,9 @@ class stICABatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             Batched corrected log-transformed input data matrix.
         """
-        check_is_fitted(self, '_Xt')
+        check_is_fitted(self, "_Xt")
         X = check_array(X)
-        if hasattr(self, '_train_done'):
+        if hasattr(self, "_train_done"):
             memory = check_memory(self.memory)
             X = memory.cache(stica_removeba_transform)(X, self.params_)
         else:
@@ -240,7 +242,8 @@ class SVDBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self._Xt, self.params_ = memory.cache(stica_removeba_fit)(
-            X, sample_meta, method='SVD', k=self.k)
+            X, sample_meta, method="SVD", k=self.k
+        )
         return self
 
     def transform(self, X, sample_meta):
@@ -257,9 +260,9 @@ class SVDBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             Batched corrected log-transformed input data matrix.
         """
-        check_is_fitted(self, '_Xt')
+        check_is_fitted(self, "_Xt")
         X = check_array(X)
-        if hasattr(self, '_train_done'):
+        if hasattr(self, "_train_done"):
             memory = check_memory(self.memory)
             X = memory.cache(stica_removeba_transform)(X, self.params_)
         else:

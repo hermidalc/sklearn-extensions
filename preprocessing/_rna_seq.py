@@ -13,39 +13,58 @@ pandas2ri.deactivate()
 numpy2ri.activate()
 pandas2ri.activate()
 
-r_base = importr('base')
-if 'deseq2_rle_fit' not in robjects.globalenv:
-    r_base.source(os.path.dirname(__file__) + '/_rna_seq.R')
-r_deseq2_rle_fit = robjects.globalenv['deseq2_rle_fit']
-r_deseq2_rle_vst_transform = robjects.globalenv['deseq2_rle_vst_transform']
-r_edger_tmm_fit = robjects.globalenv['edger_tmm_fit']
-r_edger_tmm_cpm_transform = robjects.globalenv['edger_tmm_cpm_transform']
-r_edger_tmm_tpm_transform = robjects.globalenv['edger_tmm_tpm_transform']
+r_base = importr("base")
+if "deseq2_rle_fit" not in robjects.globalenv:
+    r_base.source(os.path.dirname(__file__) + "/_rna_seq.R")
+r_deseq2_rle_fit = robjects.globalenv["deseq2_rle_fit"]
+r_deseq2_rle_vst_transform = robjects.globalenv["deseq2_rle_vst_transform"]
+r_edger_tmm_fit = robjects.globalenv["edger_tmm_fit"]
+r_edger_tmm_cpm_transform = robjects.globalenv["edger_tmm_cpm_transform"]
+r_edger_tmm_tpm_transform = robjects.globalenv["edger_tmm_tpm_transform"]
 
 
 def deseq2_rle_fit(X, y, sample_meta, fit_type, is_classif, model_batch):
     gm, df = r_deseq2_rle_fit(
-        X, y=y, sample_meta=sample_meta, fit_type=fit_type,
-        is_classif=is_classif, model_batch=model_batch)
+        X,
+        y=y,
+        sample_meta=sample_meta,
+        fit_type=fit_type,
+        is_classif=is_classif,
+        model_batch=model_batch,
+    )
     return np.array(gm, dtype=float), df
 
 
 def deseq2_rle_vst_transform(X, geo_means, disp_func):
-    return np.array(r_deseq2_rle_vst_transform(
-        X, geo_means=geo_means, disp_func=disp_func), dtype=float)
+    return np.array(
+        r_deseq2_rle_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
+        dtype=float,
+    )
 
 
 def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
-    return np.array(r_edger_tmm_cpm_transform(
-        X, ref_sample=ref_sample, log=log, prior_count=prior_count),
-                    dtype=float)
+    return np.array(
+        r_edger_tmm_cpm_transform(
+            X, ref_sample=ref_sample, log=log, prior_count=prior_count
+        ),
+        dtype=float,
+    )
 
 
-def edger_tmm_tpm_transform(X, feature_meta, ref_sample, log, prior_count,
-                            gene_length_col):
-    return np.array(r_edger_tmm_tpm_transform(
-        X, feature_meta=feature_meta, ref_sample=ref_sample, log=log,
-        prior_count=prior_count, gene_length_col=gene_length_col), dtype=float)
+def edger_tmm_tpm_transform(
+    X, feature_meta, ref_sample, log, prior_count, gene_length_col
+):
+    return np.array(
+        r_edger_tmm_tpm_transform(
+            X,
+            feature_meta=feature_meta,
+            ref_sample=ref_sample,
+            log=log,
+            prior_count=prior_count,
+            gene_length_col=gene_length_col,
+        ),
+        dtype=float,
+    )
 
 
 class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
@@ -78,8 +97,9 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         RLE normalization dispersion function.
     """
 
-    def __init__(self, fit_type='parametric', is_classif=True,
-                 model_batch=False, memory=None):
+    def __init__(
+        self, fit_type="parametric", is_classif=True, model_batch=False, memory=None
+    ):
         self.fit_type = fit_type
         self.is_classif = is_classif
         self.model_batch = model_batch
@@ -113,8 +133,13 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         if sample_meta is None:
             sample_meta = robjects.NULL
         self.geo_means_, self.disp_func_ = deseq2_rle_fit(
-                X, y=y, sample_meta=sample_meta, fit_type=self.fit_type,
-                is_classif=self.is_classif, model_batch=self.model_batch)
+            X,
+            y=y,
+            sample_meta=sample_meta,
+            fit_type=self.fit_type,
+            is_classif=self.is_classif,
+            model_batch=self.model_batch,
+        )
         return self
 
     def transform(self, X, sample_meta=None):
@@ -131,11 +156,12 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             DESeq2 median-of-ratios normalized VST transformed data matrix.
         """
-        check_is_fitted(self, 'geo_means_')
+        check_is_fitted(self, "geo_means_")
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_rle_vst_transform)(
-            X, geo_means=self.geo_means_, disp_func=self.disp_func_)
+            X, geo_means=self.geo_means_, disp_func=self.disp_func_
+        )
         return X
 
     def inverse_transform(self, X, sample_meta=None):
@@ -151,10 +177,10 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         -------
         Xr : array of shape (n_samples, n_original_features)
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
 
 
 class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
@@ -215,12 +241,12 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             edgeR TMM normalized CPM transformed data matrix.
         """
-        check_is_fitted(self, 'ref_sample_')
+        check_is_fitted(self, "ref_sample_")
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_cpm_transform)(
-            X, ref_sample=self.ref_sample_, log=self.log,
-            prior_count=self.prior_count)
+            X, ref_sample=self.ref_sample_, log=self.log, prior_count=self.prior_count
+        )
         return X
 
     def inverse_transform(self, X, sample_meta=None):
@@ -236,10 +262,10 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
         -------
         Xr : array of shape (n_samples, n_original_features)
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
 
 
 class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
@@ -270,8 +296,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, log=True, prior_count=2, gene_length_col='Length',
-                 memory=None):
+    def __init__(self, log=True, prior_count=2, gene_length_col="Length", memory=None):
         self.log = log
         self.prior_count = prior_count
         self.gene_length_col = gene_length_col
@@ -308,12 +333,17 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         Xt : array of shape (n_samples, n_features)
             edgeR TMM normalized TPM transformed data matrix.
         """
-        check_is_fitted(self, 'ref_sample_')
+        check_is_fitted(self, "ref_sample_")
         X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_tpm_transform)(
-            X, feature_meta, ref_sample=self.ref_sample_, log=self.log,
-            prior_count=self.prior_count, gene_length_col=self.gene_length_col)
+            X,
+            feature_meta,
+            ref_sample=self.ref_sample_,
+            log=self.log,
+            prior_count=self.prior_count,
+            gene_length_col=self.gene_length_col,
+        )
         return X
 
     def inverse_transform(self, X, feature_meta=None):
@@ -329,16 +359,18 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         -------
         Xr : array of shape (n_samples, n_original_features)
         """
-        raise NotImplementedError('inverse_transform not implemented.')
+        raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
-                             'different feature dimensions'
-                             .format(X.shape[1], feature_meta.shape[0]))
+            raise ValueError(
+                "X ({:d}) and feature_meta ({:d}) have "
+                "different feature dimensions".format(X.shape[1], feature_meta.shape[0])
+            )
         if self.gene_length_col not in feature_meta.columns:
-            raise ValueError('{} feature_meta column does not exist.'
-                             .format(self.gene_length_col))
+            raise ValueError(
+                "{} feature_meta column does not exist.".format(self.gene_length_col)
+            )
 
     def _more_tags(self):
-        return {'requires_positive_X': True}
+        return {"requires_positive_X": True}
