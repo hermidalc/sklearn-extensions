@@ -3,9 +3,9 @@
 #         Andreas Mueller
 # License: BSD
 
-from collections import defaultdict
 import copy
 import six
+from collections import defaultdict
 
 
 class _NonePolicy:
@@ -13,7 +13,7 @@ class _NonePolicy:
         return {}
 
     def __repr__(self):
-        return 'None'
+        return "None"
 
 
 class _AllPolicy:
@@ -25,7 +25,7 @@ class _AllPolicy:
         pass
 
     def __repr__(self):
-        return repr('*')
+        return repr("*")
 
 
 class _ExcludePolicy:
@@ -34,8 +34,7 @@ class _ExcludePolicy:
         self.exclusions = exclusions
 
     def apply(self, props, unused):
-        out = {k: v for k, v in props.items()
-               if k not in self.exclusions}
+        out = {k: v for k, v in props.items() if k not in self.exclusions}
         unused.intersection_update(self.exclusions)
         return out
 
@@ -43,7 +42,7 @@ class _ExcludePolicy:
         self.exclusions.update(other)
 
     def __repr__(self):
-        return repr(['-' + k for k in sorted(self.exclusions)])
+        return repr(["-" + k for k in sorted(self.exclusions)])
 
 
 class _IncludePolicy:
@@ -53,22 +52,22 @@ class _IncludePolicy:
 
     def apply(self, props, unused):
         unused.difference_update(self.inclusions.values())
-        return {tgt: props[src]
-                for tgt, src in self.inclusions.items()
-                if src in props}
+        return {tgt: props[src] for tgt, src in self.inclusions.items() if src in props}
 
     def update(self, other):
         intersection = set(self.inclusions) & set(other.inclusions)
         if intersection:
-            raise ValueError('Target property names {!r} are used multiple '
-                             'times in the routing policy for the same '
-                             'destination'.format(sorted(intersection)))
+            raise ValueError(
+                "Target property names {!r} are used multiple "
+                "times in the routing policy for the same "
+                "destination".format(sorted(intersection))
+            )
         self.inclusions.update(other.inclusions)
 
     def __repr__(self):
-        return '{%s}' % ', '.join('{!r}: {!r}'.format(tgt, src)
-                                  for tgt, src
-                                  in self.inclusions.items())
+        return "{%s}" % ", ".join(
+            "{!r}: {!r}".format(tgt, src) for tgt, src in self.inclusions.items()
+        )
 
 
 class _Router:
@@ -117,7 +116,7 @@ class _Router:
 
         # Sorted so error messages are deterministic
         for dest, props in sorted(routing.items()):
-            if props == '*':
+            if props == "*":
                 policy = _AllPolicy()
             else:
                 if isinstance(props, six.string_types):
@@ -126,13 +125,15 @@ class _Router:
                 if isinstance(props, dict):
                     policy = _IncludePolicy(props)
                 else:
-                    minuses = [prop[:1] == '-' for prop in props]
+                    minuses = [prop[:1] == "-" for prop in props]
                     if all(minuses):
                         policy = _ExcludePolicy({prop[1:] for prop in props})
                     elif any(minuses):
-                        raise ValueError('Routing props should either all '
-                                         'start with "-" or none should start '
-                                         'with "-". Got a mix for %r' % dest)
+                        raise ValueError(
+                            "Routing props should either all "
+                            'start with "-" or none should start '
+                            'with "-". Got a mix for %r' % dest
+                        )
                     else:
                         policy = _IncludePolicy({prop: prop for prop in props})
 
@@ -142,14 +143,17 @@ class _Router:
                     policies[idx] = copy.deepcopy(policy)
                 else:
                     if type(policies[idx]) is not type(policy):
-                        raise ValueError('When handling routing for '
-                                         'destination {!r}, found a mix of '
-                                         'inclusion, exclusion and pass all '
-                                         'policies.'.format(dest))
+                        raise ValueError(
+                            "When handling routing for "
+                            "destination {!r}, found a mix of "
+                            "inclusion, exclusion and pass all "
+                            "policies.".format(dest)
+                        )
                     policies[idx].update(policy)
 
-        self.policies = [_NonePolicy() if policy is None else policy
-                         for policy in policies]
+        self.policies = [
+            _NonePolicy() if policy is None else policy for policy in policies
+        ]
 
     def __call__(self, props):
         """Apply the routing policy to the given sample props
@@ -164,8 +168,7 @@ class _Router:
             Names of props that were not routed anywhere.
         """
         unused = set(props)
-        out = [policy.apply(props, unused)
-               for policy in self.policies]
+        out = [policy.apply(props, unused) for policy in self.policies]
         return out, unused
 
 
@@ -267,7 +270,7 @@ def check_routing(routing, dests, default=None):
     """
     if routing is None:
         if default is None:
-            raise ValueError('Routing must be specified')
+            raise ValueError("Routing must be specified")
         routing = default
     if not callable(routing):
         return _Router(routing, dests)

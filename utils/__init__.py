@@ -14,7 +14,7 @@ def _array_indexing(array, key, key_dtype, axis):
     if np_version < (1, 12) or issparse(array):
         # FIXME: Remove the check for NumPy when using >= 1.12
         # check if we have an boolean array-likes to make the proper indexing
-        if key_dtype == 'bool':
+        if key_dtype == "bool":
             key = np.asarray(key)
     if isinstance(key, tuple):
         key = list(key)
@@ -23,7 +23,7 @@ def _array_indexing(array, key, key_dtype, axis):
 
 def _pandas_indexing(X, key, key_dtype, axis):
     """Index a pandas dataframe or a series."""
-    if hasattr(key, 'shape'):
+    if hasattr(key, "shape"):
         # Work-around for indexing with read-only key in pandas
         # FIXME: solved in pandas 0.25
         key = np.asarray(key)
@@ -31,7 +31,7 @@ def _pandas_indexing(X, key, key_dtype, axis):
     elif isinstance(key, tuple):
         key = list(key)
     # check whether we should index with loc or iloc
-    indexer = X.iloc if key_dtype == 'int' else X.loc
+    indexer = X.iloc if key_dtype == "int" else X.loc
     return indexer[:, key] if axis else indexer[key]
 
 
@@ -40,7 +40,7 @@ def _list_indexing(X, key, key_dtype):
     if np.isscalar(key) or isinstance(key, slice):
         # key is a slice or a scalar
         return X[key]
-    if key_dtype == 'bool':
+    if key_dtype == "bool":
         # key is a boolean array-like
         return list(compress(X, key))
     # key is a integer array-like of key
@@ -63,13 +63,21 @@ def _determine_key_type(key, accept_slice=True):
     dtype : {'int', 'str', 'bool', None}
         Returns the data type of key.
     """
-    err_msg = ("No valid specification of the columns. Only a scalar, list or "
-               "slice of all integers or all strings, or boolean mask is "
-               "allowed")
+    err_msg = (
+        "No valid specification of the columns. Only a scalar, list or "
+        "slice of all integers or all strings, or boolean mask is "
+        "allowed"
+    )
 
-    dtype_to_str = {int: 'int', str: 'str', bool: 'bool', np.bool_: 'bool'}
-    array_dtype_to_str = {'i': 'int', 'u': 'int', 'b': 'bool', 'O': 'str',
-                          'U': 'str', 'S': 'str'}
+    dtype_to_str = {int: "int", str: "str", bool: "bool", np.bool_: "bool"}
+    array_dtype_to_str = {
+        "i": "int",
+        "u": "int",
+        "b": "bool",
+        "O": "str",
+        "U": "str",
+        "S": "str",
+    }
 
     if key is None:
         return None
@@ -81,8 +89,7 @@ def _determine_key_type(key, accept_slice=True):
     if isinstance(key, slice):
         if not accept_slice:
             raise TypeError(
-                'Only array-like or scalar are supported. '
-                'A Python slice was given.'
+                "Only array-like or scalar are supported. " "A Python slice was given."
             )
         if key.start is None and key.stop is None:
             return None
@@ -102,7 +109,7 @@ def _determine_key_type(key, accept_slice=True):
         if len(key_type) != 1:
             raise ValueError(err_msg)
         return key_type.pop()
-    if hasattr(key, 'dtype'):
+    if hasattr(key, "dtype"):
         try:
             return array_dtype_to_str[key.dtype.kind]
         except KeyError:
@@ -162,10 +169,8 @@ def _safe_indexing(X, indices, axis=0):
 
     indices_dtype = _determine_key_type(indices)
 
-    if not hasattr(X, 'loc') and axis == 0 and indices_dtype == 'str':
-        raise ValueError(
-            "String indexing is not supported with 'axis=0'"
-        )
+    if not hasattr(X, "loc") and axis == 0 and indices_dtype == "str":
+        raise ValueError("String indexing is not supported with 'axis=0'")
 
     if axis == 1 and X.ndim != 2:
         raise ValueError(
@@ -174,7 +179,7 @@ def _safe_indexing(X, indices, axis=0):
             "Got {} instead with {} dimension(s).".format(type(X), X.ndim)
         )
 
-    if axis == 1 and indices_dtype == 'str' and not hasattr(X, 'loc'):
+    if axis == 1 and indices_dtype == "str" and not hasattr(X, "loc"):
         raise ValueError(
             "Specifying the columns using strings is only supported for "
             "pandas DataFrames"
@@ -201,22 +206,25 @@ def _get_column_indices(X, key):
     if isinstance(key, (list, tuple)) and not key:
         # we get an empty list
         return []
-    elif key_dtype in ('bool', 'int'):
+    elif key_dtype in ("bool", "int"):
         # Convert key into positive indexes
         try:
             idx = _safe_indexing(np.arange(n_columns), key)
         except IndexError as e:
             raise ValueError(
-                'all features must be in [0, {}] or [-{}, 0]'
-                .format(n_columns - 1, n_columns)
+                "all features must be in [0, {}] or [-{}, 0]".format(
+                    n_columns - 1, n_columns
+                )
             ) from e
         return np.atleast_1d(idx).tolist()
-    elif key_dtype == 'str':
+    elif key_dtype == "str":
         try:
             all_columns = list(X.columns)
         except AttributeError:
-            raise ValueError("Specifying the columns using strings is only "
-                             "supported for pandas DataFrames")
+            raise ValueError(
+                "Specifying the columns using strings is only "
+                "supported for pandas DataFrames"
+            )
         if isinstance(key, str):
             columns = [key]
         elif isinstance(key, slice):
@@ -235,7 +243,7 @@ def _get_column_indices(X, key):
         try:
             column_indices = [X.columns.get_loc(col) for col in columns]
         except ValueError as e:
-            if 'not in list' in str(e):
+            if "not in list" in str(e):
                 raise ValueError(
                     "A given column is not a column of the dataframe"
                 ) from e
@@ -243,6 +251,8 @@ def _get_column_indices(X, key):
 
         return column_indices
     else:
-        raise ValueError("No valid specification of the columns. Only a "
-                         "scalar, list or slice of all integers or all "
-                         "strings, or boolean mask is allowed")
+        raise ValueError(
+            "No valid specification of the columns. Only a "
+            "scalar, list or slice of all integers or all "
+            "strings, or boolean mask is allowed"
+        )
