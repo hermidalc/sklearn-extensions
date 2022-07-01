@@ -17,6 +17,7 @@ from ._custom_threshold import (
     MeanThreshold,
     MedianThreshold,
 )
+from ._mutual_info import MutualInfoScorerClassification, MutualInfoScorerRegression
 from ._from_model import SelectFromModel
 from ._multivariate import CFS, FCBF, ReliefF
 from ._nanostring import NanoStringEndogenousSelector
@@ -28,8 +29,6 @@ from ._univariate_selection import (
     ANOVAFScorerRegression,
     Chi2Scorer,
     GenericUnivariateSelect,
-    MutualInfoScorerClassification,
-    MutualInfoScorerRegression,
     SelectFdr,
     SelectFpr,
     SelectFwe,
