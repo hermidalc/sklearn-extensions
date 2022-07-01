@@ -479,7 +479,7 @@ class ExtendedBaseSearchCV(BaseSearchCV):
             best_index = results[f"rank_test_{refit_metric}"].argmin()
         return best_index
 
-    def fit(self, X, y=None, *, **fit_params):
+    def fit(self, X, y=None, **fit_params):
         """Run fit with all sets of parameters.
 
         Parameters
