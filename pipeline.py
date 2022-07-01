@@ -15,7 +15,7 @@ from itertools import islice
 
 import numpy as np
 import pandas as pd
-from joblib import delayed, Parallel
+from joblib import Parallel
 from scipy import sparse
 
 from sklearn.base import clone
@@ -27,6 +27,7 @@ from sklearn.utils import Bunch, _print_elapsed_time
 from sklearn.utils._estimator_html_repr import _VisualBlock
 from sklearn.utils._tags import _safe_tags
 from sklearn.utils.deprecation import deprecated
+from sklearn.utils.fixes import delayed
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted, check_memory
 

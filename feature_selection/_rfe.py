@@ -12,11 +12,12 @@ and better performance
 import numbers
 
 import numpy as np
-from joblib import Parallel, delayed, effective_n_jobs
+from joblib import effective_n_jobs, Parallel
 from sklearn.base import clone, is_classifier
 from sklearn.feature_selection import RFE
 from sklearn.model_selection import check_cv
 from sklearn.utils import safe_sqr
+from sklearn.utils.fixes import delayed
 from sklearn.utils.metaestimators import available_if, _safe_split
 from sklearn.utils.validation import (
     indexable,

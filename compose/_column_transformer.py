@@ -12,13 +12,14 @@ from collections import Counter
 
 import numpy as np
 from scipy import sparse
-from joblib import Parallel, delayed
+from joblib import Parallel
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.utils import Bunch
 from sklearn.utils._estimator_html_repr import _VisualBlock
 from sklearn.utils.deprecation import deprecated
+from sklearn.utils.fixes import delayed
 from sklearn.utils.validation import (
     check_array,
     check_is_fitted,

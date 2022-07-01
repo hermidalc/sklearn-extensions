@@ -22,15 +22,16 @@ from traceback import format_exc
 
 import numpy as np
 import scipy.sparse as sp
-from joblib import delayed, logger, Parallel
+from joblib import logger, Parallel
 from sklearn.base import is_classifier, clone
-from sklearn.utils import check_array, check_random_state, _message_with_time
-from sklearn.utils.metaestimators import _safe_split
 from sklearn.exceptions import FitFailedWarning
 from sklearn.metrics import check_scoring
 from sklearn.metrics._scorer import _check_multimetric_scoring, _MultimetricScorer
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils import check_array, check_random_state
+from sklearn.utils.fixes import delayed
+from sklearn.utils.metaestimators import _safe_split
 from sklearn.utils.validation import indexable, _check_fit_params, _num_samples
 
 from ..utils import _safe_indexing

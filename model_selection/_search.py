@@ -20,10 +20,9 @@ from functools import partial
 from itertools import product
 
 import numpy as np
-from joblib import Parallel, delayed
+from joblib import Parallel
+from numpy.ma import MaskedArray
 from scipy.stats import rankdata
-from sklearn import feature_selection
-
 from sklearn.base import is_classifier, clone
 from sklearn.metrics import check_scoring
 from sklearn.metrics._scorer import _check_multimetric_scoring
@@ -36,10 +35,11 @@ from sklearn.model_selection import (
 from sklearn.model_selection._search import BaseSearchCV
 from sklearn.model_selection._split import check_cv
 from sklearn.exceptions import NotFittedError
-from sklearn.utils.fixes import MaskedArray
+from sklearn.utils.fixes import delayed
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils._tags import _safe_tags
 from sklearn.utils.validation import indexable, check_is_fitted, _check_fit_params
+
 from ._validation import (
     _aggregate_score_dicts,
     _fit_and_score,
@@ -47,8 +47,6 @@ from ._validation import (
     _normalize_score_results,
     _warn_or_raise_about_fit_failures,
 )
-
-
 from ..utils.metaestimators import check_routing
 
 
