@@ -11,7 +11,8 @@ import numpy as np
 from scipy.sparse import issparse, csc_matrix
 from sklearn.cross_decomposition._pls import _PLS
 from sklearn.feature_selection import SelectorMixin
-from sklearn.utils import check_array, safe_mask, safe_sqr, _safe_tags
+from sklearn.utils import check_array, safe_mask, safe_sqr
+from sklearn.utils._tags import _safe_tags
 from sklearn.utils.validation import _check_feature_names_in
 
 from ..base import ExtendedTransformerMixin
