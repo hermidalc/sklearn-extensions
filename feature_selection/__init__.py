@@ -7,8 +7,10 @@ recursive feature elimination algorithm.
 from ._base import ExtendedSelectorMixin
 from ._cached import (
     CachedANOVAFScorerClassification,
+    CachedANOVAFScorerRegression,
     CachedChi2Scorer,
     CachedMutualInfoScorerClassification,
+    CachedMutualInfoScorerRegression,
 )
 from ._column import ColumnSelector
 from ._custom_threshold import (
@@ -42,8 +44,10 @@ __all__ = [
     "ANOVAFScorerClassification",
     "ANOVAFScorerRegression",
     "CachedANOVAFScorerClassification",
+    "CachedANOVAFScorerRegression",
     "CachedChi2Scorer",
     "CachedMutualInfoScorerClassification",
+    "CachedMutualInfoScorerRegression",
     "CFS",
     "Chi2Scorer",
     "ColumnSelector",
