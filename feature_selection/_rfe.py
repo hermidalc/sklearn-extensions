@@ -18,6 +18,7 @@ from sklearn.feature_selection import RFE
 from sklearn.model_selection import check_cv
 from sklearn.utils import safe_sqr
 from sklearn.utils.fixes import delayed
+from sklearn.utils.deprecation import deprecated
 from sklearn.utils.metaestimators import available_if, _safe_split
 from sklearn.utils.validation import (
     indexable,
