@@ -1,4 +1,4 @@
-from ..feature_selection import (
+from ._univariate_selection import (
     ANOVAFScorerClassification,
     Chi2Scorer,
     MutualInfoScorerClassification,

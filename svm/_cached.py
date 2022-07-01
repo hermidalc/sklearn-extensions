@@ -1,4 +1,5 @@
 from sklearn.svm import LinearSVC, SVC
+
 from ..cached import CachedFitMixin
 
 

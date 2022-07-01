@@ -12,7 +12,6 @@ from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import _num_samples
 
 from ._search import ExtendedBaseSearchCV
-from ..utils.metaestimators import check_routing
 
 
 __all__ = ["HalvingGridSearchCV", "HalvingRandomSearchCV"]

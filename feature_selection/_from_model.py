@@ -12,7 +12,8 @@ from sklearn.utils.metaestimators import available_if
 from sklearn.utils._tags import _safe_tags
 from sklearn.utils.validation import check_is_fitted, check_scalar, _num_features
 
-from ..feature_selection import ExtendedSelectorMixin, _get_feature_importances
+from ._base import _get_feature_importances
+from ..feature_selection import ExtendedSelectorMixin
 
 
 def _calculate_threshold(estimator, importances, threshold):

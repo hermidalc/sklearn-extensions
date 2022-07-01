@@ -16,11 +16,7 @@ from joblib import Parallel, delayed
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.utils import (
-    Bunch,
-    _get_column_indices,
-    _safe_indexing,
-)
+from sklearn.utils import Bunch
 from sklearn.utils._estimator_html_repr import _VisualBlock
 from sklearn.utils.deprecation import deprecated
 from sklearn.utils.validation import (
@@ -30,6 +26,7 @@ from sklearn.utils.validation import (
 )
 
 from ..base import ExtendedTransformerMixin
+from ..utils import _get_column_indices, _safe_indexing
 from ..utils.metaestimators import check_routing
 from ..pipeline import _fit_transform_one, _transform_one, _name_estimators
 

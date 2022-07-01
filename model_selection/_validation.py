@@ -31,9 +31,9 @@ from sklearn.metrics import check_scoring
 from sklearn.metrics._scorer import _check_multimetric_scoring, _MultimetricScorer
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
-from sklearn.utils import _safe_indexing
 from sklearn.utils.validation import indexable, _check_fit_params, _num_samples
 
+from ..utils import _safe_indexing
 from ..utils.metaestimators import check_routing
 
 
