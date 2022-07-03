@@ -1,21 +1,17 @@
 """
 The :mod:`sklearn.utils` module includes various utilities.
 """
+import numbers
 from itertools import compress
 
 import numpy as np
 from scipy.sparse import issparse
 
-from sklearn.utils.fixes import np_version
-
 
 def _array_indexing(array, key, key_dtype, axis):
     """Index an array or scipy.sparse consistently across NumPy version."""
-    if np_version < (1, 12) or issparse(array):
-        # FIXME: Remove the check for NumPy when using >= 1.12
-        # check if we have an boolean array-likes to make the proper indexing
-        if key_dtype == "bool":
-            key = np.asarray(key)
+    if issparse(array) and key_dtype == "bool":
+        key = np.asarray(key)
     if isinstance(key, tuple):
         key = list(key)
     return array[key] if axis == 0 else array[:, key]
@@ -30,9 +26,15 @@ def _pandas_indexing(X, key, key_dtype, axis):
         key = key if key.flags.writeable else key.copy()
     elif isinstance(key, tuple):
         key = list(key)
-    # check whether we should index with loc or iloc
-    indexer = X.iloc if key_dtype == "int" else X.loc
-    return indexer[:, key] if axis else indexer[key]
+
+    if key_dtype == "int" and not (isinstance(key, slice) or np.isscalar(key)):
+        # using take() instead of iloc[] ensures the return value is a "proper"
+        # copy that will not raise SettingWithCopyWarning
+        return X.take(key, axis=axis)
+    else:
+        # check whether we should index with loc or iloc
+        indexer = X.iloc if key_dtype == "int" else X.loc
+        return indexer[:, key] if axis else indexer[key]
 
 
 def _list_indexing(X, key, key_dtype):
@@ -89,7 +91,7 @@ def _determine_key_type(key, accept_slice=True):
     if isinstance(key, slice):
         if not accept_slice:
             raise TypeError(
-                "Only array-like or scalar are supported. " "A Python slice was given."
+                "Only array-like or scalar are supported. A Python slice was given."
             )
         if key.start is None and key.stop is None:
             return None
@@ -117,7 +119,7 @@ def _determine_key_type(key, accept_slice=True):
     raise ValueError(err_msg)
 
 
-def _safe_indexing(X, indices, axis=0):
+def _safe_indexing(X, indices, *, axis=0):
     """Return rows, items or columns of X using indices.
 
     .. warning::
@@ -169,7 +171,7 @@ def _safe_indexing(X, indices, axis=0):
 
     indices_dtype = _determine_key_type(indices)
 
-    if not hasattr(X, "loc") and axis == 0 and indices_dtype == "str":
+    if axis == 0 and indices_dtype == "str":
         raise ValueError("String indexing is not supported with 'axis=0'")
 
     if axis == 1 and X.ndim != 2:
@@ -219,7 +221,7 @@ def _get_column_indices(X, key):
         return np.atleast_1d(idx).tolist()
     elif key_dtype == "str":
         try:
-            all_columns = list(X.columns)
+            all_columns = X.columns
         except AttributeError:
             raise ValueError(
                 "Specifying the columns using strings is only "
@@ -230,10 +232,10 @@ def _get_column_indices(X, key):
         elif isinstance(key, slice):
             start, stop = key.start, key.stop
             if start is not None:
-                start = all_columns.index(start)
+                start = all_columns.get_loc(start)
             if stop is not None:
                 # pandas indexing with strings is endpoint included
-                stop = all_columns.index(stop) + 1
+                stop = all_columns.get_loc(stop) + 1
             else:
                 stop = n_columns + 1
             return list(range(n_columns)[slice(start, stop)])
@@ -241,13 +243,17 @@ def _get_column_indices(X, key):
             columns = list(key)
 
         try:
-            column_indices = [X.columns.get_loc(col) for col in columns]
-        except ValueError as e:
-            if "not in list" in str(e):
-                raise ValueError(
-                    "A given column is not a column of the dataframe"
-                ) from e
-            raise
+            column_indices = []
+            for col in columns:
+                col_idx = all_columns.get_loc(col)
+                if not isinstance(col_idx, numbers.Integral):
+                    raise ValueError(
+                        f"Selected columns, {columns}, are not unique in dataframe"
+                    )
+                column_indices.append(col_idx)
+
+        except KeyError as e:
+            raise ValueError("A given column is not a column of the dataframe") from e
 
         return column_indices
     else:
