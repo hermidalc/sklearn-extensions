@@ -224,6 +224,9 @@ class _BaseFilter(ExtendedSelectorMixin, _SklearnBaseFilter):
                 % (self.score_func, type(self.score_func))
             )
 
+    def _get_support_mask(self):
+        return super()._get_support_mask()
+
 
 class SelectPercentile(_BaseFilter, SklearnSelectPercentile):
     pass

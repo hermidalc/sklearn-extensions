@@ -8,4 +8,5 @@ from ..feature_selection import ExtendedSelectorMixin
 
 
 class VarianceThreshold(ExtendedSelectorMixin, SklearnVarianceThreshold):
-    pass
+    def _get_support_mask(self):
+        return super()._get_support_mask()
