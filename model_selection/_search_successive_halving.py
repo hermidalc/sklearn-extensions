@@ -9,7 +9,7 @@ from sklearn.model_selection import ParameterGrid, ParameterSampler
 from sklearn.model_selection._split import check_cv, _yields_constant_splits
 from sklearn.utils import resample
 from sklearn.utils.multiclass import check_classification_targets
-from sklearn.utils.validation import _num_samples
+from sklearn.utils.validation import _check_fit_params, _num_samples, indexable
 
 from ._search import ExtendedBaseSearchCV
 

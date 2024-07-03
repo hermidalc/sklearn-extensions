@@ -971,7 +971,9 @@ def make_extended_pipeline(*steps, memory=None, verbose=False, param_routing=Non
     )
 
 
-def _transform_one(transformer, X, y, weight, **transform_params):
+def _transform_one(
+    transformer, X, y, weight, message_clsname="", message=None, **transform_params
+):
     res = transformer.transform(X, **transform_params)
     # if we have a weight for this transformer, multiply output
     if weight is None:

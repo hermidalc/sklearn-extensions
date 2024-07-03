@@ -38,7 +38,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.fixes import delayed
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils._tags import _safe_tags
-from sklearn.utils.validation import indexable, check_is_fitted, _check_fit_params
+from sklearn.utils.validation import check_is_fitted, _check_fit_params, indexable
 
 from ._validation import (
     _aggregate_score_dicts,

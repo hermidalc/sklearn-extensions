@@ -25,8 +25,6 @@ import scipy.sparse as sp
 from joblib import logger, Parallel
 from sklearn.base import is_classifier, clone
 from sklearn.exceptions import FitFailedWarning
-from sklearn.metrics import check_scoring
-from sklearn.metrics._scorer import _check_multimetric_scoring, _MultimetricScorer
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import check_array, check_random_state
@@ -34,6 +32,8 @@ from sklearn.utils.fixes import delayed
 from sklearn.utils.metaestimators import _safe_split
 from sklearn.utils.validation import indexable, _check_fit_params, _num_samples
 
+from ..metrics import check_scoring
+from ..metrics._scorer import _check_multimetric_scoring, _MultimetricScorer
 from ..utils import _safe_indexing
 from ..utils.metaestimators import check_routing
 
