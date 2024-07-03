@@ -2,6 +2,7 @@
 The :mod:`sklearn.pipeline` module implements utilities to build a composite
 estimator, as a chain of transforms and estimators.
 """
+
 # Author: Edouard Duchesnay
 #         Gael Varoquaux
 #         Virgile Fritsch
@@ -358,7 +359,7 @@ class ExtendedPipeline(Pipeline):
 
     # Estimator interface
 
-    def _fit(self, X, y, step_fit_params, feature_meta=None):
+    def _fit(self, X, y=None, **fit_params):
         # shallow copy of steps - this should really be steps_
         self.steps = list(self.steps)
         self._validate_steps()
@@ -366,6 +367,11 @@ class ExtendedPipeline(Pipeline):
         memory = check_memory(self.memory)
 
         fit_transform_one_cached = memory.cache(_fit_transform_one)
+
+        step_fit_params, remainder = self.router(fit_params)
+        if remainder:
+            raise TypeError("Got unexpected keyword arguments %r" % sorted(remainder))
+        feature_meta = fit_params.get("feature_meta", None)
 
         for step_idx, name, transformer in self._iter(
             with_final=False, filter_passthrough=False
@@ -444,16 +450,10 @@ class ExtendedPipeline(Pipeline):
         self : object
             Pipeline with fitted steps.
         """
-        step_fit_params, remainder = self.router(fit_params)
-        if remainder:
-            raise TypeError("Got unexpected keyword arguments %r" % remainder)
-
-        feature_meta = fit_params.get("feature_meta", None)
-
-        Xt, final_fit_params = self._fit(X, y, step_fit_params, feature_meta)
+        Xt, fit_params = self._fit(X, y, **fit_params)
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
             if self._final_estimator != "passthrough":
-                self._final_estimator.fit(Xt, y, **final_fit_params)
+                self._final_estimator.fit(Xt, y, **fit_params)
         return self
 
     def fit_transform(self, X, y=None, **fit_params):
@@ -483,16 +483,15 @@ class ExtendedPipeline(Pipeline):
         Xt : ndarray of shape (n_samples, n_transformed_features)
             Transformed samples.
         """
-        Xt, final_fit_params = self._fit(X, y, **fit_params)
-        final_step = self._final_estimator
+        Xt, fit_params = self._fit(X, y, **fit_params)
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
-            if final_step == "passthrough":
+            if self._final_estimator == "passthrough":
                 return Xt
-            if hasattr(final_step, "fit_transform"):
-                return final_step.fit_transform(Xt, y, **final_fit_params)
+            if hasattr(self._final_estimator, "fit_transform"):
+                return self._final_estimator.fit_transform(Xt, y, **fit_params)
             else:
-                return final_step.fit(Xt, y, **final_fit_params).transform(
-                    Xt, **final_fit_params
+                return self._final_estimator.fit(Xt, y, **fit_params).transform(
+                    Xt, **fit_params
                 )
 
     @available_if(_final_estimator_has("predict"))
@@ -556,9 +555,9 @@ class ExtendedPipeline(Pipeline):
         y_pred : ndarray
             Result of calling `fit_predict` on the final estimator.
         """
-        Xt, final_fit_params = self._fit(X, y, **fit_params)
+        Xt, fit_params = self._fit(X, y, **fit_params)
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
-            y_pred = self.steps[-1][-1].fit_predict(Xt, y, **final_fit_params)
+            y_pred = self.steps[-1][-1].fit_predict(Xt, y, **fit_params)
         return y_pred
 
     @available_if(_final_estimator_has("predict_proba"))
