@@ -868,17 +868,16 @@ def transform_feature_meta(estimator, feature_meta):
                 )
     elif hasattr(estimator, "get_support"):
         transformed_feature_meta = feature_meta.loc[estimator.get_support()]
-    elif hasattr(estimator, "get_feature_names_out"):
+    # TODO: fix logic to handle all types of feature changing estimators
+    elif hasattr(estimator, "get_feature_names"):
         transformed_feature_meta = None
-        feature_names = estimator.get_feature_names_out(
-            input_features=feature_meta.index.values
-        ).astype(str)
+        feature_names = estimator.get_feature_names_out().astype(str)
         for feature_name in feature_meta.index:
             f_feature_meta = pd.concat(
                 [feature_meta.loc[[feature_name]]]
                 * np.sum(np.char.startswith(feature_names, "{}_".format(feature_name))),
                 axis=0,
-                ignore_index=True,
+                ignore_index=False,
             )
             if transformed_feature_meta is None:
                 transformed_feature_meta = f_feature_meta
@@ -886,7 +885,7 @@ def transform_feature_meta(estimator, feature_meta):
                 transformed_feature_meta = pd.concat(
                     [transformed_feature_meta, f_feature_meta],
                     axis=0,
-                    ignore_index=True,
+                    ignore_index=False,
                 )
         transformed_feature_meta = transformed_feature_meta.set_index(feature_names)
     else:
