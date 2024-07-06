@@ -11,6 +11,11 @@ from ._split import (
     StratifiedSampleFromGroupShuffleSplit,
 )
 
+from ._search import ExtendedGridSearchCV
+from ._search_successive_halving import ExtendedHalvingGridSearchCV
+from ._search import ExtendedRandomizedSearchCV
+from ._search_successive_halving import ExtendedHalvingRandomSearchCV
+
 from ._validation import cross_val_score
 from ._validation import cross_val_predict
 from ._validation import cross_validate
@@ -18,13 +23,12 @@ from ._validation import learning_curve
 from ._validation import permutation_test_score, shuffle_y
 from ._validation import validation_curve
 
-from ._search import ExtendedGridSearchCV
-from ._search import ExtendedRandomizedSearchCV
-
 
 __all__ = [
     "ExtendedGridSearchCV",
+    "ExtendedHalvingGridSearchCV",
     "ExtendedRandomizedSearchCV",
+    "ExtendedHalvingRandomizedSearchCV",
     "StratifiedGroupKFold",
     "StratifiedSampleFromGroupKFold",
     "StratifiedGroupShuffleSplit",
@@ -40,9 +44,10 @@ __all__ = [
     "validation_curve",
 ]
 
+
 # TODO: remove this check once the estimator is no longer experimental.
 def __getattr__(name):
-    if name in {"HalvingGridSearchCV", "HalvingRandomSearchCV"}:
+    if name in {"ExtendedHalvingGridSearchCV", "ExtendedHalvingRandomizedSearchCV"}:
         raise ImportError(
             f"{name} is experimental and the API might change without any "
             "deprecation cycle. To use it, you need to explicitly import "
