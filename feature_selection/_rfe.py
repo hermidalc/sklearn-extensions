@@ -41,8 +41,8 @@ def _rfe_fit(
     # RFECV self.scores_ and will not be calculated when calling regular
     # fit() method
 
-    supports = np.ones((len(steps) + 1, X.shape[1]), dtype=np.bool)
-    rankings = np.ones((len(steps) + 1, X.shape[1]), dtype=np.int)
+    supports = np.ones((len(steps) + 1, X.shape[1]), dtype=bool)
+    rankings = np.ones((len(steps) + 1, X.shape[1]), dtype=int)
 
     if step_score:
         scores = []
@@ -389,7 +389,7 @@ class ExtendedRFE(ExtendedSelectorMixin, RFE):
 
         # Initialization
         if self.penalty_factor_meta_col is None:
-            keep_features = np.array([], dtype=np.int)
+            keep_features = np.array([], dtype=int)
             n_features = X.shape[1]
         else:
             penalty_factor = feature_meta[self.penalty_factor_meta_col].to_numpy(
