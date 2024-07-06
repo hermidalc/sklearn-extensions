@@ -541,9 +541,7 @@ class ExtendedRFE(ExtendedSelectorMixin, RFE):
             n_remaining_feature_steps.append(n_remaining_features)
             steps.append(step)
 
-        self.n_remaining_feature_steps_ = np.array(
-            n_remaining_feature_steps, dtype=np.int
-        )
+        self.n_remaining_feature_steps_ = np.array(n_remaining_feature_steps, dtype=int)
         return steps
 
     def _check_params(self, X, y, feature_meta):
