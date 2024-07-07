@@ -24,8 +24,6 @@ from joblib import Parallel
 from numpy.ma import MaskedArray
 from scipy.stats import rankdata
 from sklearn.base import is_classifier, clone
-from sklearn.metrics import check_scoring
-from sklearn.metrics._scorer import _check_multimetric_scoring
 from sklearn.model_selection import (
     GridSearchCV,
     ParameterGrid,
@@ -40,6 +38,8 @@ from sklearn.utils.metaestimators import available_if
 from sklearn.utils._tags import _safe_tags
 from sklearn.utils.validation import check_is_fitted, _check_fit_params, indexable
 
+from ..metrics import check_scoring
+from ..metrics._scorer import _check_multimetric_scoring
 from ._validation import (
     _aggregate_score_dicts,
     _fit_and_score,

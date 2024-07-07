@@ -193,7 +193,7 @@ class _BaseScorer:
             kwargs_string,
         )
 
-    def __call__(self, estimator, X, y_true, sample_weight=None, **predict_params):
+    def __call__(self, estimator, X, y_true, sample_weight=None, **score_params):
         """Evaluate predicted target values for X relative to y_true.
 
         Parameters
@@ -222,7 +222,7 @@ class _BaseScorer:
             X,
             y_true,
             sample_weight=sample_weight,
-            **predict_params,
+            **score_params,
         )
 
     def _factory_args(self):

@@ -2079,8 +2079,10 @@ def _aggregate_score_dicts(scores):
      'b': array([10, 2, 3, 10])}
     """
     return {
-        key: np.asarray([score[key] for score in scores])
-        if isinstance(scores[0][key], numbers.Number)
-        else [score[key] for score in scores]
+        key: (
+            np.asarray([score[key] for score in scores])
+            if isinstance(scores[0][key], numbers.Number)
+            else [score[key] for score in scores]
+        )
         for key in scores[0]
     }
