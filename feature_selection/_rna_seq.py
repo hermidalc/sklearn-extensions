@@ -300,7 +300,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             with only the selected features.
         """
         check_is_fitted(self, "geo_means_")
-        X = self._validate_data(X, dtype=int)
+        X = self._validate_data(X, reset=False, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_rle_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
@@ -425,7 +425,7 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             features.
         """
         check_is_fitted(self, "_mask")
-        X = self._validate_data(X, dtype=int)
+        X = self._validate_data(X, reset=False, dtype=int)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -602,7 +602,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        X = self._validate_data(X, dtype=int)
+        X = self._validate_data(X, reset=False, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
@@ -832,7 +832,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        X = self._validate_data(X, dtype=int)
+        X = self._validate_data(X, reset=False, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
@@ -1054,7 +1054,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        X = self._validate_data(X, dtype=int)
+        X = self._validate_data(X, reset=False, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL

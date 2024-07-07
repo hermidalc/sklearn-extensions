@@ -89,7 +89,7 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
             Batched corrected log-transformed input data matrix.
         """
         check_is_fitted(self, "batch_adj_")
-        X = self._validate_data(X)
+        X = self._validate_data(X, reset=False)
         X = np.array(
             r_limma_removeba_transform(X, sample_meta, self.batch_adj_), dtype=float
         )
@@ -176,7 +176,7 @@ class stICABatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
             Batched corrected log-transformed input data matrix.
         """
         check_is_fitted(self, "_Xt")
-        X = self._validate_data(X)
+        X = self._validate_data(X, reset=False)
         if hasattr(self, "_train_done"):
             memory = check_memory(self.memory)
             X = memory.cache(stica_removeba_transform)(X, self.params_)
@@ -261,7 +261,7 @@ class SVDBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
             Batched corrected log-transformed input data matrix.
         """
         check_is_fitted(self, "_Xt")
-        X = self._validate_data(X)
+        X = self._validate_data(X, reset=False)
         if hasattr(self, "_train_done"):
             memory = check_memory(self.memory)
             X = memory.cache(stica_removeba_transform)(X, self.params_)

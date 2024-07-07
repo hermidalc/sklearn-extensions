@@ -156,7 +156,7 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
             Normalized data matrix.
         """
         check_is_fitted(self)
-        X = self._validate_data(X, dtype=int)
+        X = self._validate_data(X, reset=False, dtype=int)
         if hasattr(self, "_train_done"):
             return self._fit_transform(X, feature_meta, in_fit=False)
         self._train_done = True
@@ -367,7 +367,7 @@ class NanoStringDiffNormalizer(ExtendedTransformerMixin, BaseEstimator):
             Normalized data matrix.
         """
         check_is_fitted(self)
-        X = self._validate_data(X, dtype=int)
+        X = self._validate_data(X, reset=False, dtype=int)
         X = np.array(
             r_nanostringdiff_transform(
                 X,
