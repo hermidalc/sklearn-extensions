@@ -7,7 +7,6 @@ from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.rinterface import RRuntimeWarning
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ..feature_selection import ExtendedSelectorMixin
@@ -67,7 +66,7 @@ class CFS(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self._n_features = X.shape[1]
         warnings.filterwarnings(
             "ignore", category=RRuntimeWarning, message="^Rjava\.init\.warning"
@@ -131,7 +130,7 @@ class FCBF(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         self._n_features = X.shape[1]
@@ -215,7 +214,7 @@ class ReliefF(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         warnings.filterwarnings(

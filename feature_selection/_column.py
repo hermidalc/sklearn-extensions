@@ -2,7 +2,6 @@ import warnings
 
 import numpy as np
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
 from sklearn.utils.validation import check_is_fitted
 
 from ..feature_selection import ExtendedSelectorMixin
@@ -52,7 +51,7 @@ class ColumnSelector(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self._check_params(X, y, feature_meta)
         if self.cols is None:
             mask = np.ones(X.shape[1], dtype=bool)

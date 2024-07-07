@@ -4,7 +4,6 @@ import rpy2.robjects as robjects
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ..base import ExtendedTransformerMixin
@@ -126,9 +125,9 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
             Returns self.
         """
         if self.is_classif:
-            X, y = check_X_y(X, y, dtype=int)
+            X, y = self._validate_data(X, y, dtype=int)
         else:
-            X = check_array(X, dtype=int)
+            X = self._validate_data(X, dtype=int)
         if y is None:
             y = robjects.NULL
         if sample_meta is None:
@@ -158,7 +157,7 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
             DESeq2 median-of-ratios normalized VST transformed data matrix.
         """
         check_is_fitted(self, "geo_means_")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_rle_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
@@ -224,7 +223,7 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
 
         sample_meta: ignored
         """
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
         return self
 
@@ -243,7 +242,7 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
             edgeR TMM normalized CPM transformed data matrix.
         """
         check_is_fitted(self, "ref_sample_")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_cpm_transform)(
             X, ref_sample=self.ref_sample_, log=self.log, prior_count=self.prior_count
@@ -314,7 +313,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
 
         feature_meta : ignored
         """
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
         return self
 
@@ -335,7 +334,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
             edgeR TMM normalized TPM transformed data matrix.
         """
         check_is_fitted(self, "ref_sample_")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_tpm_transform)(
             X,

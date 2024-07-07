@@ -6,7 +6,6 @@ import rpy2.robjects as robjects
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_array, check_X_y
 from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ._base import ExtendedSelectorMixin
@@ -259,7 +258,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=int)
+        X, y = self._validate_data(X, y, dtype=int)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
@@ -301,7 +300,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             with only the selected features.
         """
         check_is_fitted(self, "geo_means_")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_rle_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
@@ -391,9 +390,9 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         if self.is_classif:
-            X, y = check_X_y(X, y, dtype=int)
+            X, y = self._validate_data(X, y, dtype=int)
         else:
-            X = check_array(X, dtype=int)
+            X = self._validate_data(X, dtype=int)
         if y is None:
             y = robjects.NULL
         if sample_meta is None:
@@ -426,7 +425,7 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             features.
         """
         check_is_fitted(self, "_mask")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -566,7 +565,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=int)
+        X, y = self._validate_data(X, y, dtype=int)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
@@ -603,7 +602,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
@@ -795,7 +794,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=int)
+        X, y = self._validate_data(X, y, dtype=int)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
@@ -833,7 +832,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
@@ -1020,7 +1019,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=int)
+        X, y = self._validate_data(X, y, dtype=int)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         self.scores_, self.padjs_ = memory.cache(dream_voom_feature_score)(
@@ -1055,7 +1054,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = robjects.NULL
@@ -1216,7 +1215,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y)
+        X, y = self._validate_data(X, y)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:

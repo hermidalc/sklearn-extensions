@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
 from sklearn.utils.validation import check_is_fitted
 
 from ..feature_selection import ExtendedSelectorMixin
@@ -41,7 +40,7 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self._check_params(X, y, feature_meta)
         mask = feature_meta[self.meta_col].isin(["Endogenous"]).to_numpy()
         if self.filter_empty:

@@ -3,7 +3,6 @@
 import numpy as np
 
 from sklearn.base import BaseEstimator, clone, MetaEstimatorMixin
-from sklearn.utils import check_X_y
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted, check_memory
 
@@ -91,7 +90,7 @@ class SelectFromUnivariateModel(
         -------
         self : object
         """
-        X, y = check_X_y(X, y)
+        X, y = self._validate_data(X, y)
         self._check_params(X, y)
         memory = check_memory(self.memory)
         estimator = clone(self.estimator)

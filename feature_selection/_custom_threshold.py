@@ -1,5 +1,4 @@
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_X_y
 from sklearn.utils.validation import check_is_fitted
 
 from ..feature_selection import ExtendedSelectorMixin
@@ -23,7 +22,7 @@ class ConfidenceThreshold(ExtendedSelectorMixin, BaseEstimator):
         Feature confidence scores.
     """
 
-    def __init__(self, threshold=0.95, meta_col='Confidence Score'):
+    def __init__(self, threshold=0.95, meta_col="Confidence Score"):
         self.threshold = threshold
         self.meta_col = meta_col
 
@@ -46,19 +45,21 @@ class ConfidenceThreshold(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self._check_params(X, y, feature_meta)
         self.confidence_scores_ = feature_meta[self.meta_col].to_numpy()
         return self
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
-                             'different feature dimensions'
-                             .format(X.shape[1], feature_meta.shape[0]))
+            raise ValueError(
+                "X ({:d}) and feature_meta ({:d}) have "
+                "different feature dimensions".format(X.shape[1], feature_meta.shape[0])
+            )
         if self.meta_col not in feature_meta.columns:
-            raise ValueError('{} feature_meta column does not exist.'
-                             .format(self.meta_col))
+            raise ValueError(
+                "{} feature_meta column does not exist.".format(self.meta_col)
+            )
 
     def _get_support_mask(self):
         check_is_fitted(self)
@@ -83,7 +84,7 @@ class CorrelationThreshold(ExtendedSelectorMixin, BaseEstimator):
         Feature correlation scores.
     """
 
-    def __init__(self, threshold=0.5, meta_col='Correlation Score'):
+    def __init__(self, threshold=0.5, meta_col="Correlation Score"):
         self.threshold = threshold
         self.meta_col = meta_col
 
@@ -106,19 +107,21 @@ class CorrelationThreshold(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self._check_params(X, y, feature_meta)
         self.correlation_scores_ = feature_meta[self.meta_col].to_numpy()
         return self
 
     def _check_params(self, X, y, feature_meta):
         if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError('X ({:d}) and feature_meta ({:d}) have '
-                             'different feature dimensions'
-                             .format(X.shape[1], feature_meta.shape[0]))
+            raise ValueError(
+                "X ({:d}) and feature_meta ({:d}) have "
+                "different feature dimensions".format(X.shape[1], feature_meta.shape[0])
+            )
         if self.meta_col not in feature_meta.columns:
-            raise ValueError('{} feature_meta column does not exist.'
-                             .format(self.meta_col))
+            raise ValueError(
+                "{} feature_meta column does not exist.".format(self.meta_col)
+            )
 
     def _get_support_mask(self):
         check_is_fitted(self)
@@ -140,7 +143,7 @@ class MeanThreshold(ExtendedSelectorMixin, BaseEstimator):
         Feature means.
     """
 
-    def __init__(self, threshold=0.):
+    def __init__(self, threshold=0.0):
         self.threshold = threshold
 
     def fit(self, X, y):
@@ -162,7 +165,7 @@ class MeanThreshold(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self.means_ = X.mean(axis=0)
         return self
 
@@ -186,7 +189,7 @@ class MedianThreshold(ExtendedSelectorMixin, BaseEstimator):
         Feature medians.
     """
 
-    def __init__(self, threshold=0.):
+    def __init__(self, threshold=0.0):
         self.threshold = threshold
 
     def fit(self, X, y):
@@ -208,7 +211,7 @@ class MedianThreshold(ExtendedSelectorMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, dtype=None)
+        X, y = self._validate_data(X, y, dtype=None)
         self.medians_ = X.median(axis=0)
         return self
 
