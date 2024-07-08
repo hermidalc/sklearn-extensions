@@ -4,6 +4,7 @@ import rpy2.robjects as robjects
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ..base import ExtendedTransformerMixin
@@ -157,7 +158,7 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
             DESeq2 median-of-ratios normalized VST transformed data matrix.
         """
         check_is_fitted(self, "geo_means_")
-        X = self._validate_data(X, reset=False, dtype=int)
+        X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_rle_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
@@ -242,7 +243,7 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
             edgeR TMM normalized CPM transformed data matrix.
         """
         check_is_fitted(self, "ref_sample_")
-        X = self._validate_data(X, reset=False, dtype=int)
+        X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_cpm_transform)(
             X, ref_sample=self.ref_sample_, log=self.log, prior_count=self.prior_count
@@ -334,7 +335,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
             edgeR TMM normalized TPM transformed data matrix.
         """
         check_is_fitted(self, "ref_sample_")
-        X = self._validate_data(X, reset=False, dtype=int)
+        X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_tpm_transform)(
             X,

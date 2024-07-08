@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.base import BaseEstimator
+from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 
 from ..feature_selection import ExtendedSelectorMixin
@@ -63,6 +64,7 @@ class NanoStringEndogenousSelector(ExtendedSelectorMixin, BaseEstimator):
             Input data matrix with only endogenous features.
         """
         check_is_fitted(self)
+        X = check_array(X, dtype=int)
         return super().transform(X)
 
     def inverse_transform(self, X, feature_meta=None):
