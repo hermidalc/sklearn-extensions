@@ -601,6 +601,19 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
 
     Parameters
     ----------
+    min_count : int (default = 10)
+        Minimum count required for at least some samples.
+
+    min_total_count : int (default = 15)
+        Minimum total count required.
+
+    large_n : int (default = 10)
+        Number of samples per group that is considered to be “large”.
+
+    min_prop : float (default = 0.7)
+        Minimum proportion of samples in the smallest group that express the gene.
+        Should be between 0 and 1.
+
     is_classif : bool (default = True)
         Whether this is a classification design.
 
@@ -609,7 +622,19 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         exists.
     """
 
-    def __init__(self, is_classif=True, model_batch=False):
+    def __init__(
+        self,
+        min_count=10,
+        min_total_count=15,
+        large_n=10,
+        min_prop=0.7,
+        is_classif=True,
+        model_batch=False,
+    ):
+        self.min_count = min_count
+        self.min_total_count = min_total_count
+        self.large_n = large_n
+        self.min_prop = min_prop
         self.is_classif = is_classif
         self.model_batch = model_batch
 
@@ -645,6 +670,10 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
                 X,
                 y=y,
                 sample_meta=sample_meta,
+                min_count=self.min_count,
+                min_total_count=self.min_total_count,
+                large_n=self.large_n,
+                min_prop=self.min_prop,
                 model_batch=self.model_batch,
                 is_classif=self.is_classif,
             ),

@@ -113,7 +113,8 @@ deseq2_zinbwave_feature_score <- function(
 }
 
 edger_filterbyexpr_mask <- function(
-    X, y=NULL, sample_meta=NULL, is_classif=TRUE, model_batch=FALSE
+    X, y=NULL, sample_meta=NULL, min_count=10, min_total_count=15, large_n=10,
+    min_prop=0.7, is_classif=TRUE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     dge <- DGEList(counts=t(X))
@@ -134,7 +135,12 @@ edger_filterbyexpr_mask <- function(
     } else {
         design <- NULL
     }
-    return(filterByExpr(dge, design))
+    return(
+        filterByExpr(
+            dge, design, min.count=min_count, min.total.count=min_total_count,
+            large.n=large_n, min.prop=min_prop
+        )
+    )
 }
 
 edger_feature_score <- function(
