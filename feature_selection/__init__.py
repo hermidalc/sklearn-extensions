@@ -23,7 +23,16 @@ from ._mutual_info import MutualInfoScorerClassification, MutualInfoScorerRegres
 from ._from_model import SelectFromModel
 from ._multivariate import CFS, FCBF, ReliefF
 from ._nanostring import NanoStringEndogenousSelector
-from ._rna_seq import DESeq2, DreamVoom, EdgeR, EdgeRFilterByExpr, Limma, LimmaVoom
+from ._rna_seq import (
+    DESeq2,
+    DESeq2ZINBWaVE,
+    DreamVoom,
+    EdgeR,
+    EdgeRZINBWaVE,
+    EdgeRFilterByExpr,
+    Limma,
+    LimmaVoom,
+)
 from ._rfe import ExtendedRFE, ExtendedRFECV
 from ._univariate_model import SelectFromUnivariateModel
 from ._univariate_selection import (
@@ -54,8 +63,10 @@ __all__ = [
     "ConfidenceThreshold",
     "CorrelationThreshold",
     "DESeq2",
+    "DESeq2ZINBWaVE",
     "DreamVoom",
     "EdgeR",
+    "EdgeRZINBWaVE",
     "EdgeRFilterByExpr",
     "ExtendedSelectorMixin",
     "FCBF",

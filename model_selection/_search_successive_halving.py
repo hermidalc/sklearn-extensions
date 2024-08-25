@@ -14,7 +14,7 @@ from sklearn.utils.validation import _check_fit_params, _num_samples, indexable
 from ._search import ExtendedBaseSearchCV
 
 
-__all__ = ["HalvingGridSearchCV", "HalvingRandomSearchCV"]
+__all__ = ["ExtendedHalvingGridSearchCV", "ExtendedHalvingRandomSearchCV"]
 
 
 class _SubsampleMetaSplitter:

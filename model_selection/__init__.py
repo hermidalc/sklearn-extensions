@@ -28,7 +28,7 @@ __all__ = [
     "ExtendedGridSearchCV",
     "ExtendedHalvingGridSearchCV",
     "ExtendedRandomizedSearchCV",
-    "ExtendedHalvingRandomizedSearchCV",
+    "ExtendedHalvingRandomSearchCV",
     "StratifiedGroupKFold",
     "StratifiedSampleFromGroupKFold",
     "StratifiedGroupShuffleSplit",
