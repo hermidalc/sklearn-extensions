@@ -55,6 +55,63 @@ deseq2_feature_score <- function(
     return(list(scores, results$padj))
 }
 
+deseq2_zinbwave_feature_score <- function(
+    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", K=0, epsilon=1e12,
+    fit_type="parametric", model_batch=FALSE, n_threads=1
+) {
+    suppressPackageStartupMessages(library("SummarizedExperiment"))
+    suppressPackageStartupMessages(library("zinbwave"))
+    suppressPackageStartupMessages(library("DESeq2"))
+    suppressPackageStartupMessages(library("BiocParallel"))
+    if (n_threads > 1) {
+        register(MulticoreParam(workers=n_threads))
+        parallel <- TRUE
+    } else {
+        register(SerialParam())
+        parallel <- FALSE
+    }
+    counts <- t(X)
+    if (
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
+    ) {
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        sample_meta$Class <- factor(sample_meta$Class)
+        zinb <- zinbwave(
+            SummarizedExperiment(
+                assays=list(counts=counts), colData=as.data.frame(sample_meta)
+            ),
+            K=K, epsilon=epsilon, observationalWeights=TRUE
+        )
+        design <- ~Batch + Class
+    } else {
+        zinb <- zinbwave(
+            SummarizedExperiment(
+                assays=list(counts=counts), colData=data.frame(Class=factor(y))
+            ),
+            K=K, epsilon=epsilon, observationalWeights=TRUE
+        )
+        design <- ~Class
+    }
+    dds <- DESeqDataSet(zinb, design)
+    suppressMessages(dds <- DESeq(
+        dds, fitType=fit_type, sfType="poscounts", useT=TRUE, minmu=1e-6,
+        parallel=parallel, quiet=TRUE
+    ))
+    suppressMessages(results <- as.data.frame(lfcShrink(
+        dds, coef=length(resultsNames(dds)), type="normal", lfcThreshold=lfc,
+        parallel=parallel, quiet=TRUE
+    )))
+    results$padj[is.na(results$padj)] <- 1
+    results <- results[order(as.integer(row.names(results))), , drop=FALSE]
+    if (scoring_meth == "lfc_pv") {
+        scores <- abs(results$log2FoldChange) * -log10(results$pvalue)
+    } else {
+        scores <- results$pvalue
+    }
+    return(list(scores, results$padj))
+}
+
 edger_filterbyexpr_mask <- function(
     X, y=NULL, sample_meta=NULL, is_classif=TRUE, model_batch=FALSE
 ) {
@@ -107,6 +164,52 @@ edger_feature_score <- function(
     }
     results <- as.data.frame(topTags(
         glt, n=Inf, adjust.method="BH", sort.by="none"
+    ))
+    results <- results[order(as.integer(row.names(results))), , drop=FALSE]
+    if (scoring_meth == "lfc_pv") {
+        scores <- abs(results$logFC) * -log10(results$PValue)
+    } else {
+        scores <- results$PValue
+    }
+    return(list(scores, results$FDR))
+}
+
+edger_zinbwave_feature_score <- function(
+    X, y, sample_meta=NULL, scoring_meth="pv", K=0, epsilon=1e12, robust=TRUE,
+    model_batch=FALSE, n_threads=1
+) {
+    suppressPackageStartupMessages(library("SummarizedExperiment"))
+    suppressPackageStartupMessages(library("zinbwave"))
+    suppressPackageStartupMessages(library("edgeR"))
+    suppressPackageStartupMessages(library("BiocParallel"))
+    if (n_threads > 1) {
+        register(MulticoreParam(workers=n_threads))
+    } else {
+        register(SerialParam())
+    }
+    counts <- t(X)
+    if (
+        model_batch && !is.null(sample_meta) &&
+        length(unique(sample_meta$Batch)) > 1
+    ) {
+        sample_meta$Batch <- factor(sample_meta$Batch)
+        sample_meta$Class <- factor(sample_meta$Class)
+        design <- model.matrix(~Batch + Class, data=sample_meta)
+    } else {
+        design <- model.matrix(~factor(y))
+    }
+    zinb <- zinbwave(
+        SummarizedExperiment(assays=list(counts=counts), colData=sample_meta),
+        K=K, epsilon=epsilon, observationalWeights=TRUE
+    )
+    dge <- DGEList(counts=assay(zinb))
+    dge$weights <- assay(zinb, "weights")
+    dge <- calcNormFactors(dge, method="TMM")
+    dge <- estimateDisp(dge, design, robust=robust)
+    fit <- glmFit(dge, design)
+    lrt <- glmWeightedF(fit, coef=ncol(design))
+    results <- as.data.frame(topTags(
+        lrt, n=Inf, adjust.method="BH", sort.by="none"
     ))
     results <- results[order(as.integer(row.names(results))), , drop=FALSE]
     if (scoring_meth == "lfc_pv") {

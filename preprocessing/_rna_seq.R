@@ -1,8 +1,8 @@
 # RNA-seq transformer functions
 
-deseq2_rle_fit <- function(
-    X, y=NULL, sample_meta=NULL, fit_type="parametric", is_classif=TRUE,
-    model_batch=FALSE
+deseq2_norm_fit <- function(
+    X, y=NULL, sample_meta=NULL, type="ratio", fit_type="parametric",
+    is_classif=TRUE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     counts <- t(X)
@@ -31,15 +31,29 @@ deseq2_rle_fit <- function(
             counts, data.frame(row.names=seq(1, ncol(counts))), ~1
         )
     }
-    dds <- estimateSizeFactors(dds, quiet=TRUE)
+    if (type == "poscounts") {
+        locfunc <- genefilter::shorth
+    } else {
+        locfunc <- stats::median
+    }
+    dds <- estimateSizeFactors(dds, type=type, locfunc=locfunc, quiet=TRUE)
     suppressMessages(
         dds <- estimateDispersions(dds, fitType=fit_type, quiet=TRUE)
     )
-    geo_means <- exp(rowMeans(log(counts)))
+    if (type == "ratio") {
+        geo_means <- exp(rowMeans(log(counts)))
+    } else if (type == "poscounts") {
+        # adapted from DESeq2::estimateSizeFactors source code
+        geoMeanNZ <- function(x) {
+            if (all(x == 0)) { 0 }
+            else { exp( sum(log(x[x > 0])) / length(x) ) }
+        }
+        geo_means <- apply(counts, 1, geoMeanNZ)
+    }
     return(list(geo_means, dispersionFunction(dds)))
 }
 
-deseq2_rle_vst_transform <- function(X, geo_means, disp_func) {
+deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
     suppressPackageStartupMessages(library("DESeq2"))
     counts <- t(X)
     dds <- DESeqDataSetFromMatrix(

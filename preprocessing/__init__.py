@@ -10,11 +10,11 @@ from ._batch_effect import (
 )
 from ._data import LogTransformer
 from ._nanostring import NanoStringNormalizer, NanoStringDiffNormalizer
-from ._rna_seq import DESeq2RLEVST, EdgeRTMMCPM, EdgeRTMMTPM
+from ._rna_seq import DESeq2NormVST, EdgeRTMMCPM, EdgeRTMMTPM
 
 
 __all__ = [
-    "DESeq2RLEVST",
+    "DESeq2NormVST",
     "EdgeRTMMCPM",
     "EdgeRTMMTPM",
     "LimmaBatchEffectRemover",

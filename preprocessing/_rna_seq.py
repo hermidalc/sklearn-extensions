@@ -14,20 +14,21 @@ numpy2ri.activate()
 pandas2ri.activate()
 
 r_base = importr("base")
-if "deseq2_rle_fit" not in robjects.globalenv:
+if "deseq2_norm_fit" not in robjects.globalenv:
     r_base.source(os.path.dirname(__file__) + "/_rna_seq.R")
-r_deseq2_rle_fit = robjects.globalenv["deseq2_rle_fit"]
-r_deseq2_rle_vst_transform = robjects.globalenv["deseq2_rle_vst_transform"]
+r_deseq2_norm_fit = robjects.globalenv["deseq2_norm_fit"]
+r_deseq2_norm_vst_transform = robjects.globalenv["deseq2_norm_vst_transform"]
 r_edger_tmm_fit = robjects.globalenv["edger_tmm_fit"]
 r_edger_tmm_cpm_transform = robjects.globalenv["edger_tmm_cpm_transform"]
 r_edger_tmm_tpm_transform = robjects.globalenv["edger_tmm_tpm_transform"]
 
 
-def deseq2_rle_fit(X, y, sample_meta, fit_type, is_classif, model_batch):
-    gm, df = r_deseq2_rle_fit(
+def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_batch):
+    gm, df = r_deseq2_norm_fit(
         X,
         y=y,
         sample_meta=sample_meta,
+        type=norm_type,
         fit_type=fit_type,
         is_classif=is_classif,
         model_batch=model_batch,
@@ -35,9 +36,9 @@ def deseq2_rle_fit(X, y, sample_meta, fit_type, is_classif, model_batch):
     return np.array(gm, dtype=float), df
 
 
-def deseq2_rle_vst_transform(X, geo_means, disp_func):
+def deseq2_norm_vst_transform(X, geo_means, disp_func):
     return np.array(
-        r_deseq2_rle_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
+        r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
         dtype=float,
     )
 
@@ -67,12 +68,14 @@ def edger_tmm_tpm_transform(
     )
 
 
-class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
-    """DESeq2 median-of-ratios normalization and VST transformation for count
-    data
+class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
+    """DESeq2 normalization and VST transformation for count data
 
     Parameters
     ----------
+    norm_type : str (default = "ratio")
+        estimateSizeFactors type option.
+
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
 
@@ -94,12 +97,18 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         Feature geometric means.
 
     disp_func_ : R/rpy2 function
-        RLE normalization dispersion function.
+        Normalization dispersion function.
     """
 
     def __init__(
-        self, fit_type="parametric", is_classif=True, model_batch=False, memory=None
+        self,
+        norm_type="ratio",
+        fit_type="parametric",
+        is_classif=True,
+        model_batch=False,
+        memory=None,
     ):
+        self.norm_type = norm_type
         self.fit_type = fit_type
         self.is_classif = is_classif
         self.model_batch = model_batch
@@ -132,10 +141,11 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
             y = robjects.NULL
         if sample_meta is None:
             sample_meta = robjects.NULL
-        self.geo_means_, self.disp_func_ = deseq2_rle_fit(
+        self.geo_means_, self.disp_func_ = deseq2_norm_fit(
             X,
             y=y,
             sample_meta=sample_meta,
+            norm_type=self.norm_type,
             fit_type=self.fit_type,
             is_classif=self.is_classif,
             model_batch=self.model_batch,
@@ -159,7 +169,7 @@ class DESeq2RLEVST(ExtendedTransformerMixin, BaseEstimator):
         check_is_fitted(self, "geo_means_")
         # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
-        X = memory.cache(deseq2_rle_vst_transform)(
+        X = memory.cache(deseq2_norm_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
         )
         return X
