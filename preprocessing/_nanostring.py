@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from scipy import stats
-import rpy2.robjects as robjects
+import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
@@ -10,16 +10,11 @@ from sklearn.utils.validation import check_array, check_is_fitted
 
 from ..base import ExtendedTransformerMixin
 
-numpy2ri.deactivate()
-pandas2ri.deactivate()
-numpy2ri.activate()
-pandas2ri.activate()
-
-if "nanostringdiff_fit" not in robjects.globalenv:
+if "nanostringdiff_fit" not in ro.globalenv:
     r_base = importr("base")
     r_base.source(os.path.dirname(__file__) + "/_nanostring.R")
-r_nanostringdiff_fit = robjects.globalenv["nanostringdiff_fit"]
-r_nanostringdiff_transform = robjects.globalenv["nanostringdiff_transform"]
+r_nanostringdiff_fit = ro.globalenv["nanostringdiff_fit"]
+r_nanostringdiff_transform = ro.globalenv["nanostringdiff_transform"]
 
 
 def _mean_plus_2sd(x):

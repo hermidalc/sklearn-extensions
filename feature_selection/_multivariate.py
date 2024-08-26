@@ -2,7 +2,7 @@ import os
 import warnings
 
 import numpy as np
-import rpy2.robjects as robjects
+import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.rinterface import RRuntimeWarning
 from rpy2.robjects.packages import importr
@@ -11,17 +11,12 @@ from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ..feature_selection import ExtendedSelectorMixin
 
-numpy2ri.deactivate()
-pandas2ri.deactivate()
-numpy2ri.activate()
-pandas2ri.activate()
-
-if "cfs_feature_idxs" not in robjects.globalenv:
+if "cfs_feature_idxs" not in ro.globalenv:
     r_base = importr("base")
     r_base.source(os.path.dirname(__file__) + "/_multivariate.R")
-r_cfs_feature_idxs = robjects.globalenv["cfs_feature_idxs"]
-r_fcbf_feature_idxs = robjects.globalenv["fcbf_feature_idxs"]
-r_relieff_feature_score = robjects.globalenv["relieff_feature_score"]
+r_cfs_feature_idxs = ro.globalenv["cfs_feature_idxs"]
+r_fcbf_feature_idxs = ro.globalenv["fcbf_feature_idxs"]
+r_relieff_feature_score = ro.globalenv["relieff_feature_score"]
 
 
 def fcbf_feature_idxs(X, y, threshold):

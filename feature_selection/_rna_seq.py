@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-import rpy2.robjects as robjects
+import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
@@ -10,29 +10,24 @@ from sklearn.utils.validation import check_array, check_is_fitted, check_memory
 
 from ._base import ExtendedSelectorMixin
 
-numpy2ri.deactivate()
-pandas2ri.deactivate()
-numpy2ri.activate()
-pandas2ri.activate()
-
 r_base = importr("base")
-if "deseq2_feature_score" not in robjects.globalenv:
+if "deseq2_feature_score" not in ro.globalenv:
     r_base.source(os.path.dirname(__file__) + "/_rna_seq.R")
-r_deseq2_feature_score = robjects.globalenv["deseq2_feature_score"]
-r_deseq2_zinbwave_feature_score = robjects.globalenv["deseq2_zinbwave_feature_score"]
-r_edger_feature_score = robjects.globalenv["edger_feature_score"]
-r_edger_zinbwave_feature_score = robjects.globalenv["edger_zinbwave_feature_score"]
-r_edger_filterbyexpr_mask = robjects.globalenv["edger_filterbyexpr_mask"]
-r_limma_voom_feature_score = robjects.globalenv["limma_voom_feature_score"]
-r_dream_voom_feature_score = robjects.globalenv["dream_voom_feature_score"]
-r_limma_feature_score = robjects.globalenv["limma_feature_score"]
-if "deseq2_norm_fit" not in robjects.globalenv:
+r_deseq2_feature_score = ro.globalenv["deseq2_feature_score"]
+r_deseq2_zinbwave_feature_score = ro.globalenv["deseq2_zinbwave_feature_score"]
+r_edger_feature_score = ro.globalenv["edger_feature_score"]
+r_edger_zinbwave_feature_score = ro.globalenv["edger_zinbwave_feature_score"]
+r_edger_filterbyexpr_mask = ro.globalenv["edger_filterbyexpr_mask"]
+r_limma_voom_feature_score = ro.globalenv["limma_voom_feature_score"]
+r_dream_voom_feature_score = ro.globalenv["dream_voom_feature_score"]
+r_limma_feature_score = ro.globalenv["limma_feature_score"]
+if "deseq2_norm_fit" not in ro.globalenv:
     r_base.source(os.path.dirname(__file__) + "/../preprocessing/_rna_seq.R")
-r_deseq2_norm_fit = robjects.globalenv["deseq2_norm_fit"]
-r_deseq2_norm_vst_transform = robjects.globalenv["deseq2_norm_vst_transform"]
-r_edger_tmm_fit = robjects.globalenv["edger_tmm_fit"]
-r_edger_tmm_cpm_transform = robjects.globalenv["edger_tmm_cpm_transform"]
-r_edger_tmm_tpm_transform = robjects.globalenv["edger_tmm_tpm_transform"]
+r_deseq2_norm_fit = ro.globalenv["deseq2_norm_fit"]
+r_deseq2_norm_vst_transform = ro.globalenv["deseq2_norm_vst_transform"]
+r_edger_tmm_fit = ro.globalenv["edger_tmm_fit"]
+r_edger_tmm_cpm_transform = ro.globalenv["edger_tmm_cpm_transform"]
+r_edger_tmm_tpm_transform = ro.globalenv["edger_tmm_tpm_transform"]
 
 
 def deseq2_feature_score(
@@ -303,7 +298,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.scores_, self.padjs_ = memory.cache(deseq2_feature_score)(
             X,
             y,
@@ -504,7 +499,7 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.scores_, self.padjs_ = memory.cache(deseq2_zinbwave_feature_score)(
             X,
             y,
@@ -662,9 +657,9 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         else:
             X = self._validate_data(X, dtype=int)
         if y is None:
-            y = robjects.NULL
+            y = ro.NULL
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self._mask = np.array(
             r_edger_filterbyexpr_mask(
                 X,
@@ -841,7 +836,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.scores_, self.padjs_ = memory.cache(edger_feature_score)(
             X,
             y,
@@ -877,7 +872,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
-            feature_meta = robjects.NULL
+            feature_meta = ro.NULL
         if self.transform_meth == "cpm":
             X = memory.cache(edger_tmm_cpm_transform)(
                 X,
@@ -1070,7 +1065,7 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.scores_, self.padjs_ = memory.cache(edger_zinbwave_feature_score)(
             X,
             y,
@@ -1107,7 +1102,7 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
-            feature_meta = robjects.NULL
+            feature_meta = ro.NULL
         if self.transform_meth == "cpm":
             X = memory.cache(edger_tmm_cpm_transform)(
                 X,
@@ -1298,7 +1293,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.scores_, self.padjs_ = memory.cache(limma_voom_feature_score)(
             X,
             y,
@@ -1335,7 +1330,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
-            feature_meta = robjects.NULL
+            feature_meta = ro.NULL
         if self.transform_meth == "cpm":
             X = memory.cache(edger_tmm_cpm_transform)(
                 X,
@@ -1557,7 +1552,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
-            feature_meta = robjects.NULL
+            feature_meta = ro.NULL
         if self.transform_meth == "cpm":
             X = memory.cache(edger_tmm_cpm_transform)(
                 X,
@@ -1719,7 +1714,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         self._check_params(X, y)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.scores_, self.padjs_ = memory.cache(limma_feature_score)(
             X,
             y,

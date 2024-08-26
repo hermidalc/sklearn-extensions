@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import rpy2.robjects as robjects
+import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
@@ -8,20 +8,15 @@ from sklearn.utils.validation import check_array, check_is_fitted, check_memory
 
 from ..base import ExtendedTransformerMixin
 
-numpy2ri.deactivate()
-pandas2ri.deactivate()
-numpy2ri.activate()
-pandas2ri.activate()
-
-if "limma_removeba_it" not in robjects.globalenv:
+if "limma_removeba_it" not in ro.globalenv:
     r_base = importr("base")
     r_base.source(os.path.dirname(__file__) + "/_batch_effect.R")
-r_limma_removeba_fit = robjects.globalenv["limma_removeba_fit"]
-r_limma_removeba_transform = robjects.globalenv["limma_removeba_transform"]
-r_stica_removeba_fit = robjects.globalenv["stica_removeba_fit"]
-r_stica_removeba_transform = robjects.globalenv["stica_removeba_transform"]
-r_bapred_removeba_fit = robjects.globalenv["bapred_removeba_fit"]
-r_bapred_removeba_transform = robjects.globalenv["bapred_removeba_transform"]
+r_limma_removeba_fit = ro.globalenv["limma_removeba_fit"]
+r_limma_removeba_transform = ro.globalenv["limma_removeba_transform"]
+r_stica_removeba_fit = ro.globalenv["stica_removeba_fit"]
+r_stica_removeba_transform = ro.globalenv["stica_removeba_transform"]
+r_bapred_removeba_fit = ro.globalenv["bapred_removeba_fit"]
+r_bapred_removeba_transform = ro.globalenv["bapred_removeba_transform"]
 
 
 def stica_removeba_fit(X, sample_meta, method, k, alpha):
@@ -66,7 +61,7 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         """
         X = self._validate_data(X)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.batch_adj_ = r_limma_removeba_fit(
             X, sample_meta, preserve_design=self.preserve_design
         )
@@ -155,7 +150,7 @@ class stICABatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         X = self._validate_data(X)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self._Xt, self.params_ = memory.cache(stica_removeba_fit)(
             X, sample_meta, method="stICA", k=self.k, alpha=self.alpha
         )
@@ -240,7 +235,7 @@ class SVDBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         X = self._validate_data(X)
         memory = check_memory(self.memory)
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self._Xt, self.params_ = memory.cache(stica_removeba_fit)(
             X, sample_meta, method="SVD", k=self.k
         )

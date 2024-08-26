@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import rpy2.robjects as robjects
+import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
@@ -8,19 +8,14 @@ from sklearn.utils.validation import check_array, check_is_fitted, check_memory
 
 from ..base import ExtendedTransformerMixin
 
-numpy2ri.deactivate()
-pandas2ri.deactivate()
-numpy2ri.activate()
-pandas2ri.activate()
-
 r_base = importr("base")
-if "deseq2_norm_fit" not in robjects.globalenv:
+if "deseq2_norm_fit" not in ro.globalenv:
     r_base.source(os.path.dirname(__file__) + "/_rna_seq.R")
-r_deseq2_norm_fit = robjects.globalenv["deseq2_norm_fit"]
-r_deseq2_norm_vst_transform = robjects.globalenv["deseq2_norm_vst_transform"]
-r_edger_tmm_fit = robjects.globalenv["edger_tmm_fit"]
-r_edger_tmm_cpm_transform = robjects.globalenv["edger_tmm_cpm_transform"]
-r_edger_tmm_tpm_transform = robjects.globalenv["edger_tmm_tpm_transform"]
+r_deseq2_norm_fit = ro.globalenv["deseq2_norm_fit"]
+r_deseq2_norm_vst_transform = ro.globalenv["deseq2_norm_vst_transform"]
+r_edger_tmm_fit = ro.globalenv["edger_tmm_fit"]
+r_edger_tmm_cpm_transform = ro.globalenv["edger_tmm_cpm_transform"]
+r_edger_tmm_tpm_transform = ro.globalenv["edger_tmm_tpm_transform"]
 
 
 def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_batch):
@@ -138,9 +133,9 @@ class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
         else:
             X = self._validate_data(X, dtype=int)
         if y is None:
-            y = robjects.NULL
+            y = ro.NULL
         if sample_meta is None:
-            sample_meta = robjects.NULL
+            sample_meta = ro.NULL
         self.geo_means_, self.disp_func_ = deseq2_norm_fit(
             X,
             y=y,
