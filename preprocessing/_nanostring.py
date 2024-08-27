@@ -340,11 +340,14 @@ class NanoStringDiffNormalizer(ExtendedTransformerMixin, BaseEstimator):
         """
         X, y = self._validate_data(X, y, dtype=int)
         self._check_params(X, y, feature_meta)
-        (
-            self.positive_factor_,
-            self.negative_factor_,
-            self.housekeeping_factor_,
-        ) = r_nanostringdiff_fit(X, y, feature_meta, meta_col=self.meta_col)
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            (
+                self.positive_factor_,
+                self.negative_factor_,
+                self.housekeeping_factor_,
+            ) = r_nanostringdiff_fit(X, y, feature_meta, meta_col=self.meta_col)
         return self
 
     def transform(self, X, feature_meta=None):
@@ -363,16 +366,19 @@ class NanoStringDiffNormalizer(ExtendedTransformerMixin, BaseEstimator):
         """
         check_is_fitted(self)
         # X = check_array(X, dtype=int)
-        X = np.array(
-            r_nanostringdiff_transform(
-                X,
-                self.positive_factor_,
-                self.negative_factor_,
-                self.housekeeping_factor_,
-                background_threshold=self.background_threshold,
-            ),
-            dtype=int,
-        )
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            X = np.array(
+                r_nanostringdiff_transform(
+                    X,
+                    self.positive_factor_,
+                    self.negative_factor_,
+                    self.housekeeping_factor_,
+                    background_threshold=self.background_threshold,
+                ),
+                dtype=int,
+            )
         return X
 
     def inverse_transform(self, X, feature_meta=None):

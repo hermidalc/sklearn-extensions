@@ -20,12 +20,16 @@ r_bapred_removeba_transform = ro.globalenv["bapred_removeba_transform"]
 
 
 def stica_removeba_fit(X, sample_meta, method, k, alpha):
-    xt, params = r_stica_removeba_fit(X, sample_meta, method=method, k=k, alpha=alpha)
-    return np.array(xt, dtype=float), params
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        xt, params = r_stica_removeba_fit(
+            X, sample_meta, method=method, k=k, alpha=alpha
+        )
+        return np.array(xt, dtype=float), params
 
 
 def stica_removeba_transform(X, params):
-    return np.array(r_stica_removeba_transform(X, params), dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(r_stica_removeba_transform(X, params), dtype=float)
 
 
 class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
@@ -62,9 +66,12 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         X = self._validate_data(X)
         if sample_meta is None:
             sample_meta = ro.NULL
-        self.batch_adj_ = r_limma_removeba_fit(
-            X, sample_meta, preserve_design=self.preserve_design
-        )
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            self.batch_adj_ = r_limma_removeba_fit(
+                X, sample_meta, preserve_design=self.preserve_design
+            )
         return self
 
     def transform(self, X, sample_meta):
@@ -85,9 +92,12 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
         """
         check_is_fitted(self, "batch_adj_")
         # X = check_array(X)
-        X = np.array(
-            r_limma_removeba_transform(X, sample_meta, self.batch_adj_), dtype=float
-        )
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            X = np.array(
+                r_limma_removeba_transform(X, sample_meta, self.batch_adj_), dtype=float
+            )
         return X
 
     def inverse_transform(self, X, sample_meta):

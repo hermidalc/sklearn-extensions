@@ -33,160 +33,172 @@ r_edger_tmm_tpm_transform = ro.globalenv["edger_tmm_tpm_transform"]
 def deseq2_feature_score(
     X, y, sample_meta, lfc, scoring_meth, fit_type, lfc_shrink, model_batch, n_threads
 ):
-    sc, pa = r_deseq2_feature_score(
-        X,
-        y,
-        sample_meta=sample_meta,
-        lfc=lfc,
-        scoring_meth=scoring_meth,
-        fit_type=fit_type,
-        lfc_shrink=lfc_shrink,
-        model_batch=model_batch,
-        n_threads=n_threads,
-    )
-    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        sc, pa = r_deseq2_feature_score(
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=lfc,
+            scoring_meth=scoring_meth,
+            fit_type=fit_type,
+            lfc_shrink=lfc_shrink,
+            model_batch=model_batch,
+            n_threads=n_threads,
+        )
+        return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def deseq2_zinbwave_feature_score(
     X, y, sample_meta, lfc, scoring_meth, epsilon, fit_type, model_batch, n_threads
 ):
-    sc, pa = r_deseq2_zinbwave_feature_score(
-        X,
-        y,
-        sample_meta=sample_meta,
-        lfc=lfc,
-        scoring_meth=scoring_meth,
-        epsilon=epsilon,
-        fit_type=fit_type,
-        model_batch=model_batch,
-        n_threads=n_threads,
-    )
-    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        sc, pa = r_deseq2_zinbwave_feature_score(
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=lfc,
+            scoring_meth=scoring_meth,
+            epsilon=epsilon,
+            fit_type=fit_type,
+            model_batch=model_batch,
+            n_threads=n_threads,
+        )
+        return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, model_batch):
-    sc, pa = r_edger_feature_score(
-        X,
-        y,
-        sample_meta=sample_meta,
-        lfc=lfc,
-        scoring_meth=scoring_meth,
-        robust=robust,
-        model_batch=model_batch,
-    )
-    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        sc, pa = r_edger_feature_score(
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=lfc,
+            scoring_meth=scoring_meth,
+            robust=robust,
+            model_batch=model_batch,
+        )
+        return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def edger_zinbwave_feature_score(
     X, y, sample_meta, scoring_meth, epsilon, robust, model_batch, n_threads
 ):
-    sc, pa = r_edger_zinbwave_feature_score(
-        X,
-        y,
-        sample_meta=sample_meta,
-        scoring_meth=scoring_meth,
-        epsilon=epsilon,
-        robust=robust,
-        model_batch=model_batch,
-        n_threads=n_threads,
-    )
-    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        sc, pa = r_edger_zinbwave_feature_score(
+            X,
+            y,
+            sample_meta=sample_meta,
+            scoring_meth=scoring_meth,
+            epsilon=epsilon,
+            robust=robust,
+            model_batch=model_batch,
+            n_threads=n_threads,
+        )
+        return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def limma_voom_feature_score(
     X, y, sample_meta, lfc, scoring_meth, robust, model_batch, model_dupcor
 ):
-    sc, pa = r_limma_voom_feature_score(
-        X,
-        y,
-        sample_meta=sample_meta,
-        lfc=lfc,
-        scoring_meth=scoring_meth,
-        robust=robust,
-        model_batch=model_batch,
-        model_dupcor=model_dupcor,
-    )
-    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        sc, pa = r_limma_voom_feature_score(
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=lfc,
+            scoring_meth=scoring_meth,
+            robust=robust,
+            model_batch=model_batch,
+            model_dupcor=model_dupcor,
+        )
+        return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def dream_voom_feature_score(
     X, y, sample_meta, lfc, scoring_meth, model_batch, n_threads
 ):
-    sc, pa = r_dream_voom_feature_score(
-        X,
-        y,
-        sample_meta,
-        lfc=lfc,
-        scoring_meth=scoring_meth,
-        model_batch=model_batch,
-        n_threads=n_threads,
-    )
-    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        sc, pa = r_dream_voom_feature_score(
+            X,
+            y,
+            sample_meta,
+            lfc=lfc,
+            scoring_meth=scoring_meth,
+            model_batch=model_batch,
+            n_threads=n_threads,
+        )
+        return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def limma_feature_score(
     X, y, sample_meta, lfc, scoring_meth, robust, trend, model_batch
 ):
-    sc, pa = r_limma_feature_score(
-        X,
-        y,
-        sample_meta=sample_meta,
-        lfc=lfc,
-        scoring_meth=scoring_meth,
-        robust=robust,
-        trend=trend,
-        model_batch=model_batch,
-    )
-    return np.array(sc, dtype=float), np.array(pa, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        sc, pa = r_limma_feature_score(
+            X,
+            y,
+            sample_meta=sample_meta,
+            lfc=lfc,
+            scoring_meth=scoring_meth,
+            robust=robust,
+            trend=trend,
+            model_batch=model_batch,
+        )
+        return np.array(sc, dtype=float), np.array(pa, dtype=float)
 
 
 def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_batch):
-    gm, df = r_deseq2_norm_fit(
-        X,
-        y=y,
-        sample_meta=sample_meta,
-        type=norm_type,
-        fit_type=fit_type,
-        is_classif=is_classif,
-        model_batch=model_batch,
-    )
-    return np.array(gm, dtype=float), df
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        gm, df = r_deseq2_norm_fit(
+            X,
+            y=y,
+            sample_meta=sample_meta,
+            type=norm_type,
+            fit_type=fit_type,
+            is_classif=is_classif,
+            model_batch=model_batch,
+        )
+        return np.array(gm, dtype=float), df
 
 
 def deseq2_norm_vst_transform(X, geo_means, disp_func):
-    return np.array(
-        r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
-        dtype=float,
-    )
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(
+            r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
+            dtype=float,
+        )
 
 
 def edger_tmm_fit(X):
-    return np.array(r_edger_tmm_fit(X), dtype=int)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(r_edger_tmm_fit(X), dtype=int)
 
 
 def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
-    return np.array(
-        r_edger_tmm_cpm_transform(
-            X, ref_sample=ref_sample, log=log, prior_count=prior_count
-        ),
-        dtype=float,
-    )
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(
+            r_edger_tmm_cpm_transform(
+                X, ref_sample=ref_sample, log=log, prior_count=prior_count
+            ),
+            dtype=float,
+        )
 
 
 def edger_tmm_tpm_transform(
     X, feature_meta, ref_sample, log, prior_count, gene_length_col
 ):
-    return np.array(
-        r_edger_tmm_tpm_transform(
-            X,
-            feature_meta=feature_meta,
-            ref_sample=ref_sample,
-            log=log,
-            prior_count=prior_count,
-            gene_length_col=gene_length_col,
-        ),
-        dtype=float,
-    )
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(
+            r_edger_tmm_tpm_transform(
+                X,
+                feature_meta=feature_meta,
+                ref_sample=ref_sample,
+                log=log,
+                prior_count=prior_count,
+                gene_length_col=gene_length_col,
+            ),
+            dtype=float,
+        )
 
 
 class DESeq2(ExtendedSelectorMixin, BaseEstimator):
@@ -660,20 +672,23 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             y = ro.NULL
         if sample_meta is None:
             sample_meta = ro.NULL
-        self._mask = np.array(
-            r_edger_filterbyexpr_mask(
-                X,
-                y=y,
-                sample_meta=sample_meta,
-                min_count=self.min_count,
-                min_total_count=self.min_total_count,
-                large_n=self.large_n,
-                min_prop=self.min_prop,
-                model_batch=self.model_batch,
-                is_classif=self.is_classif,
-            ),
-            dtype=bool,
-        )
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            self._mask = np.array(
+                r_edger_filterbyexpr_mask(
+                    X,
+                    y=y,
+                    sample_meta=sample_meta,
+                    min_count=self.min_count,
+                    min_total_count=self.min_total_count,
+                    large_n=self.large_n,
+                    min_prop=self.min_prop,
+                    model_batch=self.model_batch,
+                    is_classif=self.is_classif,
+                ),
+                dtype=bool,
+            )
         return self
 
     def transform(self, X, sample_meta=None):

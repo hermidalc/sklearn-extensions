@@ -20,17 +20,19 @@ r_relieff_feature_score = ro.globalenv["relieff_feature_score"]
 
 
 def fcbf_feature_idxs(X, y, threshold):
-    idxs, scores = r_fcbf_feature_idxs(X, y, threshold=threshold)
-    return np.array(idxs, dtype=int), np.array(scores, dtype=float)
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        idxs, scores = r_fcbf_feature_idxs(X, y, threshold=threshold)
+        return np.array(idxs, dtype=int), np.array(scores, dtype=float)
 
 
 def relieff_feature_score(X, y, num_neighbors, sample_size):
-    return np.array(
-        r_relieff_feature_score(
-            X, y, num_neighbors=num_neighbors, sample_size=sample_size
-        ),
-        dtype=float,
-    )
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(
+            r_relieff_feature_score(
+                X, y, num_neighbors=num_neighbors, sample_size=sample_size
+            ),
+            dtype=float,
+        )
 
 
 class CFS(ExtendedSelectorMixin, BaseEstimator):
@@ -66,7 +68,10 @@ class CFS(ExtendedSelectorMixin, BaseEstimator):
         warnings.filterwarnings(
             "ignore", category=RRuntimeWarning, message="^Rjava\.init\.warning"
         )
-        self.selected_idxs_ = np.array(r_cfs_feature_idxs(X, y), dtype=int)
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            self.selected_idxs_ = np.array(r_cfs_feature_idxs(X, y), dtype=int)
         warnings.filterwarnings("always", category=RRuntimeWarning)
         return self
 

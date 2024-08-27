@@ -19,48 +19,52 @@ r_edger_tmm_tpm_transform = ro.globalenv["edger_tmm_tpm_transform"]
 
 
 def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_batch):
-    gm, df = r_deseq2_norm_fit(
-        X,
-        y=y,
-        sample_meta=sample_meta,
-        type=norm_type,
-        fit_type=fit_type,
-        is_classif=is_classif,
-        model_batch=model_batch,
-    )
-    return np.array(gm, dtype=float), df
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        gm, df = r_deseq2_norm_fit(
+            X,
+            y=y,
+            sample_meta=sample_meta,
+            type=norm_type,
+            fit_type=fit_type,
+            is_classif=is_classif,
+            model_batch=model_batch,
+        )
+        return np.array(gm, dtype=float), df
 
 
 def deseq2_norm_vst_transform(X, geo_means, disp_func):
-    return np.array(
-        r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
-        dtype=float,
-    )
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(
+            r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
+            dtype=float,
+        )
 
 
 def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
-    return np.array(
-        r_edger_tmm_cpm_transform(
-            X, ref_sample=ref_sample, log=log, prior_count=prior_count
-        ),
-        dtype=float,
-    )
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(
+            r_edger_tmm_cpm_transform(
+                X, ref_sample=ref_sample, log=log, prior_count=prior_count
+            ),
+            dtype=float,
+        )
 
 
 def edger_tmm_tpm_transform(
     X, feature_meta, ref_sample, log, prior_count, gene_length_col
 ):
-    return np.array(
-        r_edger_tmm_tpm_transform(
-            X,
-            feature_meta=feature_meta,
-            ref_sample=ref_sample,
-            log=log,
-            prior_count=prior_count,
-            gene_length_col=gene_length_col,
-        ),
-        dtype=float,
-    )
+    with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
+        return np.array(
+            r_edger_tmm_tpm_transform(
+                X,
+                feature_meta=feature_meta,
+                ref_sample=ref_sample,
+                log=log,
+                prior_count=prior_count,
+                gene_length_col=gene_length_col,
+            ),
+            dtype=float,
+        )
 
 
 class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
@@ -229,7 +233,10 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
         sample_meta: ignored
         """
         X = self._validate_data(X, dtype=int)
-        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
         return self
 
     def transform(self, X, sample_meta=None):
@@ -319,7 +326,10 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         feature_meta : ignored
         """
         X = self._validate_data(X, dtype=int)
-        self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
         return self
 
     def transform(self, X, feature_meta):
