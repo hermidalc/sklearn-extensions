@@ -136,10 +136,10 @@ edger_filterbyexpr_mask <- function(
         design <- NULL
     }
     return(
-        filterByExpr(
+        suppressMessages(filterByExpr(
             dge, design, min.count=min_count, min.total.count=min_total_count,
             large.n=large_n, min.prop=min_prop
-        )
+        ))
     )
 }
 
