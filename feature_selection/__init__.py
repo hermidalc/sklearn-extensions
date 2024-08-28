@@ -24,6 +24,7 @@ from ._from_model import SelectFromModel
 from ._multivariate import CFS, FCBF, ReliefF
 from ._nanostring import NanoStringEndogenousSelector
 from ._rna_seq import (
+    CountThreshold,
     DESeq2,
     DESeq2ZINBWaVE,
     DreamVoom,
@@ -62,6 +63,7 @@ __all__ = [
     "ColumnSelector",
     "ConfidenceThreshold",
     "CorrelationThreshold",
+    "CountThreshold",
     "DESeq2",
     "DESeq2ZINBWaVE",
     "DreamVoom",
