@@ -201,6 +201,108 @@ def edger_tmm_tpm_transform(
         )
 
 
+class CountThreshold(ExtendedSelectorMixin, BaseEstimator):
+    """Minimum counts in minimum number of samples feature selector.
+
+    Parameters
+    ----------
+    min_count : int (default = 0)
+        Minimum feature count threshold.
+
+    min_total_count : int (default = 0)
+        Minimum feature total count threshold.
+
+    min_samples : int (default = 1)
+        Minimum number of samples meeting count thresholds. Specify either
+        `min_samples` or `min_prop`.
+
+    min_prop : float (default = 0.25)
+        Minimum proportion of samples in the smallest group meeting count thresholds.
+        Should be between 0 and 1. Specify either `min_samples` or `min_prop`.
+    """
+
+    def __init__(
+        self,
+        min_count=0,
+        min_total_count=0,
+        min_samples=1,
+        min_prop=0.25,
+    ):
+        self.min_count = min_count
+        self.min_total_count = min_total_count
+        self.min_samples = min_samples
+        self.min_prop = min_prop
+
+    def fit(self, X, y=None, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Training counts data matrix.
+
+        y : array-like (default = None), shape = (n_samples,)
+            Training class labels. Ignored if is_classif=False.
+
+        sample_meta : pandas.DataFrame, pandas.Series (default = None), \
+            shape = (n_samples, n_metadata)
+            Training sample metadata.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        if y is not None:
+            X, y = self._validate_data(X, y, dtype=int)
+        else:
+            X = self._validate_data(X, dtype=int)
+        self._mask = np.sum(X >= self.min_count, axis=0) >= self.min_samples
+        return self
+
+    def transform(self, X, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input counts data matrix.
+
+        sample_meta : Ignored.
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_selected_features)
+            edgeR filterByExpr counts data matrix with only the selected
+            features.
+        """
+        check_is_fitted(self, "_mask")
+        # X = check_array(X, dtype=int)
+        return super().transform(X)
+
+    def inverse_transform(self, X, sample_meta=None):
+        """
+        Parameters
+        ----------
+        X : array-like, shape = (n_samples, n_features)
+            Input transformed data matrix.
+
+        sample_meta : Ignored.
+
+        Returns
+        -------
+        Xr : array of shape (n_samples, n_original_features)
+            `X` with columns of zeros inserted where features would have
+            been removed by :meth:`transform`.
+        """
+        raise NotImplementedError("inverse_transform not implemented.")
+
+    def _more_tags(self):
+        return {"requires_positive_X": True}
+
+    def _get_support_mask(self):
+        check_is_fitted(self, "_mask")
+        return self._mask
+
+
 class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     """DESeq2 differential expression feature selector and
     normalizer/transformer for RNA-seq count data
