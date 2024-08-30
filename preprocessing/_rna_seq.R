@@ -73,6 +73,7 @@ deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
     f / lib.size
 }
 
+# adapted from edgeR::calcNormFactors source code
 edger_tmm_ref_column <- function(counts) {
     f75 <- suppressWarnings(
         .calcFactorQuantile(data=counts, lib.size=colSums(counts), p=0.75)
