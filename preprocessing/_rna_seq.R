@@ -66,10 +66,22 @@ deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
 }
 
 # adapted from edgeR::calcNormFactors source code
-edger_tmm_ref_column <- function(counts, lib.size=colSums(counts), p=0.75) {
-    y <- t(t(counts) / lib.size)
-    f <- apply(y, 2, function(x) quantile(x, p=p))
-    ref_column <- which.min(abs(f - mean(f)))
+.calcFactorQuantile <- function(data, lib.size, p=0.75) {
+    f <- rep_len(1, ncol(data))
+    for (j in seq_len(ncol(data))) f[j] <- quantile(data[, j], probs=p)
+    if (min(f) == 0) warning("One or more quantiles are zero")
+    f / lib.size
+}
+
+edger_tmm_ref_column <- function(counts) {
+    f75 <- suppressWarnings(
+        .calcFactorQuantile(data=counts, lib.size=colSums(counts), p=0.75)
+    )
+    if (median(f75) < 1e-20) {
+        ref_column <- which.max(colSums(sqrt(counts)))
+    } else {
+        ref_column <- which.min(abs(f75 - mean(f75)))
+    }
 }
 
 edger_tmm_fit <- function(X) {
@@ -85,15 +97,17 @@ edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
     ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
     if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts)
-        dge <- calcNormFactors(
+        suppressWarnings(dge <- calcNormFactors(
             dge, method="TMM", refColumn=min(which(ref_sample_mask))
-        )
+        ))
         cpms <- cpm(dge, log=log, prior.count=prior_count)
     } else {
         counts <- cbind(counts, ref_sample)
         colnames(counts) <- NULL
         dge <- DGEList(counts=counts)
-        dge <- calcNormFactors(dge, method="TMM", refColumn=ncol(dge))
+        suppressWarnings(dge <- calcNormFactors(
+            dge, method="TMM", refColumn=ncol(dge)
+        ))
         cpms <- cpm(dge, log=log, prior.count=prior_count)
         cpms <- cpms[, -ncol(cpms)]
     }
@@ -110,14 +124,16 @@ edger_tmm_tpm_transform <- function(
     ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
     if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts, genes=feature_meta)
-        dge <- calcNormFactors(
+        suppressWarnings(dge <- calcNormFactors(
             dge, method="TMM", refColumn=min(which(ref_sample_mask))
-        )
+        ))
     } else {
         counts <- cbind(counts, ref_sample)
         colnames(counts) <- NULL
         dge <- DGEList(counts=counts, genes=feature_meta)
-        dge <- calcNormFactors(dge, method="TMM", refColumn=ncol(dge))
+        suppressWarnings(dge <- calcNormFactors(
+            dge, method="TMM", refColumn=ncol(dge)
+        ))
     }
     if (log) {
         # XXX: edgeR doesn't have built-in support for logTPM w/ prior.count

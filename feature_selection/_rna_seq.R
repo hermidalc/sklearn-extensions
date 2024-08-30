@@ -160,7 +160,7 @@ edger_feature_score <- function(
         design <- model.matrix(~factor(y))
     }
     dge <- DGEList(counts=counts)
-    dge <- calcNormFactors(dge, method="TMM")
+    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     dge <- estimateDisp(dge, design, robust=robust)
     fit <- glmQLFit(dge, design, robust=robust)
     if (lfc == 0) {
@@ -234,7 +234,7 @@ limma_voom_feature_score <- function(
     suppressPackageStartupMessages(library("limma"))
     counts <- t(X)
     dge <- DGEList(counts=counts)
-    dge <- calcNormFactors(dge, method="TMM")
+    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     if ((model_batch || model_dupcor) && !is.null(sample_meta)) {
         if (model_batch && length(unique(sample_meta$Batch)) > 1) {
             formula <- ~Batch + Class
@@ -296,7 +296,7 @@ dream_voom_feature_score <- function(
     }
     counts <- t(X)
     dge <- DGEList(counts=counts)
-    dge <- calcNormFactors(dge, method="TMM")
+    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     if (model_batch && length(unique(sample_meta$Batch)) > 1) {
         formula <- ~Batch + Class + (1|Group)
         sample_meta$Batch <- factor(sample_meta$Batch)
