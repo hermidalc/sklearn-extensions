@@ -208,9 +208,9 @@ edger_zinbwave_feature_score <- function(
         SummarizedExperiment(assays=list(counts=counts), colData=sample_meta),
         K=K, epsilon=epsilon, observationalWeights=TRUE
     )
-    dge <- DGEList(counts=assay(zinb))
+    dge <- DGEList(counts=assay(zinb, "counts"))
+    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     dge$weights <- assay(zinb, "weights")
-    dge <- calcNormFactors(dge, method="TMM")
     dge <- estimateDisp(dge, design, robust=robust)
     fit <- glmFit(dge, design)
     lrt <- glmWeightedF(fit, coef=ncol(design))
