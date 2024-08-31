@@ -50,11 +50,15 @@ deseq2_norm_fit <- function(
         }
         geo_means <- apply(counts, 1, geoMeanNZ)
     }
-    return(list(geo_means, dispersionFunction(dds)))
+    return(list(geo_means=geo_means, disp_func=dispersionFunction(dds)))
 }
 
 deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
     suppressPackageStartupMessages(library("DESeq2"))
+    if (is.data.frame(X)) {
+        rnames <- row.names(X)
+        cnames <- colnames(X)
+    }
     counts <- t(X)
     dds <- DESeqDataSetFromMatrix(
         counts, data.frame(row.names=seq(1, ncol(counts))), ~1
@@ -62,21 +66,25 @@ deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
     dds <- estimateSizeFactors(dds, geoMeans=geo_means, quiet=TRUE)
     suppressMessages(dispersionFunction(dds) <- disp_func)
     vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
-    return(t(assay(vsd)))
-}
-
-# adapted from edgeR::calcNormFactors source code
-.calcFactorQuantile <- function(data, lib.size, p=0.75) {
-    f <- rep_len(1, ncol(data))
-    for (j in seq_len(ncol(data))) f[j] <- quantile(data[, j], probs=p)
-    if (min(f) == 0) warning("One or more quantiles are zero")
-    f / lib.size
+    Xt <- t(assay(vsd))
+    if (is.data.frame(X)) {
+        Xt <- as.data.frame(Xt)
+        row.names(Xt) <- rnames
+        colnames(Xt) <- cnames
+    }
+    return(Xt)
 }
 
 # adapted from edgeR::calcNormFactors source code
 edger_tmm_ref_column <- function(counts) {
+    calcFactorQuantile <- function(data, lib.size, p=0.75) {
+        f <- rep_len(1, ncol(data))
+        for (j in seq_len(ncol(data))) f[j] <- quantile(data[, j], probs=p)
+        if (min(f) == 0) warning("One or more quantiles are zero")
+        f / lib.size
+    }
     f75 <- suppressWarnings(
-        .calcFactorQuantile(data=counts, lib.size=colSums(counts), p=0.75)
+        calcFactorQuantile(data=counts, lib.size=colSums(counts), p=0.75)
     )
     if (median(f75) < 1e-20) {
         ref_column <- which.max(colSums(sqrt(counts)))
@@ -94,6 +102,10 @@ edger_tmm_fit <- function(X) {
 
 edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
     suppressPackageStartupMessages(library("edgeR"))
+    if (is.data.frame(X)) {
+        rnames <- row.names(X)
+        cnames <- colnames(X)
+    }
     counts <- t(X)
     ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
     if (any(ref_sample_mask)) {
@@ -112,7 +124,13 @@ edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
         cpms <- cpm(dge, log=log, prior.count=prior_count)
         cpms <- cpms[, -ncol(cpms)]
     }
-    return(t(cpms))
+    Xt <- t(cpms)
+    if (is.data.frame(X)) {
+        Xt <- as.data.frame(Xt)
+        row.names(Xt) <- rnames
+        colnames(Xt) <- cnames
+    }
+    return(Xt)
 }
 
 edger_tmm_tpm_transform <- function(
@@ -121,6 +139,10 @@ edger_tmm_tpm_transform <- function(
 ) {
     if (is.null(feature_meta)) stop("feature_meta cannot be NULL")
     suppressPackageStartupMessages(library("edgeR"))
+    if (is.data.frame(X)) {
+        rnames <- row.names(X)
+        cnames <- colnames(X)
+    }
     counts <- t(X)
     ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
     if (any(ref_sample_mask)) {
@@ -160,9 +182,27 @@ edger_tmm_tpm_transform <- function(
         tpms <- t(t(fpkms) / colSums(fpkms)) * 1e6
     }
     if (!any(ref_sample_mask)) tpms <- tpms[, -ncol(tpms)]
-    return(t(tpms))
+    Xt <- t(tpms)
+    if (is.data.frame(X)) {
+        Xt <- as.data.frame(Xt)
+        row.names(Xt) <- rnames
+        colnames(Xt) <- cnames
+    }
+    return(Xt)
 }
 
 edger_cpm_transform <- function(X, log=TRUE, prior_count=2) {
-    return(t(edgeR::cpm(t(X), log=log, prior.count=prior_count)))
+    if (is.data.frame(X)) {
+        rnames <- row.names(X)
+        cnames <- colnames(X)
+    }
+    counts <- t(X)
+    cpms <- edgeR::cpm(counts, log=log, prior.count=prior_count)
+    Xt <- t(cpms)
+    if (is.data.frame(X)) {
+        Xt <- as.data.frame(Xt)
+        row.names(Xt) <- rnames
+        colnames(Xt) <- cnames
+    }
+    return(Xt)
 }

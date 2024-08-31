@@ -4,7 +4,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_array, check_is_fitted, check_memory
+from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ..base import ExtendedTransformerMixin
 
@@ -20,7 +20,7 @@ r_edger_tmm_tpm_transform = ro.globalenv["edger_tmm_tpm_transform"]
 
 def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_batch):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        gm, df = r_deseq2_norm_fit(
+        res = r_deseq2_norm_fit(
             X,
             y=y,
             sample_meta=sample_meta,
@@ -29,24 +29,18 @@ def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_ba
             is_classif=is_classif,
             model_batch=model_batch,
         )
-        return np.array(gm, dtype=float), df
+        return np.array(res["geo_means"], dtype=float), res["disp_func"]
 
 
 def deseq2_norm_vst_transform(X, geo_means, disp_func):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(
-            r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
-            dtype=float,
-        )
+        return r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func)
 
 
 def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(
-            r_edger_tmm_cpm_transform(
-                X, ref_sample=ref_sample, log=log, prior_count=prior_count
-            ),
-            dtype=float,
+        return r_edger_tmm_cpm_transform(
+            X, ref_sample=ref_sample, log=log, prior_count=prior_count
         )
 
 
@@ -54,16 +48,13 @@ def edger_tmm_tpm_transform(
     X, feature_meta, ref_sample, log, prior_count, gene_length_col
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(
-            r_edger_tmm_tpm_transform(
-                X,
-                feature_meta=feature_meta,
-                ref_sample=ref_sample,
-                log=log,
-                prior_count=prior_count,
-                gene_length_col=gene_length_col,
-            ),
-            dtype=float,
+        return r_edger_tmm_tpm_transform(
+            X,
+            feature_meta=feature_meta,
+            ref_sample=ref_sample,
+            log=log,
+            prior_count=prior_count,
+            gene_length_col=gene_length_col,
         )
 
 
@@ -166,7 +157,7 @@ class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
             DESeq2 median-of-ratios normalized VST transformed data matrix.
         """
         check_is_fitted(self, "geo_means_")
-        # X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_norm_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
@@ -254,7 +245,7 @@ class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
             edgeR TMM normalized CPM transformed data matrix.
         """
         check_is_fitted(self, "ref_sample_")
-        # X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_cpm_transform)(
             X, ref_sample=self.ref_sample_, log=self.log, prior_count=self.prior_count
@@ -349,7 +340,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
             edgeR TMM normalized TPM transformed data matrix.
         """
         check_is_fitted(self, "ref_sample_")
-        # X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
         X = memory.cache(edger_tmm_tpm_transform)(
             X,

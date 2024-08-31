@@ -6,7 +6,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_array, check_is_fitted, check_memory
+from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ._base import ExtendedSelectorMixin
 
@@ -34,7 +34,7 @@ def deseq2_feature_score(
     X, y, sample_meta, lfc, scoring_meth, fit_type, lfc_shrink, model_batch, n_threads
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        sc, pa = r_deseq2_feature_score(
+        df = r_deseq2_feature_score(
             X,
             y,
             sample_meta=sample_meta,
@@ -45,14 +45,14 @@ def deseq2_feature_score(
             model_batch=model_batch,
             n_threads=n_threads,
         )
-        return np.array(sc, dtype=float), np.array(pa, dtype=float)
+        return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
 def deseq2_zinbwave_feature_score(
     X, y, sample_meta, lfc, scoring_meth, epsilon, fit_type, model_batch, n_threads
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        sc, pa = r_deseq2_zinbwave_feature_score(
+        df = r_deseq2_zinbwave_feature_score(
             X,
             y,
             sample_meta=sample_meta,
@@ -63,12 +63,12 @@ def deseq2_zinbwave_feature_score(
             model_batch=model_batch,
             n_threads=n_threads,
         )
-        return np.array(sc, dtype=float), np.array(pa, dtype=float)
+        return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
 def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, model_batch):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        sc, pa = r_edger_feature_score(
+        df = r_edger_feature_score(
             X,
             y,
             sample_meta=sample_meta,
@@ -77,14 +77,14 @@ def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, model_batc
             robust=robust,
             model_batch=model_batch,
         )
-        return np.array(sc, dtype=float), np.array(pa, dtype=float)
+        return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
 def edger_zinbwave_feature_score(
     X, y, sample_meta, scoring_meth, epsilon, robust, model_batch, n_threads
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        sc, pa = r_edger_zinbwave_feature_score(
+        df = r_edger_zinbwave_feature_score(
             X,
             y,
             sample_meta=sample_meta,
@@ -94,14 +94,14 @@ def edger_zinbwave_feature_score(
             model_batch=model_batch,
             n_threads=n_threads,
         )
-        return np.array(sc, dtype=float), np.array(pa, dtype=float)
+        return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
 def limma_voom_feature_score(
     X, y, sample_meta, lfc, scoring_meth, robust, model_batch, model_dupcor
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        sc, pa = r_limma_voom_feature_score(
+        df = r_limma_voom_feature_score(
             X,
             y,
             sample_meta=sample_meta,
@@ -111,14 +111,14 @@ def limma_voom_feature_score(
             model_batch=model_batch,
             model_dupcor=model_dupcor,
         )
-        return np.array(sc, dtype=float), np.array(pa, dtype=float)
+        return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
 def dream_voom_feature_score(
     X, y, sample_meta, lfc, scoring_meth, model_batch, n_threads
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        sc, pa = r_dream_voom_feature_score(
+        df = r_dream_voom_feature_score(
             X,
             y,
             sample_meta,
@@ -127,14 +127,14 @@ def dream_voom_feature_score(
             model_batch=model_batch,
             n_threads=n_threads,
         )
-        return np.array(sc, dtype=float), np.array(pa, dtype=float)
+        return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
 def limma_feature_score(
     X, y, sample_meta, lfc, scoring_meth, robust, trend, model_batch
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        sc, pa = r_limma_feature_score(
+        df = r_limma_feature_score(
             X,
             y,
             sample_meta=sample_meta,
@@ -144,12 +144,12 @@ def limma_feature_score(
             trend=trend,
             model_batch=model_batch,
         )
-        return np.array(sc, dtype=float), np.array(pa, dtype=float)
+        return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
 def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_batch):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        gm, df = r_deseq2_norm_fit(
+        res = r_deseq2_norm_fit(
             X,
             y=y,
             sample_meta=sample_meta,
@@ -158,15 +158,12 @@ def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_ba
             is_classif=is_classif,
             model_batch=model_batch,
         )
-        return np.array(gm, dtype=float), df
+        return np.array(res["geo_means"], dtype=float), res["disp_func"]
 
 
 def deseq2_norm_vst_transform(X, geo_means, disp_func):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(
-            r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func),
-            dtype=float,
-        )
+        return r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func)
 
 
 def edger_tmm_fit(X):
@@ -176,11 +173,8 @@ def edger_tmm_fit(X):
 
 def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(
-            r_edger_tmm_cpm_transform(
-                X, ref_sample=ref_sample, log=log, prior_count=prior_count
-            ),
-            dtype=float,
+        return r_edger_tmm_cpm_transform(
+            X, ref_sample=ref_sample, log=log, prior_count=prior_count
         )
 
 
@@ -188,16 +182,13 @@ def edger_tmm_tpm_transform(
     X, feature_meta, ref_sample, log, prior_count, gene_length_col
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(
-            r_edger_tmm_tpm_transform(
-                X,
-                feature_meta=feature_meta,
-                ref_sample=ref_sample,
-                log=log,
-                prior_count=prior_count,
-                gene_length_col=gene_length_col,
-            ),
-            dtype=float,
+        return r_edger_tmm_tpm_transform(
+            X,
+            feature_meta=feature_meta,
+            ref_sample=ref_sample,
+            log=log,
+            prior_count=prior_count,
+            gene_length_col=gene_length_col,
         )
 
 
@@ -275,7 +266,6 @@ class CountThreshold(ExtendedSelectorMixin, BaseEstimator):
             features.
         """
         check_is_fitted(self, "_mask")
-        # X = check_array(X, dtype=int)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -451,7 +441,6 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             with only the selected features.
         """
         check_is_fitted(self, "geo_means_")
-        # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_norm_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
@@ -652,7 +641,6 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
             with only the selected features.
         """
         check_is_fitted(self, "geo_means_")
-        # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         X = memory.cache(deseq2_norm_vst_transform)(
             X, geo_means=self.geo_means_, disp_func=self.disp_func_
@@ -809,7 +797,6 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
             features.
         """
         check_is_fitted(self, "_mask")
-        # X = check_array(X, dtype=int)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):
@@ -986,7 +973,6 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
@@ -1216,7 +1202,6 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
@@ -1444,7 +1429,6 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
@@ -1666,7 +1650,6 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             selected features.
         """
         check_is_fitted(self, "ref_sample_")
-        # X = check_array(X, dtype=int)
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
@@ -1859,7 +1842,6 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
             Gene expression data matrix with only the selected features.
         """
         check_is_fitted(self, "scores_")
-        # X = check_array(X, dtype=int)
         return super().transform(X)
 
     def inverse_transform(self, X, sample_meta=None):

@@ -75,6 +75,10 @@ class ExtendedSelectorMixin(ExtendedTransformerMixin, SelectorMixin, metaclass=A
         X_r : array of shape [n_samples, n_selected_features]
             The input samples with only the selected features.
         """
+        # workaround sklearn.utils.validation._get_feature_names() needing str
+        # not numpy.str_ which pandas dataframe column labels get converted to
+        X = X.rename(str, axis="columns")
+
         # note: we use _safe_tags instead of _get_tags because this is a
         # public Mixin.
         X = self._validate_data(

@@ -52,7 +52,7 @@ deseq2_feature_score <- function(
     } else {
         scores <- results$pvalue
     }
-    return(list(scores, results$padj))
+    return(data.frame(score=scores, padj=results$padj))
 }
 
 deseq2_zinbwave_feature_score <- function(
@@ -109,7 +109,7 @@ deseq2_zinbwave_feature_score <- function(
     } else {
         scores <- results$pvalue
     }
-    return(list(scores, results$padj))
+    return(data.frame(score=scores, padj=results$padj))
 }
 
 edger_filterbyexpr_mask <- function(
@@ -177,7 +177,7 @@ edger_feature_score <- function(
     } else {
         scores <- results$PValue
     }
-    return(list(scores, results$FDR))
+    return(data.frame(score=scores, padj=results$FDR))
 }
 
 edger_zinbwave_feature_score <- function(
@@ -223,7 +223,7 @@ edger_zinbwave_feature_score <- function(
     } else {
         scores <- results$PValue
     }
-    return(list(scores, results$FDR))
+    return(data.frame(score=scores, padj=results$FDR))
 }
 
 limma_voom_feature_score <- function(
@@ -279,7 +279,7 @@ limma_voom_feature_score <- function(
     } else {
         scores <- results$P.Value
     }
-    return(list(scores, results$adj.P.Val))
+    return(data.frame(score=scores, padj=results$adj.P.Val))
 }
 
 dream_voom_feature_score <- function(
@@ -321,7 +321,7 @@ dream_voom_feature_score <- function(
     } else {
         scores <- results$P.Value
     }
-    return(list(scores, results$adj.P.Val))
+    return(data.frame(score=scores, padj=results$adj.P.Val))
 }
 
 limma_feature_score <- function(
@@ -350,5 +350,5 @@ limma_feature_score <- function(
     } else {
         scores <- results$P.Value
     }
-    return(list(scores, results$adj.P.Val))
+    return(data.frame(score=scores, padj=results$adj.P.Val))
 }

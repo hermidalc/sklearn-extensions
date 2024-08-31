@@ -6,7 +6,7 @@ from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
 from sklearn.utils import safe_mask
-from sklearn.utils.validation import check_array, check_is_fitted
+from sklearn.utils.validation import check_is_fitted
 
 from ..base import ExtendedTransformerMixin
 
@@ -151,7 +151,7 @@ class NanoStringNormalizer(ExtendedTransformerMixin, BaseEstimator):
             Normalized data matrix.
         """
         check_is_fitted(self)
-        # X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int, reset=False)
         if hasattr(self, "_train_done"):
             return self._fit_transform(X, feature_meta, in_fit=False)
         self._train_done = True
@@ -365,7 +365,7 @@ class NanoStringDiffNormalizer(ExtendedTransformerMixin, BaseEstimator):
             Normalized data matrix.
         """
         check_is_fitted(self)
-        # X = check_array(X, dtype=int)
+        X = self._validate_data(X, dtype=int, reset=False)
         with (
             ro.default_converter + numpy2ri.converter + pandas2ri.converter
         ).context():

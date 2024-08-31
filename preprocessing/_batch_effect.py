@@ -4,7 +4,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_array, check_is_fitted, check_memory
+from sklearn.utils.validation import check_is_fitted, check_memory
 
 from ..base import ExtendedTransformerMixin
 
@@ -91,7 +91,7 @@ class LimmaBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
             Batched corrected log-transformed input data matrix.
         """
         check_is_fitted(self, "batch_adj_")
-        # X = check_array(X)
+        X = self._validate_data(X, dtype=None, reset=False)
         with (
             ro.default_converter + numpy2ri.converter + pandas2ri.converter
         ).context():
@@ -181,7 +181,7 @@ class stICABatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
             Batched corrected log-transformed input data matrix.
         """
         check_is_fitted(self, "_Xt")
-        # X = check_array(X)
+        X = self._validate_data(X, dtype=None, reset=False)
         if hasattr(self, "_train_done"):
             memory = check_memory(self.memory)
             X = memory.cache(stica_removeba_transform)(X, self.params_)
@@ -266,7 +266,7 @@ class SVDBatchEffectRemover(ExtendedTransformerMixin, BaseEstimator):
             Batched corrected log-transformed input data matrix.
         """
         check_is_fitted(self, "_Xt")
-        # X = check_array(X)
+        X = self._validate_data(X, dtype=None, reset=False)
         if hasattr(self, "_train_done"):
             memory = check_memory(self.memory)
             X = memory.cache(stica_removeba_transform)(X, self.params_)
