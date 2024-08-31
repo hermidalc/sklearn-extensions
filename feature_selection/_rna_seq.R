@@ -46,10 +46,6 @@ deseq2_feature_score <- function(
         ))
         results$padj[is.na(results$padj)] <- 1
     }
-    # results <- results[match(colnames(X), row.names(results)), , drop=FALSE]
-    if (!identical(row.names(results), colnames(X))) {
-        stop("DE results order doesn't match input X feature name order")
-    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$log2FoldChange) * -log10(results$pvalue)
     } else {
@@ -106,10 +102,6 @@ deseq2_zinbwave_feature_score <- function(
         parallel=parallel, quiet=TRUE
     )))
     results$padj[is.na(results$padj)] <- 1
-    # results <- results[match(colnames(X), row.names(results)), , drop=FALSE]
-    if (!identical(row.names(results), colnames(X))) {
-        stop("DE results order doesn't match input X feature name order")
-    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$log2FoldChange) * -log10(results$pvalue)
     } else {
@@ -177,10 +169,6 @@ edger_feature_score <- function(
     results <- as.data.frame(topTags(
         glt, n=Inf, adjust.method="BH", sort.by="none"
     ))
-    # results <- results[match(colnames(X), row.names(results)), , drop=FALSE]
-    if (!identical(row.names(results), colnames(X))) {
-        stop("DE results order doesn't match input X feature name order")
-    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$PValue)
     } else {
@@ -229,10 +217,6 @@ edger_zinbwave_feature_score <- function(
     results$PValue[is.na(results$PValue)] <- 1
     results$padjFilter[is.na(results$padjFilter)] <- 1
     results$FDR[is.na(results$FDR)] <- 1
-    # results <- results[match(colnames(X), row.names(results)), , drop=FALSE]
-    if (!identical(row.names(results), colnames(X))) {
-        stop("DE results order doesn't match input X feature name order")
-    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$PValue)
     } else {
@@ -288,10 +272,6 @@ limma_voom_feature_score <- function(
     results <- topTreat(
         fit, coef=ncol(design), number=Inf, adjust.method="BH", sort.by="none"
     )
-    # results <- results[match(colnames(X), row.names(results)), , drop=FALSE]
-    if (!identical(row.names(results), colnames(X))) {
-        stop("DE results order doesn't match input X feature name order")
-    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$P.Value)
     } else {
@@ -333,10 +313,6 @@ dream_voom_feature_score <- function(
         fit, coef=ncol(design), lfc=lfc, number=Inf, adjust.method="BH",
         sort.by="none"
     )
-    # results <- results[match(colnames(X), row.names(results)), , drop=FALSE]
-    if (!identical(row.names(results), colnames(X))) {
-        stop("DE results order doesn't match input X feature name order")
-    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$P.Value)
     } else {
@@ -365,10 +341,6 @@ limma_feature_score <- function(
     results <- topTreat(
         fit, coef=ncol(design), number=Inf, adjust.method="BH", sort.by="none"
     )
-    # results <- results[match(colnames(X), row.names(results)), , drop=FALSE]
-    if (!identical(row.names(results), colnames(X))) {
-        stop("DE results order doesn't match input X feature name order")
-    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$P.Value)
     } else {
