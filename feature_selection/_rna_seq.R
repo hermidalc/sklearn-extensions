@@ -14,6 +14,7 @@ deseq2_feature_score <- function(
         parallel <- FALSE
     }
     counts <- t(X)
+    counts <- counts[rowSums(counts) > 0, , drop=FALSE]
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -71,6 +72,7 @@ deseq2_zinbwave_feature_score <- function(
         parallel <- FALSE
     }
     counts <- t(X)
+    counts <- counts[rowSums(counts) > 0, , drop=FALSE]
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -149,6 +151,7 @@ edger_feature_score <- function(
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
+    counts <- counts[rowSums(counts) > 0, , drop=FALSE]
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -194,6 +197,7 @@ edger_zinbwave_feature_score <- function(
         register(SerialParam())
     }
     counts <- t(X)
+    counts <- counts[rowSums(counts) > 0, , drop=FALSE]
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -233,6 +237,7 @@ limma_voom_feature_score <- function(
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
     counts <- t(X)
+    counts <- counts[rowSums(counts) > 0, , drop=FALSE]
     dge <- DGEList(counts=counts)
     suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     if ((model_batch || model_dupcor) && !is.null(sample_meta)) {
@@ -295,6 +300,7 @@ dream_voom_feature_score <- function(
         register(SerialParam())
     }
     counts <- t(X)
+    counts <- counts[rowSums(counts) > 0, , drop=FALSE]
     dge <- DGEList(counts=counts)
     suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     if (model_batch && length(unique(sample_meta$Batch)) > 1) {
