@@ -612,7 +612,7 @@ class ExtendedPipeline(Pipeline):
         Xt, decision_function_params = self._transform_pipeline(
             "decision_function", X, decision_function_params
         )
-        return self.steps[-1][-1].decision_function(Xt)
+        return self.steps[-1][-1].decision_function(Xt, **decision_function_params)
 
     @available_if(_final_estimator_has("score_samples"))
     def score_samples(self, X, **score_sample_params):

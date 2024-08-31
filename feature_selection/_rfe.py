@@ -570,7 +570,7 @@ class ExtendedRFE(ExtendedSelectorMixin, RFE):
         return self.support_
 
     @available_if(_estimator_has("predict"))
-    def predict(self, X):
+    def predict(self, X, feature_meta=None):
         """Reduce X to the selected features and then predict using the underlying estimator.
 
         Parameters
@@ -614,7 +614,7 @@ class ExtendedRFE(ExtendedSelectorMixin, RFE):
         return self.estimator_.score(self.transform(X), y, **score_params)
 
     @available_if(_estimator_has("decision_function"))
-    def decision_function(self, X):
+    def decision_function(self, X, feature_meta=None):
         """Compute the decision function of ``X``.
 
         Parameters
@@ -636,7 +636,7 @@ class ExtendedRFE(ExtendedSelectorMixin, RFE):
         return self.estimator_.decision_function(self.transform(X))
 
     @available_if(_estimator_has("predict_proba"))
-    def predict_proba(self, X):
+    def predict_proba(self, X, feature_meta=None):
         """Predict class probabilities for X.
 
         Parameters
@@ -656,7 +656,7 @@ class ExtendedRFE(ExtendedSelectorMixin, RFE):
         return self.estimator_.predict_proba(self.transform(X))
 
     @available_if(_estimator_has("predict_log_proba"))
-    def predict_log_proba(self, X):
+    def predict_log_proba(self, X, feature_meta=None):
         """Predict class log-probabilities for X.
 
         Parameters
