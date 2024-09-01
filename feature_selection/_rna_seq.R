@@ -2,7 +2,8 @@
 
 deseq2_feature_score <- function(
     X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", fit_type="parametric",
-    lfc_shrink=TRUE, model_batch=FALSE, n_threads=1
+    lfc_shrink=TRUE, lfc_shrink_type="apeglm", svalue=FALSE, model_batch=FALSE,
+    n_threads=1
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     suppressPackageStartupMessages(library("BiocParallel"))
@@ -20,25 +21,28 @@ deseq2_feature_score <- function(
     ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
-        dds <- DESeqDataSetFromMatrix(
-            counts, as.data.frame(sample_meta), ~Batch + Class
-        )
+        colData <- as.data.frame(sample_meta)
+        design <- ~Batch + Class
     } else {
-        dds <- DESeqDataSetFromMatrix(
-            counts, data.frame(Class=factor(y)), ~Class
-        )
+        colData <- data.frame(Class=factor(y))
+        design <- ~Class
     }
+    dds <- DESeqDataSetFromMatrix(counts, colData, design)
     suppressMessages(
         dds <- DESeq(dds, fitType=fit_type, parallel=parallel, quiet=TRUE)
     )
     if (lfc_shrink) {
         suppressMessages(results <- as.data.frame(lfcShrink(
-            dds, coef=length(resultsNames(dds)), type="apeglm",
-            lfcThreshold=lfc, svalue=TRUE, parallel=parallel, quiet=TRUE
+            dds, coef=length(resultsNames(dds)), type=lfc_shrink_type,
+            lfcThreshold=lfc, svalue=svalue, parallel=parallel, quiet=TRUE
         )))
-        results$svalue[is.na(results$svalue)] <- 1
-        results$pvalue <- results$svalue
-        results$padj <- results$svalue
+        if (svalue) {
+            results$svalue[is.na(results$svalue)] <- 1
+            results$pvalue <- results$svalue
+            results$padj <- results$svalue
+        } else {
+            results$padj[is.na(results$padj)] <- 1
+        }
     } else {
         results <- as.data.frame(results(
             dds, name=resultsNames(dds)[length(resultsNames(dds))],
@@ -70,28 +74,27 @@ deseq2_zinbwave_feature_score <- function(
         parallel <- FALSE
     }
     counts <- t(X)
+    if (is.null(row.names(counts))) {
+        row.names(counts) <- seq_len(nrow(counts))
+    }
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
     ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
-        zinb <- zinbwave(
-            SummarizedExperiment(
-                assays=list(counts=counts), colData=as.data.frame(sample_meta)
-            ),
-            K=K, epsilon=epsilon, observationalWeights=TRUE
-        )
+        colData <- as.data.frame(sample_meta)
         design <- ~Batch + Class
     } else {
-        zinb <- zinbwave(
-            SummarizedExperiment(
-                assays=list(counts=counts), colData=data.frame(Class=factor(y))
-            ),
-            K=K, epsilon=epsilon, observationalWeights=TRUE
-        )
+        colData <- data.frame(Class=factor(y))
         design <- ~Class
     }
+    zinb <- zinbwave(
+        SummarizedExperiment(
+            assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData
+        ),
+        X=design, K=K, epsilon=epsilon, observationalWeights=TRUE
+    )
     dds <- DESeqDataSet(zinb, design)
     suppressMessages(dds <- DESeq(
         dds, fitType=fit_type, sfType="poscounts", useT=TRUE, minmu=1e-6,
@@ -102,6 +105,23 @@ deseq2_zinbwave_feature_score <- function(
         parallel=parallel, quiet=TRUE
     )))
     results$padj[is.na(results$padj)] <- 1
+    zero_rownames <- row.names(counts)[rowSums(counts) == 0]
+    zero_rowlen <- length(zero_rownames)
+    if (zero_rowlen > 0) {
+        results <- rbind(
+            results,
+            data.frame(
+                row.names=zero_rownames,
+                baseMean=rep(0, zero_rowlen),
+                log2FoldChange=rep(0, zero_rowlen),
+                lfcSE=rep(0, zero_rowlen),
+                stat=rep(0, zero_rowlen),
+                pvalue=rep(1, zero_rowlen),
+                padj=rep(1, zero_rowlen)
+            )
+        )
+        results <- results[match(row.names(counts), row.names(results)), ]
+    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$log2FoldChange) * -log10(results$pvalue)
     } else {
@@ -191,20 +211,28 @@ edger_zinbwave_feature_score <- function(
         register(SerialParam())
     }
     counts <- t(X)
+    if (is.null(row.names(counts))) {
+        row.names(counts) <- seq_len(nrow(counts))
+    }
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
     ) {
         sample_meta$Batch <- factor(sample_meta$Batch)
         sample_meta$Class <- factor(sample_meta$Class)
-        design <- model.matrix(~Batch + Class, data=sample_meta)
+        colData <- as.data.frame(sample_meta)
+        design_formula <- ~Batch + Class
     } else {
-        design <- model.matrix(~factor(y))
+        colData <- data.frame(Class=factor(y))
+        design_formula <- ~Class
     }
     zinb <- zinbwave(
-        SummarizedExperiment(assays=list(counts=counts), colData=sample_meta),
-        K=K, epsilon=epsilon, observationalWeights=TRUE
+        SummarizedExperiment(
+            assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData
+        ),
+        X=design_formula, K=K, epsilon=epsilon, observationalWeights=TRUE
     )
+    design <- model.matrix(design_formula, data=colData)
     dge <- DGEList(counts=assay(zinb, "counts"))
     suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     dge$weights <- assay(zinb, "weights")
@@ -217,6 +245,23 @@ edger_zinbwave_feature_score <- function(
     results$PValue[is.na(results$PValue)] <- 1
     results$padjFilter[is.na(results$padjFilter)] <- 1
     results$FDR[is.na(results$FDR)] <- 1
+    zero_rownames <- row.names(counts)[rowSums(counts) == 0]
+    zero_rowlen <- length(zero_rownames)
+    if (zero_rowlen > 0) {
+        results <- rbind(
+            results,
+            data.frame(
+                row.names=zero_rownames,
+                logFC=rep(0, zero_rowlen),
+                logCPM=rep(0, zero_rowlen),
+                LR=rep(0, zero_rowlen),
+                PValue=rep(1, zero_rowlen),
+                padjFilter=rep(1, zero_rowlen),
+                FDR=rep(1, zero_rowlen)
+            )
+        )
+        results <- results[match(row.names(counts), row.names(results)), ]
+    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$PValue)
     } else {
@@ -232,17 +277,20 @@ limma_voom_feature_score <- function(
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
     counts <- t(X)
-    dge <- DGEList(counts=counts)
+    if (is.null(row.names(counts))) {
+        row.names(counts) <- seq_len(nrow(counts))
+    }
+    dge <- DGEList(counts=counts, remove.zeros=TRUE)
     suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     if ((model_batch || model_dupcor) && !is.null(sample_meta)) {
-        if (model_batch && length(unique(sample_meta$Batch)) > 1) {
-            formula <- ~Batch + Class
-            sample_meta$Batch <- factor(sample_meta$Batch)
-        } else {
-            formula <- ~Class
-        }
         sample_meta$Class <- factor(sample_meta$Class)
-        design <- model.matrix(formula, data=sample_meta)
+        if (model_batch && length(unique(sample_meta$Batch)) > 1) {
+            sample_meta$Batch <- factor(sample_meta$Batch)
+            design_formula <- ~Batch + Class
+        } else {
+            design_formula <- ~Class
+        }
+        design <- model.matrix(design_formula, data=sample_meta)
         v <- voom(dge, design)
         if (model_dupcor) {
             sample_meta$Group <- factor(sample_meta$Group)
@@ -268,10 +316,26 @@ limma_voom_feature_score <- function(
         v <- voom(dge, design)
         fit <- lmFit(v, design)
     }
-    fit <- treat(fit, lfc=lfc, robust=robust)
+    fit <- treat(fit, lfc=lfc, robust=robust, trend=FALSE)
     results <- topTreat(
         fit, coef=ncol(design), number=Inf, adjust.method="BH", sort.by="none"
     )
+    zero_rownames <- row.names(counts)[rowSums(counts) == 0]
+    zero_rowlen <- length(zero_rownames)
+    if (zero_rowlen > 0) {
+        results <- rbind(
+            results,
+            data.frame(
+                row.names=zero_rownames,
+                logFC=rep(0, zero_rowlen),
+                AveExpr=rep(0, zero_rowlen),
+                t=rep(0, zero_rowlen),
+                P.Value=rep(1, zero_rowlen),
+                adj.P.Val=rep(1, zero_rowlen)
+            )
+        )
+        results <- results[match(row.names(counts), row.names(results)), ]
+    }
     if (scoring_meth == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$P.Value)
     } else {
@@ -296,18 +360,18 @@ dream_voom_feature_score <- function(
     dge <- DGEList(counts=counts)
     suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     if (model_batch && length(unique(sample_meta$Batch)) > 1) {
-        formula <- ~Batch + Class + (1|Group)
+        design_formula <- ~Batch + Class + (1|Group)
         sample_meta$Batch <- factor(sample_meta$Batch)
     } else {
-        formula <- ~Class + (1|Group)
+        design_formula <- ~Class + (1|Group)
     }
     sample_meta$Class <- factor(sample_meta$Class)
     sample_meta$Group <- factor(sample_meta$Group)
     invisible(capture.output(
-        v <- voomWithDreamWeights(dge, formula, sample_meta)
+        v <- voomWithDreamWeights(dge, design_formula, sample_meta)
     ))
     invisible(capture.output(
-        fit <- dream(v, formula, sample_meta, suppressWarnings=TRUE)
+        fit <- dream(v, design_formula, sample_meta, suppressWarnings=TRUE)
     ))
     results <- topTable(
         fit, coef=ncol(design), lfc=lfc, number=Inf, adjust.method="BH",
