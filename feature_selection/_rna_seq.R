@@ -93,7 +93,8 @@ deseq2_zinbwave_feature_score <- function(
         SummarizedExperiment(
             assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData
         ),
-        X=design, K=K, epsilon=epsilon, observationalWeights=TRUE
+        X=design, K=K, epsilon=epsilon, zeroinflation=TRUE,
+        observationalWeights=TRUE
     )
     dds <- DESeqDataSet(zinb, design)
     suppressMessages(dds <- DESeq(
@@ -230,7 +231,8 @@ edger_zinbwave_feature_score <- function(
         SummarizedExperiment(
             assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData
         ),
-        X=design_formula, K=K, epsilon=epsilon, observationalWeights=TRUE
+        X=design_formula, K=K, epsilon=epsilon, zeroinflation=TRUE,
+        observationalWeights=TRUE
     )
     design <- model.matrix(design_formula, data=colData)
     dge <- DGEList(counts=assay(zinb, "counts"))
