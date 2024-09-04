@@ -282,7 +282,7 @@ limma_voom_feature_score <- function(
     if (is.null(row.names(counts))) {
         row.names(counts) <- seq_len(nrow(counts))
     }
-    dge <- DGEList(counts=counts, remove.zeros=TRUE)
+    suppressMessages(dge <- DGEList(counts=counts, remove.zeros=TRUE))
     suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     if ((model_batch || model_dupcor) && !is.null(sample_meta)) {
         sample_meta$Class <- factor(sample_meta$Class)
