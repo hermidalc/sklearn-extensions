@@ -227,20 +227,23 @@ edger_zinbwave_feature_score <- function(
         colData <- data.frame(Class=factor(y))
         design_formula <- ~Class
     }
-    zinb <- zinbwave(
-        SummarizedExperiment(
-            assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData
-        ),
-        X=design_formula, K=K, epsilon=epsilon, zeroinflation=TRUE,
-        observationalWeights=TRUE
-    )
-    design <- model.matrix(design_formula, data=colData)
-    dge <- DGEList(counts=assay(zinb, "counts"))
-    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
-    dge$weights <- assay(zinb, "weights")
-    dge <- estimateDisp(dge, design, robust=robust)
-    suppressWarnings(fit <- glmFit(dge, design))
-    lrt <- glmWeightedF(fit, coef=ncol(design))
+    suppressWarnings({
+        zinb <- zinbwave(
+            SummarizedExperiment(
+                assays=list(counts=counts[rowSums(counts) > 0, ]),
+                colData=colData
+            ),
+            X=design_formula, K=K, epsilon=epsilon, zeroinflation=TRUE,
+            observationalWeights=TRUE
+        )
+        design <- model.matrix(design_formula, data=colData)
+        dge <- DGEList(counts=assay(zinb, "counts"))
+        dge <- calcNormFactors(dge, method="TMM")
+        dge$weights <- assay(zinb, "weights")
+        dge <- estimateDisp(dge, design, robust=robust)
+        fit <- glmFit(dge, design)
+        lrt <- glmWeightedF(fit, coef=ncol(design))
+    })
     results <- as.data.frame(topTags(
         lrt, n=Inf, adjust.method="BH", sort.by="none"
     ))
