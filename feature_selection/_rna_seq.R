@@ -239,7 +239,7 @@ edger_zinbwave_feature_score <- function(
     suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
     dge$weights <- assay(zinb, "weights")
     dge <- estimateDisp(dge, design, robust=robust)
-    fit <- glmFit(dge, design)
+    suppressWarnings(fit <- glmFit(dge, design))
     lrt <- glmWeightedF(fit, coef=ncol(design))
     results <- as.data.frame(topTags(
         lrt, n=Inf, adjust.method="BH", sort.by="none"
