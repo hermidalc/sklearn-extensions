@@ -6,12 +6,11 @@ deseq2_feature_score <- function(
     n_threads=1
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
-    suppressPackageStartupMessages(library("BiocParallel"))
     if (n_threads > 1) {
-        register(MulticoreParam(workers=n_threads))
+        BPPARAM <- BiocParallel::MulticoreParam(workers=n_threads)
         parallel <- TRUE
     } else {
-        register(SerialParam())
+        BPPARAM <- BiocParallel::SerialParam()
         parallel <- FALSE
     }
     counts <- t(X)
@@ -29,12 +28,16 @@ deseq2_feature_score <- function(
     }
     dds <- DESeqDataSetFromMatrix(counts, colData, design)
     suppressMessages(
-        dds <- DESeq(dds, fitType=fit_type, parallel=parallel, quiet=TRUE)
+        dds <- DESeq(
+            dds, fitType=fit_type, parallel=parallel, BPPARAM=BPPARAM,
+            quiet=TRUE
+        )
     )
     if (lfc_shrink) {
         suppressMessages(results <- as.data.frame(lfcShrink(
             dds, coef=length(resultsNames(dds)), type=lfc_shrink_type,
-            lfcThreshold=lfc, svalue=svalue, parallel=parallel, quiet=TRUE
+            lfcThreshold=lfc, svalue=svalue, parallel=parallel, BPPARAM=BPPARAM,
+            quiet=TRUE
         )))
         if (svalue) {
             results$svalue[is.na(results$svalue)] <- 1
@@ -65,12 +68,11 @@ deseq2_zinbwave_feature_score <- function(
     suppressPackageStartupMessages(library("SummarizedExperiment"))
     suppressPackageStartupMessages(library("zinbwave"))
     suppressPackageStartupMessages(library("DESeq2"))
-    suppressPackageStartupMessages(library("BiocParallel"))
     if (n_threads > 1) {
-        register(MulticoreParam(workers=n_threads))
+        BPPARAM <- BiocParallel::MulticoreParam(workers=n_threads)
         parallel <- TRUE
     } else {
-        register(SerialParam())
+        BPPARAM <- BiocParallel::SerialParam()
         parallel <- FALSE
     }
     counts <- t(X)
@@ -91,19 +93,19 @@ deseq2_zinbwave_feature_score <- function(
     }
     zinb <- zinbwave(
         SummarizedExperiment(
-            assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData
+            assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData,
         ),
         X=design, K=K, epsilon=epsilon, zeroinflation=TRUE,
-        observationalWeights=TRUE
+        observationalWeights=TRUE, BPPARAM=BPPARAM
     )
     dds <- DESeqDataSet(zinb, design)
     suppressMessages(dds <- DESeq(
         dds, fitType=fit_type, sfType="poscounts", useT=TRUE, minmu=1e-6,
-        parallel=parallel, quiet=TRUE
+        parallel=parallel, BPPARAM=BPPARAM, quiet=TRUE
     ))
     suppressMessages(results <- as.data.frame(lfcShrink(
         dds, coef=length(resultsNames(dds)), type="normal", lfcThreshold=lfc,
-        parallel=parallel, quiet=TRUE
+        parallel=parallel, BPPARAM=BPPARAM, quiet=TRUE
     )))
     results$padj[is.na(results$padj)] <- 1
     zero_rownames <- row.names(counts)[rowSums(counts) == 0]
@@ -205,11 +207,12 @@ edger_zinbwave_feature_score <- function(
     suppressPackageStartupMessages(library("SummarizedExperiment"))
     suppressPackageStartupMessages(library("zinbwave"))
     suppressPackageStartupMessages(library("edgeR"))
-    suppressPackageStartupMessages(library("BiocParallel"))
     if (n_threads > 1) {
-        register(MulticoreParam(workers=n_threads))
+        BPPARAM <- BiocParallel::MulticoreParam(workers=n_threads)
+        parallel <- TRUE
     } else {
-        register(SerialParam())
+        BPPARAM <- BiocParallel::SerialParam()
+        parallel <- FALSE
     }
     counts <- t(X)
     if (is.null(row.names(counts))) {
@@ -234,7 +237,7 @@ edger_zinbwave_feature_score <- function(
                 colData=colData
             ),
             X=design_formula, K=K, epsilon=epsilon, zeroinflation=TRUE,
-            observationalWeights=TRUE
+            observationalWeights=TRUE, BPPARAM=BPPARAM
         )
         design <- model.matrix(design_formula, data=colData)
         dge <- DGEList(counts=assay(zinb, "counts"))
@@ -355,11 +358,10 @@ dream_voom_feature_score <- function(
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
     suppressPackageStartupMessages(library("variancePartition"))
-    suppressPackageStartupMessages(library("BiocParallel"))
     if (n_threads > 1) {
-        register(MulticoreParam(workers=n_threads))
+        BPPARAM <- BiocParallel::MulticoreParam(workers=n_threads)
     } else {
-        register(SerialParam())
+        BPPARAM <- BiocParallel::SerialParam()
     }
     counts <- t(X)
     dge <- DGEList(counts=counts)
@@ -373,10 +375,15 @@ dream_voom_feature_score <- function(
     sample_meta$Class <- factor(sample_meta$Class)
     sample_meta$Group <- factor(sample_meta$Group)
     invisible(capture.output(
-        v <- voomWithDreamWeights(dge, design_formula, sample_meta)
+        v <- voomWithDreamWeights(
+            dge, design_formula, sample_meta, BPPARAM=BPPARAM
+        )
     ))
     invisible(capture.output(
-        fit <- dream(v, design_formula, sample_meta, suppressWarnings=TRUE)
+        fit <- dream(
+            v, design_formula, sample_meta, BPPARAM=BPPARAM,
+            suppressWarnings=TRUE
+        )
     ))
     results <- topTable(
         fit, coef=ncol(design), lfc=lfc, number=Inf, adjust.method="BH",
