@@ -384,7 +384,7 @@ def _warn_or_raise_about_fit_failures(results, error_score):
 
         if num_failed_fits == num_fits:
             all_fits_failed_message = (
-                f"\nAll the {num_fits} fits failed.\n"
+                f"All fits failed.\n"
                 "It is very likely that your model is misconfigured.\n"
                 "You can try to debug the error by setting error_score='raise'.\n\n"
                 f"Below are more details about the failures:\n{fit_errors_summary}"
@@ -393,11 +393,11 @@ def _warn_or_raise_about_fit_failures(results, error_score):
 
         else:
             some_fits_failed_message = (
-                f"\n{num_failed_fits} fits failed out of a total of {num_fits}.\n"
+                f"Some fits failed: {num_failed_fits} out of {num_fits} total.\n"
                 "The score on these train-test partitions for these parameters"
                 f" will be set to {error_score}.\n"
                 "If these failures are not expected, you can try to debug them "
-                "by setting error_score='raise'.\n\n"
+                "by setting error_score='raise'.\n"
                 f"Below are more details about the failures:\n{fit_errors_summary}"
             )
             warnings.warn(some_fits_failed_message, FitFailedWarning)
