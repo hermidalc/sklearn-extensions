@@ -54,7 +54,7 @@ wrench <- function(
         rg <- qg / qref
         lrg <- log(rg)
         lrg[!is.finite(lrg)] <- NA
-        s2thetag <- colVars(lrg, na.rm = TRUE)
+        s2thetag <- matrixStats::colVars(lrg, na.rm = TRUE)
         s2thetag_rep <- design %*% s2thetag
 
         thetag <- colMeans(rg)
@@ -162,6 +162,9 @@ wrench_cpm_transform <- function(
         cnames <- colnames(X)
     }
     counts <- t(X)
+    nzrows <- as.logical(nzrows)
+    qref <- as.numeric(qref)
+    s2 <- as.numeric(s2)
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }

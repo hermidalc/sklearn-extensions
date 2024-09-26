@@ -60,6 +60,7 @@ deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
         cnames <- colnames(X)
     }
     counts <- t(X)
+    geo_means <- as.numeric(geo_means)
     dds <- DESeqDataSetFromMatrix(
         counts, data.frame(row.names=seq(1, ncol(counts))), ~1
     )
@@ -107,6 +108,7 @@ edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
         cnames <- colnames(X)
     }
     counts <- t(X)
+    ref_sample <- as.numeric(ref_sample)
     ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
     if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts)
