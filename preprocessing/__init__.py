@@ -11,7 +11,7 @@ from ._batch_effect import (
 from ._data import LogTransformer
 from ._nanostring import NanoStringNormalizer, NanoStringDiffNormalizer
 from ._rna_seq import DESeq2NormVST, EdgeRTMMCPM, EdgeRTMMTPM
-
+from ._wrench import WrenchCPM
 
 __all__ = [
     "DESeq2NormVST",
@@ -23,4 +23,5 @@ __all__ = [
     "NanoStringDiffNormalizer",
     "stICABatchEffectRemover",
     "SVDBatchEffectRemover",
+    "WrenchCPM",
 ]
