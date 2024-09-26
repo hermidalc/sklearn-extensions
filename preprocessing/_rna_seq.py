@@ -317,6 +317,7 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         feature_meta : ignored
         """
         X = self._validate_data(X, dtype=int)
+        self._check_params(self, X, y, feature_meta)
         with (
             ro.default_converter + numpy2ri.converter + pandas2ri.converter
         ).context():
