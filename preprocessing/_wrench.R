@@ -1,7 +1,30 @@
 # Adapted from https://github.com/HCBravoLab/Wrench/blob/master/R/wrenchSource.R
 # Normalization for sparse, under-sampled count data
+
+.getThetag <- function(mat, group, qref) {
+    p <- nrow(mat)
+    # group-wise ratios
+    Yg <- vapply(unique(group), function(g) {
+        g_idx <- which(group == g)
+        ng <- sum(group == g)
+        if (ng > 1) {
+            rowSums(mat[, g_idx])
+        } else {
+            mat[, g_idx]
+        }
+    }, FUN.VALUE = numeric(p))
+    qg <- sweep(Yg, 2, colSums(Yg), "/") # weighted estimator
+    rg <- qg / qref
+    lrg <- log(rg)
+    lrg[!is.finite(lrg)] <- NA
+    s2thetag <- matrixStats::colVars(lrg, na.rm = TRUE)
+    thetag <- colMeans(rg)
+    return(list(s2thetag = s2thetag, thetag = thetag, rg = rg))
+}
+
 wrench <- function(
-    mat, condition, qref, s2, etype = "w.marg.mean", ebcf = TRUE,
+    mat, condition, qref = NULL, s2 = NULL, s2thetag = NULL, thetag = NULL,
+    etype = "w.marg.mean", ebcf = TRUE,
     z.adj = FALSE, phi.adj = TRUE, detrend = FALSE, ...
 ) {
     # trim
@@ -11,7 +34,7 @@ wrench <- function(
     # mat <- mat[, nzcols]
     # condition <- condition[nzcols]
 
-    stopifnot(all(rowSums(mat) > 0))
+    # stopifnot(all(rowSums(mat) > 0))
     stopifnot(all(colSums(mat) > 0))
     stopifnot(ncol(mat) == length(condition))
     stopifnot((nrow(mat) == length(qref)) && (nrow(mat) == length(s2)))
@@ -20,44 +43,41 @@ wrench <- function(
     n <- ncol(mat)
     p <- nrow(mat)
     tots <- colSums(mat)
+
     compute.pi0 <- !((etype %in% c("mean", "median", "s2.w.mean")) & !z.adj)
     if (compute.pi0) {
         pi0 <- Wrench:::.getHurdle(mat, ...)$pi0
     }
+
     group <- as.character(condition)
     if (length(unique(group)) == 1) {
         design <- model.matrix(mat[1, ] ~ 1)
     } else {
         design <- model.matrix(~ -1 + group)
     }
-    # s2 <- Wrench:::.gets2(mat, design, ...)
+
+    # variances
+    if (is.null(s2)) {
+        s2 <- Wrench:::.gets2(mat, design, ...)
+    }
 
     # reference
-    # qref <- Wrench:::.getReference(mat, ...)
+    if (is.null(qref)) {
+        qref <- Wrench:::.getReference(mat, ...)
+    }
 
     # sample-wise ratios
     qmat <- sweep(mat, 2, colSums(mat), "/")
     r <- qmat / qref
 
     if (ebcf) {
-        # group-wise ratios
-        Yg <- vapply(unique(group), function(g) {
-            g_indx <- which(group == g)
-            ng <- sum(group == g)
-            if (ng > 1) {
-                rowSums(mat[, g_indx])
-            } else {
-                mat[, g_indx]
-            }
-        }, FUN.VALUE = numeric(p))
-        qg <- sweep(Yg, 2, colSums(Yg), "/") # weighted estimator
-        rg <- qg / qref
-        lrg <- log(rg)
-        lrg[!is.finite(lrg)] <- NA
-        s2thetag <- matrixStats::colVars(lrg, na.rm = TRUE)
+        if (is.null(s2thetag) && is.null(thetag)) {
+            tgres <- .getThetag(mat, group, qref)
+            s2thetag <- tgres$s2thetag
+            thetag <- tgres$thetag
+            # rg <- tgres$rg
+        }
         s2thetag_rep <- design %*% s2thetag
-
-        thetag <- colMeans(rg)
         thetag_rep <- c(design %*% thetag)
 
         # regularized estimation of positive means.
@@ -94,7 +114,7 @@ wrench <- function(
     res$others <- list()
     if (ebcf) {
         res$others <- list(
-            "rg" = rg,
+            # "rg" = rg,
             "thetag" = thetag,
             "thetagi" = thetagi,
             "s2thetag" = s2thetag
@@ -147,14 +167,20 @@ wrench_fit <- function(X, sample_meta, ref_type = "sw.means") {
     } else {
         design <- model.matrix(~ -1 + group)
     }
+    suppressWarnings(s2 <- Wrench:::.gets2(counts, design))
     qref <- Wrench:::.getReference(counts, ref.est = ref_type)
-    s2 <- Wrench:::.gets2(counts, design)
-    return(list(nzrows = nzrows, qref = qref, s2 = s2))
+    tgres <- .getThetag(counts, group, qref)
+    s2thetag <- tgres$s2thetag
+    thetag <- tgres$thetag
+    return(list(
+        nzrows = nzrows, qref = qref, s2 = s2, s2thetag = s2thetag,
+        thetag = thetag
+    ))
 }
 
 wrench_cpm_transform <- function(
-    X, sample_meta, nzrows, qref, s2, est_type = "w.marg.mean", log = TRUE,
-    prior_count = 1
+    X, sample_meta, nzrows, qref, s2, s2thetag, thetag,
+    est_type = "w.marg.mean", log = TRUE, prior_count = 1
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     if (is.data.frame(X)) {
@@ -165,6 +191,8 @@ wrench_cpm_transform <- function(
     nzrows <- as.logical(nzrows)
     qref <- as.numeric(qref)
     s2 <- as.numeric(s2)
+    s2thetag <- as.numeric(s2thetag)
+    thetag <- as.numeric(thetag)
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
@@ -177,7 +205,8 @@ wrench_cpm_transform <- function(
     group <- group[nzcols]
     suppressWarnings(W <- wrench(
         counts,
-        condition = group, qref = qref, s2 = s2, etype = est_type
+        condition = group, qref = qref, s2 = s2, s2thetag = s2thetag,
+        thetag = thetag, etype = est_type
     ))
     ccf[names(W$ccf)] <- W$ccf
     dge <- DGEList(counts = counts, norm.factors = ccf)

@@ -22,10 +22,14 @@ def wrench_fit(X, sample_meta, ref_type):
             np.array(res["nzrows"], dtype=bool),
             np.array(res["qref"], dtype=float),
             np.array(res["s2"], dtype=float),
+            np.array(res["s2thetag"], dtype=float),
+            np.array(res["thetag"], dtype=float),
         )
 
 
-def wrench_cpm_transform(X, sample_meta, nzrows, qref, s2, est_type, log, prior_count):
+def wrench_cpm_transform(
+    X, sample_meta, nzrows, qref, s2, s2thetag, thetag, est_type, log, prior_count
+):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         return r_wrench_cpm_transform(
             X,
@@ -33,6 +37,8 @@ def wrench_cpm_transform(X, sample_meta, nzrows, qref, s2, est_type, log, prior_
             nzrows=nzrows,
             qref=qref,
             s2=s2,
+            s2thetag=s2thetag,
+            thetag=thetag,
             est_type=est_type,
             log=log,
             prior_count=prior_count,
@@ -68,11 +74,15 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
     nzrows_ : array, shape (n_features, )
         Non-zero count feature mask
 
-    qref_ : array, shape (n_nonzero_features,)
+    qref_ : array, shape (n_nonzero_features, )
         Wrench reference vector
 
-    s2_ : array, shape (n_nonzero_features,)
+    s2_ : array, shape (n_nonzero_features, )
         Wrench variance estimates for logged feature-wise counts
+
+    s2thetag_ : array, shape (n_conditions, )
+
+    thetag_ : array, shape (n_conditions, )
     """
 
     def __init__(
@@ -103,7 +113,7 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
             Training sample metadata.
         """
         X = self._validate_data(X, dtype=int)
-        self.nzrows_, self.qref_, self.s2_ = wrench_fit(
+        self.nzrows_, self.qref_, self.s2_, self.s2thetag_, self.thetag_ = wrench_fit(
             X, sample_meta, ref_type=self.ref_type
         )
         return self
@@ -133,6 +143,8 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
             nzrows=self.nzrows_,
             qref=self.qref_,
             s2=self.s2_,
+            s2thetag=self.s2thetag_,
+            thetag=self.thetag_,
             est_type=self.est_type,
             log=self.log,
             prior_count=self.prior_count,
