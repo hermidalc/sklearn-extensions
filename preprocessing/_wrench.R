@@ -196,8 +196,9 @@ wrench_cpm_transform <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    ccf <- rep(1, ncol(counts))
-    names(ccf) <- colnames(counts)
+    unf_counts <- counts
+    unf_ccf <- rep(1, ncol(counts))
+    names(unf_ccf) <- colnames(counts)
     counts <- counts[nzrows, ]
     nzcols <- colSums(counts) > 0
     counts <- counts[, nzcols]
@@ -208,8 +209,8 @@ wrench_cpm_transform <- function(
         condition = group, qref = qref, s2 = s2, s2thetag = s2thetag,
         thetag = thetag, etype = est_type
     ))
-    ccf[names(W$ccf)] <- W$ccf
-    dge <- DGEList(counts = counts, norm.factors = ccf)
+    unf_ccf[names(W$ccf)] <- W$ccf
+    dge <- DGEList(counts = unf_counts, norm.factors = unf_ccf)
     cpms <- cpm(dge, log = log, prior.count = prior_count)
     Xt <- t(cpms)
     if (is.data.frame(X)) {
