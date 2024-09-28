@@ -1,6 +1,71 @@
 # Adapted from https://github.com/HCBravoLab/Wrench/blob/master/R/wrenchSource.R
 # Normalization for sparse, under-sampled count data
 
+.getHurdleFit <- function(mat, pres.abs.mod = TRUE) {
+    if (pres.abs.mod) {
+        pi0.fit <- apply(mat, 1, function(x) {
+            glm(
+                Response ~ -1 + LogColSums,
+                data = data.frame(
+                    Response = c(1 * (x == 0)),
+                    LogColSums = log(colSums(mat))
+                ),
+                family = "binomial", x = TRUE
+            )
+        })
+    } else {
+        tau <- colSums(mat)
+        pi0.fit <- apply(mat, 1, function(x) {
+            glm(
+                Response ~ -1 + LogColSums,
+                data = data.frame(
+                    Response = cbind(tau - x, x),
+                    LogColSums = log(colSums(mat))
+                ),
+                family = "binomial", x = TRUE
+            )
+        })
+    }
+    pi0.fit
+}
+
+.getHurdle <- function(
+    mat, pi0.fit, pres.abs.mod = TRUE, thresh = FALSE, thresh.val = 1e-8
+) {
+    n <- ncol(mat)
+    if (pres.abs.mod) {
+        pi0 <- t(vapply(
+            pi0.fit, function(x) {
+                predict(
+                    x,
+                    newdata = data.frame(LogColSums = log(colSums(mat))),
+                    type = "response"
+                )
+            },
+            FUN.VALUE = numeric(n)
+        ))
+    } else {
+        tau <- colSums(mat)
+        pi0 <- t(vapply(
+            pi0.fit, function(x) {
+                exp(tau * log(
+                    predict(
+                        x,
+                        newdata = data.frame(LogColSums = log(colSums(mat))),
+                        type = "response"
+                    )
+                ))
+            },
+            FUN.VALUE = numeric(n)
+        ))
+    }
+    if (thresh) {
+        pi0[pi0 > 1 - thresh.val] <- 1 - thresh.val
+        pi0[pi0 < thresh.val] <- thresh.val
+    }
+    pi0
+}
+
 .getThetag <- function(mat, group, qref) {
     p <- nrow(mat)
     # group-wise ratios
@@ -17,15 +82,15 @@
     rg <- qg / qref
     lrg <- log(rg)
     lrg[!is.finite(lrg)] <- NA
-    s2thetag <- matrixStats::colVars(lrg, na.rm = TRUE)
+    s2thetag <- colVars(lrg, na.rm = TRUE)
     thetag <- colMeans(rg)
     return(list(s2thetag = s2thetag, thetag = thetag, rg = rg))
 }
 
 wrench <- function(
     mat, condition, qref = NULL, s2 = NULL, s2thetag = NULL, thetag = NULL,
-    etype = "w.marg.mean", ebcf = TRUE,
-    z.adj = FALSE, phi.adj = TRUE, detrend = FALSE, ...
+    pi0.fit = NULL, etype = "w.marg.mean", ebcf = TRUE, z.adj = FALSE,
+    phi.adj = TRUE, detrend = FALSE, ...
 ) {
     # trim
     # nzrows <- rowSums(mat) > 0
@@ -39,14 +104,17 @@ wrench <- function(
     stopifnot(ncol(mat) == length(condition))
     stopifnot((nrow(mat) == length(qref)) && (nrow(mat) == length(s2)))
 
-    # feature-wise parameters: hurdle, variance, reference and raw ratios
     n <- ncol(mat)
     p <- nrow(mat)
     tots <- colSums(mat)
 
-    compute.pi0 <- !((etype %in% c("mean", "median", "s2.w.mean")) & !z.adj)
+    # feature-wise parameters: hurdle, variance, reference and raw ratios
+    compute.pi0 <- (
+        !is.null(pi0.fit) &
+            !((etype %in% c("mean", "median", "s2.w.mean")) & !z.adj)
+    )
     if (compute.pi0) {
-        pi0 <- Wrench:::.getHurdle(mat, ...)$pi0
+        pi0 <- .getHurdle(mat, pi0.fit, ...)
     }
 
     group <- as.character(condition)
@@ -85,7 +153,7 @@ wrench <- function(
         thetagj <- exp(vapply(seq(n), function(j) {
             x <- log(r[, j])
             x[!is.finite(x)] <- NA
-            stats::weighted.mean(
+            weighted.mean(
                 x,
                 w = 1 / (s2 + s2thetag_rep[j]), na.rm = TRUE
             )
@@ -154,7 +222,14 @@ wrench <- function(
     res
 }
 
-wrench_fit <- function(X, sample_meta, ref_type = "sw.means") {
+wrench_fit <- function(
+    X, sample_meta, est_type = "w.marg.mean", ref_type = "sw.means",
+    z_adj = FALSE
+) {
+    suppressPackageStartupMessages({
+        library(stats)
+        library(matrixStats)
+    })
     counts <- t(X)
     nzrows <- rowSums(counts) > 0
     counts <- counts[nzrows, ]
@@ -172,17 +247,26 @@ wrench_fit <- function(X, sample_meta, ref_type = "sw.means") {
     tgres <- .getThetag(counts, group, qref)
     s2thetag <- tgres$s2thetag
     thetag <- tgres$thetag
+    if (!((est_type %in% c("mean", "median", "s2.w.mean")) && !z_adj)) {
+        pi0_fit <- .getHurdleFit(counts)
+    } else {
+        pi0_fit <- NULL
+    }
     return(list(
         nzrows = nzrows, qref = qref, s2 = s2, s2thetag = s2thetag,
-        thetag = thetag
+        thetag = thetag, pi0_fit = pi0_fit
     ))
 }
 
 wrench_cpm_transform <- function(
-    X, sample_meta, nzrows, qref, s2, s2thetag, thetag,
-    est_type = "w.marg.mean", log = TRUE, prior_count = 1
+    X, sample_meta, nzrows, qref, s2, s2thetag, thetag, pi0_fit,
+    est_type = "w.marg.mean", z_adj = FALSE, log = TRUE, prior_count = 1
 ) {
-    suppressPackageStartupMessages(library("edgeR"))
+    suppressPackageStartupMessages({
+        library(edgeR)
+        library(stats)
+        library(matrixStats)
+    })
     if (is.data.frame(X)) {
         rnames <- row.names(X)
         cnames <- colnames(X)
@@ -197,8 +281,8 @@ wrench_cpm_transform <- function(
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
     unf_counts <- counts
-    unf_ccf <- rep(1, ncol(counts))
-    names(unf_ccf) <- colnames(counts)
+    unf_ccf <- rep(1, ncol(unf_counts))
+    names(unf_ccf) <- colnames(unf_counts)
     counts <- counts[nzrows, ]
     nzcols <- colSums(counts) > 0
     counts <- counts[, nzcols]
@@ -207,7 +291,7 @@ wrench_cpm_transform <- function(
     suppressWarnings(W <- wrench(
         counts,
         condition = group, qref = qref, s2 = s2, s2thetag = s2thetag,
-        thetag = thetag, etype = est_type
+        thetag = thetag, pi0.fit = pi0_fit, etype = est_type, z.adj = z_adj,
     ))
     unf_ccf[names(W$ccf)] <- W$ccf
     dge <- DGEList(counts = unf_counts, norm.factors = unf_ccf)
