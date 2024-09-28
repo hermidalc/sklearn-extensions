@@ -231,10 +231,6 @@ wrench_fit <- function(X, sample_meta, ref_type = "sw.means", z_adj = FALSE) {
 }
 
 wrench_pi0_fit <- function(X, est_type = "w.marg.mean", z_adj = FALSE) {
-    suppressPackageStartupMessages({
-        library(stats)
-        library(matrixStats)
-    })
     counts <- t(X)
     nzrows <- rowSums(counts) > 0
     counts <- counts[nzrows, ]
