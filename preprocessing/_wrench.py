@@ -144,7 +144,13 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
             self.s2thetag_,
             self.thetag_,
             self.pi0_fit_,
-        ) = wrench_fit(X, sample_meta, ref_type=self.ref_type, z_adj=self.z_adj)
+        ) = wrench_fit(
+            X,
+            sample_meta,
+            est_type=self.est_type,
+            ref_type=self.ref_type,
+            z_adj=self.z_adj,
+        )
         return self
 
     def transform(self, X, sample_meta):
