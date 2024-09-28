@@ -12,21 +12,19 @@ r_base = importr("base")
 if "wrench_fit" not in ro.globalenv:
     r_base.source(os.path.dirname(__file__) + "/_wrench.R")
 r_wrench_fit = ro.globalenv["wrench_fit"]
+r_wrench_pi0_fit = ro.globalenv["wrench_pi0_fit"]
 r_wrench_cpm_transform = ro.globalenv["wrench_cpm_transform"]
 
 
-def wrench_fit(X, sample_meta, est_type, ref_type, z_adj):
+def wrench_fit(X, sample_meta, ref_type, z_adj):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        res = r_wrench_fit(
-            X, sample_meta, est_type=est_type, ref_type=ref_type, z_adj=z_adj
-        )
+        res = r_wrench_fit(X, sample_meta, ref_type=ref_type, z_adj=z_adj)
         return (
             np.array(res["nzrows"], dtype=bool),
             np.array(res["qref"], dtype=float),
             np.array(res["s2"], dtype=float),
             np.array(res["s2thetag"], dtype=float),
             np.array(res["thetag"], dtype=float),
-            res["pi0_fit"],
         )
 
 
@@ -104,7 +102,8 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
 
     thetag_ : array, shape (n_conditions, )
 
-    pi0_fit_ : dict, shape (n_nonzero_features_, )
+    pi0_fit_ : R list, shape (n_nonzero_features_, )
+        Wrench hurdle model feature-wise glm fitted objects
     """
 
     def __init__(
@@ -143,14 +142,12 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
             self.s2_,
             self.s2thetag_,
             self.thetag_,
-            self.pi0_fit_,
-        ) = wrench_fit(
-            X,
-            sample_meta,
-            est_type=self.est_type,
-            ref_type=self.ref_type,
-            z_adj=self.z_adj,
-        )
+        ) = wrench_fit(X, sample_meta, ref_type=self.ref_type, z_adj=self.z_adj)
+        with (
+            ro.default_converter + numpy2ri.converter + pandas2ri.converter
+        ).context():
+            X_r = ro.conversion.get_conversion().py2rpy(X)
+        self.pi0_fit_ = r_wrench_pi0_fit(X_r, est_type=self.est_type, z_adj=self.z_adj)
         return self
 
     def transform(self, X, sample_meta):
@@ -172,7 +169,7 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
         check_is_fitted(self, "nzrows_")
         X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
-        X = memory.cache(wrench_cpm_transform)(
+        X = memory.cache(wrench_cpm_transform, ignore=["pi0_fit"])(
             X,
             sample_meta,
             nzrows=self.nzrows_,

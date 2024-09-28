@@ -1,26 +1,24 @@
 # Adapted from https://github.com/HCBravoLab/Wrench/blob/master/R/wrenchSource.R
-# Normalization for sparse, under-sampled count data
+# Wrench normalization for sparse, under-sampled count data
 
 .getHurdleFit <- function(mat, pres.abs.mod = TRUE) {
+    tau <- colSums(mat)
     if (pres.abs.mod) {
         pi0.fit <- apply(mat, 1, function(x) {
             glm(
-                Response ~ -1 + LogColSums,
+                Response ~ -1 + LogTau,
                 data = data.frame(
-                    Response = c(1 * (x == 0)),
-                    LogColSums = log(colSums(mat))
+                    Response = c(1 * (x == 0)), LogTau = log(tau)
                 ),
                 family = "binomial", x = TRUE
             )
         })
     } else {
-        tau <- colSums(mat)
         pi0.fit <- apply(mat, 1, function(x) {
             glm(
-                Response ~ -1 + LogColSums,
+                Response ~ -1 + LogTau,
                 data = data.frame(
-                    Response = cbind(tau - x, x),
-                    LogColSums = log(colSums(mat))
+                    Response = cbind(tau - x, x), LogTau = log(tau)
                 ),
                 family = "binomial", x = TRUE
             )
@@ -33,25 +31,25 @@
     mat, pi0.fit, pres.abs.mod = TRUE, thresh = FALSE, thresh.val = 1e-8
 ) {
     n <- ncol(mat)
+    tau <- colSums(mat)
     if (pres.abs.mod) {
         pi0 <- t(vapply(
             pi0.fit, function(x) {
                 predict(
                     x,
-                    newdata = data.frame(LogColSums = log(colSums(mat))),
+                    newdata = data.frame(LogTau = log(tau)),
                     type = "response"
                 )
             },
             FUN.VALUE = numeric(n)
         ))
     } else {
-        tau <- colSums(mat)
         pi0 <- t(vapply(
             pi0.fit, function(x) {
                 exp(tau * log(
                     predict(
                         x,
-                        newdata = data.frame(LogColSums = log(colSums(mat))),
+                        newdata = data.frame(LogTau = log(tau)),
                         type = "response"
                     )
                 ))
@@ -222,10 +220,7 @@ wrench <- function(
     res
 }
 
-wrench_fit <- function(
-    X, sample_meta, est_type = "w.marg.mean", ref_type = "sw.means",
-    z_adj = FALSE
-) {
+wrench_fit <- function(X, sample_meta, ref_type = "sw.means", z_adj = FALSE) {
     suppressPackageStartupMessages({
         library(stats)
         library(matrixStats)
@@ -247,15 +242,27 @@ wrench_fit <- function(
     tgres <- .getThetag(counts, group, qref)
     s2thetag <- tgres$s2thetag
     thetag <- tgres$thetag
-    if (!((est_type %in% c("mean", "median", "s2.w.mean")) && !z_adj)) {
-        suppressWarnings(pi0_fit <- .getHurdleFit(counts))
-    } else {
-        pi0_fit <- NULL
-    }
     return(list(
         nzrows = nzrows, qref = qref, s2 = s2, s2thetag = s2thetag,
-        thetag = thetag, pi0_fit = pi0_fit
+        thetag = thetag
     ))
+}
+
+wrench_pi0_fit <- function(X, est_type = "w.marg.mean", z_adj = FALSE) {
+    suppressPackageStartupMessages({
+        library(stats)
+        library(matrixStats)
+    })
+    counts <- t(X)
+    nzrows <- rowSums(counts) > 0
+    counts <- counts[nzrows, ]
+    nzcols <- colSums(counts) > 0
+    counts <- counts[, nzcols]
+    pi0_fit <- NULL
+    if (!((est_type %in% c("mean", "median", "s2.w.mean")) && !z_adj)) {
+        suppressWarnings(pi0_fit <- .getHurdleFit(counts))
+    }
+    pi0_fit
 }
 
 wrench_cpm_transform <- function(
