@@ -248,7 +248,7 @@ wrench_fit <- function(
     s2thetag <- tgres$s2thetag
     thetag <- tgres$thetag
     if (!((est_type %in% c("mean", "median", "s2.w.mean")) && !z_adj)) {
-        pi0_fit <- .getHurdleFit(counts)
+        suppressWarnings(pi0_fit <- .getHurdleFit(counts))
     } else {
         pi0_fit <- NULL
     }
