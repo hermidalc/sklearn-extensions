@@ -2,26 +2,16 @@
 # Wrench normalization for sparse, under-sampled count data
 
 .getHurdleFit <- function(mat, pres.abs.mod = TRUE) {
+    suppressPackageStartupMessages(library(fastglm))
     tau <- colSums(mat)
+    design <- model.matrix(~ -1 + log(tau))
     if (pres.abs.mod) {
         pi0.fit <- apply(mat, 1, function(x) {
-            glm(
-                Response ~ -1 + LogTau,
-                data = data.frame(
-                    Response = c(1 * (x == 0)), LogTau = log(tau)
-                ),
-                family = "binomial", x = TRUE
-            )
+            fastglm(design, c(1 * (x == 0)), family = binomial())
         })
     } else {
         pi0.fit <- apply(mat, 1, function(x) {
-            glm(
-                Response ~ -1 + LogTau,
-                data = data.frame(
-                    Response = cbind(tau - x, x), LogTau = log(tau)
-                ),
-                family = "binomial", x = TRUE
-            )
+            fastglm(design, cbind(tau - x, x), family = binomial())
         })
     }
     pi0.fit
@@ -30,29 +20,21 @@
 .getHurdle <- function(
     mat, pi0.fit, pres.abs.mod = TRUE, thresh = FALSE, thresh.val = 1e-8
 ) {
+    suppressPackageStartupMessages(library(fastglm))
     n <- ncol(mat)
     tau <- colSums(mat)
+    newdata <- as.matrix(data.frame(LogTau = log(tau)))
     if (pres.abs.mod) {
         pi0 <- t(vapply(
             pi0.fit, function(x) {
-                predict(
-                    x,
-                    newdata = data.frame(LogTau = log(tau)),
-                    type = "response"
-                )
+                predict(x, newdata = newdata, type = "response")
             },
             FUN.VALUE = numeric(n)
         ))
     } else {
         pi0 <- t(vapply(
             pi0.fit, function(x) {
-                exp(tau * log(
-                    predict(
-                        x,
-                        newdata = data.frame(LogTau = log(tau)),
-                        type = "response"
-                    )
-                ))
+                exp(tau * log(predict(x, newdata = newdata, type = "response")))
             },
             FUN.VALUE = numeric(n)
         ))

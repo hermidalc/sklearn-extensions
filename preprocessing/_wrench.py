@@ -71,7 +71,7 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
         Wrench reference vector type.
 
     z_adj : bool (default = False)
-        If Wrench feature-wise ratios need to be adjusted by hurdle probabilities
+        Whether feature-wise ratios need to be adjusted by hurdle probabilities
         (arises when taking marginal expectation)
 
     log : bool (default = True)
