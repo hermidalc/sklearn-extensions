@@ -13,9 +13,9 @@ if "deseq2_norm_fit" not in ro.globalenv:
     r_base.source(os.path.dirname(__file__) + "/_rna_seq.R")
 r_deseq2_norm_fit = ro.globalenv["deseq2_norm_fit"]
 r_deseq2_norm_vst_transform = ro.globalenv["deseq2_norm_vst_transform"]
-r_edger_tmm_fit = ro.globalenv["edger_tmm_fit"]
-r_edger_tmm_cpm_transform = ro.globalenv["edger_tmm_cpm_transform"]
-r_edger_tmm_tpm_transform = ro.globalenv["edger_tmm_tpm_transform"]
+r_edger_norm_fit = ro.globalenv["edger_norm_fit"]
+r_edger_norm_cpm_transform = ro.globalenv["edger_norm_cpm_transform"]
+r_edger_norm_tpm_transform = ro.globalenv["edger_norm_tpm_transform"]
 
 
 def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_batch):
@@ -37,29 +37,34 @@ def deseq2_norm_vst_transform(X, geo_means, disp_func):
         return r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func)
 
 
-def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
+def edger_norm_cpm_transform(X, ref_sample, norm_type, log, prior_count):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return r_edger_tmm_cpm_transform(
-            X, ref_sample=ref_sample, log=log, prior_count=prior_count
+        return r_edger_norm_cpm_transform(
+            X,
+            ref_sample=ref_sample,
+            norm_type=norm_type,
+            log=log,
+            prior_count=prior_count,
         )
 
 
-def edger_tmm_tpm_transform(
-    X, feature_meta, ref_sample, log, prior_count, gene_length_col
+def edger_norm_tpm_transform(
+    X, feature_meta, ref_sample, norm_type, log, prior_count, gene_length_col
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return r_edger_tmm_tpm_transform(
+        return r_edger_norm_tpm_transform(
             X,
             feature_meta=feature_meta,
             ref_sample=ref_sample,
+            norm_type=norm_type,
             log=log,
             prior_count=prior_count,
             gene_length_col=gene_length_col,
         )
 
 
-class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
-    """DESeq2 normalization and VST transformation for count data
+class DESeq2Normalizer(ExtendedTransformerMixin, BaseEstimator):
+    """DESeq2 normalization and transformation for count data
 
     Parameters
     ----------
@@ -68,6 +73,9 @@ class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
 
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
+
+    trans_type : str (default = "vst")
+        Transformation method
 
     is_classif : bool (default = True)
         Whether this is a classification design.
@@ -94,12 +102,14 @@ class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
         self,
         norm_type="ratio",
         fit_type="parametric",
+        trans_type="vst",
         is_classif=True,
         model_batch=False,
         memory=None,
     ):
         self.norm_type = norm_type
         self.fit_type = fit_type
+        self.trans_type = trans_type
         self.is_classif = is_classif
         self.model_batch = model_batch
         self.memory = memory
@@ -127,6 +137,7 @@ class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
             X, y = self._validate_data(X, y, dtype=int)
         else:
             X = self._validate_data(X, dtype=int)
+        self._check_params(X)
         if y is None:
             y = ro.NULL
         if sample_meta is None:
@@ -159,10 +170,11 @@ class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
         check_is_fitted(self, "geo_means_")
         X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
-        X = memory.cache(deseq2_norm_vst_transform)(
-            X, geo_means=self.geo_means_, disp_func=self.disp_func_
-        )
-        return X
+        if self.trans_type == "vst":
+            Xt = memory.cache(deseq2_norm_vst_transform)(
+                X, geo_means=self.geo_means_, disp_func=self.disp_func_
+            )
+        return Xt
 
     def inverse_transform(self, X, sample_meta=None):
         """
@@ -179,103 +191,29 @@ class DESeq2NormVST(ExtendedTransformerMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
+    def _check_params(self, X):
+        if self.norm_type not in ("ratio", "poscounts"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.fit_type not in ("parametric"):
+            raise ValueError("invalid fit_type %s" % self.fit_type)
+        if self.trans_type not in ("vst"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
+
     def _more_tags(self):
         return {"requires_positive_X": True}
 
 
-class EdgeRTMMCPM(ExtendedTransformerMixin, BaseEstimator):
+class EdgeRNormalizer(ExtendedTransformerMixin, BaseEstimator):
     """edgeR TMM normalization and CPM transformation for count data
 
     Parameters
     ----------
-    log : bool (default = True)
-        Whether to return log2 transformed values.
+    norm_type : str (default = "TMM")
+        estimateSizeFactors type option.
 
-    prior_count : float (default = 2)
-        Average count to add to each observation to avoid taking log of zero.
-        Larger values produce stronger moderation of low counts and more
-        shrinkage of the corresponding log fold changes.
+    trans_type : str (default = "cpm")
+        Transformation method. Allowed types are "cpm" or "tpm".
 
-    memory : None, str or object with the joblib.Memory interface \
-        (default = None)
-        Used for internal caching. By default, no caching is done.
-        If a string is given, it is the path to the caching directory.
-
-    Attributes
-    ----------
-    ref_sample_ : array, shape (n_features,)
-        TMM normalization reference sample feature vector.
-    """
-
-    def __init__(self, log=True, prior_count=2, memory=None):
-        self.log = log
-        self.prior_count = prior_count
-        self.memory = memory
-
-    def fit(self, X, y=None, sample_meta=None):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input counts data matrix.
-
-        y : ignored
-
-        sample_meta: ignored
-        """
-        X = self._validate_data(X, dtype=int)
-        with (
-            ro.default_converter + numpy2ri.converter + pandas2ri.converter
-        ).context():
-            self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
-        return self
-
-    def transform(self, X, sample_meta=None):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input counts data matrix.
-
-        sample_meta : ignored
-
-        Returns
-        -------
-        Xt : array of shape (n_samples, n_features)
-            edgeR TMM normalized CPM transformed data matrix.
-        """
-        check_is_fitted(self, "ref_sample_")
-        X = self._validate_data(X, dtype=int, reset=False)
-        memory = check_memory(self.memory)
-        X = memory.cache(edger_tmm_cpm_transform)(
-            X, ref_sample=self.ref_sample_, log=self.log, prior_count=self.prior_count
-        )
-        return X
-
-    def inverse_transform(self, X, sample_meta=None):
-        """
-        Parameters
-        ----------
-        X : array-like, shape = (n_samples, n_features)
-            Input transformed data matrix.
-
-        sample_meta : ignored
-
-        Returns
-        -------
-        Xr : array of shape (n_samples, n_original_features)
-        """
-        raise NotImplementedError("inverse_transform not implemented.")
-
-    def _more_tags(self):
-        return {"requires_positive_X": True}
-
-
-class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
-    """edgeR TMM normalization and TPM transformation for count data
-
-    Parameters
-    ----------
     log : bool (default = True)
         Whether to return log2 transformed values.
 
@@ -299,13 +237,23 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         TMM normalization reference sample feature vector.
     """
 
-    def __init__(self, log=True, prior_count=2, gene_length_col="Length", memory=None):
+    def __init__(
+        self,
+        norm_type="TMM",
+        trans_type="cpm",
+        log=True,
+        prior_count=2,
+        gene_length_col="Length",
+        memory=None,
+    ):
+        self.norm_type = norm_type
+        self.trans_type = trans_type
         self.log = log
         self.prior_count = prior_count
         self.gene_length_col = gene_length_col
         self.memory = memory
 
-    def fit(self, X, y=None, feature_meta=None):
+    def fit(self, X, y=None, sample_meta=None, feature_meta=None):
         """
         Parameters
         ----------
@@ -314,51 +262,69 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
 
         y : ignored
 
-        feature_meta : ignored
+        sample_meta : ignored
+
+        feature_meta : ignored for cpm required for tpm
         """
         X = self._validate_data(X, dtype=int)
-        self._check_params(self, X, y, feature_meta)
+        self._check_params(X, feature_meta)
         with (
             ro.default_converter + numpy2ri.converter + pandas2ri.converter
         ).context():
-            self.ref_sample_ = np.array(r_edger_tmm_fit(X), dtype=int)
+            self.ref_sample_ = np.array(
+                r_edger_norm_fit(X, type=self.norm_type), dtype=int
+            )
         return self
 
-    def transform(self, X, feature_meta):
+    def transform(self, X, sample_meta=None, feature_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Input counts data matrix.
 
-        feature_meta : pandas.DataFrame, pandas.Series \
-            shape = (n_features, n_metadata)
-            Feature metadata.
+        sample_meta : ignored
+
+        feature_meta : ignored for cpm required for tpm
 
         Returns
         -------
         Xt : array of shape (n_samples, n_features)
-            edgeR TMM normalized TPM transformed data matrix.
+            edgeR TMM normalized CPM transformed data matrix.
         """
         check_is_fitted(self, "ref_sample_")
         X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
-        X = memory.cache(edger_tmm_tpm_transform)(
-            X,
-            feature_meta,
-            ref_sample=self.ref_sample_,
-            log=self.log,
-            prior_count=self.prior_count,
-            gene_length_col=self.gene_length_col,
-        )
-        return X
+        if feature_meta is None:
+            feature_meta = ro.NULL
+        if self.trans_type == "cpm":
+            Xt = memory.cache(edger_norm_cpm_transform)(
+                X,
+                ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
+                log=self.log,
+                prior_count=self.prior_count,
+            )
+        elif self.trans_type == "tpm":
+            Xt = memory.cache(edger_norm_tpm_transform)(
+                X,
+                feature_meta,
+                ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
+                log=self.log,
+                prior_count=self.prior_count,
+                gene_length_col=self.gene_length_col,
+            )
+        return Xt
 
-    def inverse_transform(self, X, feature_meta=None):
+    def inverse_transform(self, X, sample_meta=None, feature_meta=None):
         """
         Parameters
         ----------
         X : array-like, shape = (n_samples, n_features)
             Input transformed data matrix.
+
+        sample_meta : ignored
 
         feature_meta : ignored
 
@@ -368,7 +334,11 @@ class EdgeRTMMTPM(ExtendedTransformerMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
-    def _check_params(self, X, y, feature_meta):
+    def _check_params(self, X, feature_meta):
+        if self.norm_type not in ("TMM"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.trans_type not in ("cpm", "tpm"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
         if X.shape[1] != feature_meta.shape[0]:
             raise ValueError(
                 "X ({:d}) and feature_meta ({:d}) have "

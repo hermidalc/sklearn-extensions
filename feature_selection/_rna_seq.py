@@ -25,22 +25,32 @@ if "deseq2_norm_fit" not in ro.globalenv:
     r_base.source(os.path.dirname(__file__) + "/../preprocessing/_rna_seq.R")
 r_deseq2_norm_fit = ro.globalenv["deseq2_norm_fit"]
 r_deseq2_norm_vst_transform = ro.globalenv["deseq2_norm_vst_transform"]
-r_edger_tmm_fit = ro.globalenv["edger_tmm_fit"]
-r_edger_tmm_cpm_transform = ro.globalenv["edger_tmm_cpm_transform"]
-r_edger_tmm_tpm_transform = ro.globalenv["edger_tmm_tpm_transform"]
+r_edger_norm_fit = ro.globalenv["edger_norm_fit"]
+r_edger_norm_cpm_transform = ro.globalenv["edger_norm_cpm_transform"]
+r_edger_norm_tpm_transform = ro.globalenv["edger_norm_tpm_transform"]
 
 
 def deseq2_feature_score(
-    X, y, sample_meta, lfc, scoring_meth, fit_type, lfc_shrink, model_batch, n_threads
+    X,
+    y,
+    sample_meta,
+    fit_type,
+    norm_type,
+    scoring_type,
+    lfc,
+    lfc_shrink,
+    model_batch,
+    n_threads,
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         df = r_deseq2_feature_score(
             X,
             y,
             sample_meta=sample_meta,
-            lfc=lfc,
-            scoring_meth=scoring_meth,
             fit_type=fit_type,
+            norm_type=norm_type,
+            scoring_type=scoring_type,
+            lfc=lfc,
             lfc_shrink=lfc_shrink,
             model_batch=model_batch,
             n_threads=n_threads,
@@ -49,31 +59,44 @@ def deseq2_feature_score(
 
 
 def deseq2_zinbwave_feature_score(
-    X, y, sample_meta, lfc, scoring_meth, epsilon, fit_type, model_batch, n_threads
+    X,
+    y,
+    sample_meta,
+    epsilon,
+    fit_type,
+    norm_type,
+    scoring_type,
+    lfc,
+    model_batch,
+    n_threads,
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         df = r_deseq2_zinbwave_feature_score(
             X,
             y,
             sample_meta=sample_meta,
-            lfc=lfc,
-            scoring_meth=scoring_meth,
             epsilon=epsilon,
             fit_type=fit_type,
+            norm_type=norm_type,
+            scoring_type=scoring_type,
+            lfc=lfc,
             model_batch=model_batch,
             n_threads=n_threads,
         )
         return np.array(df["score"], dtype=float), np.array(df["padj"], dtype=float)
 
 
-def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, model_batch):
+def edger_feature_score(
+    X, y, sample_meta, norm_type, scoring_type, lfc, robust, model_batch
+):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         df = r_edger_feature_score(
             X,
             y,
             sample_meta=sample_meta,
+            norm_type=norm_type,
+            scoring_type=scoring_type,
             lfc=lfc,
-            scoring_meth=scoring_meth,
             robust=robust,
             model_batch=model_batch,
         )
@@ -81,15 +104,16 @@ def edger_feature_score(X, y, sample_meta, lfc, scoring_meth, robust, model_batc
 
 
 def edger_zinbwave_feature_score(
-    X, y, sample_meta, scoring_meth, epsilon, robust, model_batch, n_threads
+    X, y, sample_meta, epsilon, norm_type, scoring_type, robust, model_batch, n_threads
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         df = r_edger_zinbwave_feature_score(
             X,
             y,
             sample_meta=sample_meta,
-            scoring_meth=scoring_meth,
             epsilon=epsilon,
+            norm_type=norm_type,
+            scoring_type=scoring_type,
             robust=robust,
             model_batch=model_batch,
             n_threads=n_threads,
@@ -98,15 +122,16 @@ def edger_zinbwave_feature_score(
 
 
 def limma_voom_feature_score(
-    X, y, sample_meta, lfc, scoring_meth, robust, model_batch, model_dupcor
+    X, y, sample_meta, norm_type, scoring_type, lfc, robust, model_batch, model_dupcor
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         df = r_limma_voom_feature_score(
             X,
             y,
             sample_meta=sample_meta,
+            norm_type=norm_type,
+            scoring_type=scoring_type,
             lfc=lfc,
-            scoring_meth=scoring_meth,
             robust=robust,
             model_batch=model_batch,
             model_dupcor=model_dupcor,
@@ -115,15 +140,16 @@ def limma_voom_feature_score(
 
 
 def dream_voom_feature_score(
-    X, y, sample_meta, lfc, scoring_meth, model_batch, n_threads
+    X, y, sample_meta, norm_type, scoring_type, lfc, model_batch, n_threads
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         df = r_dream_voom_feature_score(
             X,
             y,
             sample_meta,
+            norm_type=norm_type,
+            scoring_type=scoring_type,
             lfc=lfc,
-            scoring_meth=scoring_meth,
             model_batch=model_batch,
             n_threads=n_threads,
         )
@@ -131,15 +157,15 @@ def dream_voom_feature_score(
 
 
 def limma_feature_score(
-    X, y, sample_meta, lfc, scoring_meth, robust, trend, model_batch
+    X, y, sample_meta, scoring_type, lfc, robust, trend, model_batch
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
         df = r_limma_feature_score(
             X,
             y,
             sample_meta=sample_meta,
+            scoring_type=scoring_type,
             lfc=lfc,
-            scoring_meth=scoring_meth,
             robust=robust,
             trend=trend,
             model_batch=model_batch,
@@ -166,26 +192,31 @@ def deseq2_norm_vst_transform(X, geo_means, disp_func):
         return r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func)
 
 
-def edger_tmm_fit(X):
+def edger_norm_fit(X, norm_type):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(r_edger_tmm_fit(X), dtype=int)
+        return np.array(r_edger_norm_fit(X, type=norm_type), dtype=int)
 
 
-def edger_tmm_cpm_transform(X, ref_sample, log, prior_count):
+def edger_norm_cpm_transform(X, ref_sample, norm_type, log, prior_count):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return r_edger_tmm_cpm_transform(
-            X, ref_sample=ref_sample, log=log, prior_count=prior_count
+        return r_edger_norm_cpm_transform(
+            X,
+            ref_sample=ref_sample,
+            norm_type=norm_type,
+            log=log,
+            prior_count=prior_count,
         )
 
 
-def edger_tmm_tpm_transform(
-    X, feature_meta, ref_sample, log, prior_count, gene_length_col
+def edger_norm_tpm_transform(
+    X, feature_meta, ref_sample, norm_type, log, prior_count, gene_length_col
 ):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return r_edger_tmm_tpm_transform(
+        return r_edger_norm_tpm_transform(
             X,
             feature_meta=feature_meta,
             ref_sample=ref_sample,
+            norm_type=norm_type,
             log=log,
             prior_count=prior_count,
             gene_length_col=gene_length_col,
@@ -285,17 +316,17 @@ class CountThreshold(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
-    def _more_tags(self):
-        return {"requires_positive_X": True}
-
     def _get_support_mask(self):
         check_is_fitted(self, "_mask")
         return self._mask
 
+    def _more_tags(self):
+        return {"requires_positive_X": True}
 
-class DESeq2(ExtendedSelectorMixin, BaseEstimator):
+
+class DESeq2Selector(ExtendedSelectorMixin, BaseEstimator):
     """DESeq2 differential expression feature selector and
-    normalizer/transformer for RNA-seq count data
+    normalizer/transformer for count data
 
     Parameters
     ----------
@@ -313,15 +344,18 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
     fc : float (default = 1.0)
         lfcShrink absolute fold change minimum threshold.
 
-    scoring_meth : str (default = "pv")
-        Differential expression analysis feature scoring method. Available
-        methods are "pv" or "lfc_pv".
-
     norm_type : str (default = "ratio")
         estimateSizeFactors type option.
 
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
+
+    scoring_type : str (default = "pv")
+        Differential expression analysis feature scoring method. Available
+        methods are "pv" or "lfc_pv".
+
+    trans_type : str (default = "vst")
+        Transformation method.
 
     lfc_shrink : bool (default = True)
         Run lfcShrink after differential expression testing.
@@ -360,9 +394,10 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         k="all",
         pv=1,
         fc=1,
-        scoring_meth="pv",
         norm_type="ratio",
         fit_type="parametric",
+        scoring_type="pv",
+        trans_type="vst",
         lfc_shrink=True,
         model_batch=False,
         n_threads=1,
@@ -371,9 +406,10 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         self.k = k
         self.pv = pv
         self.fc = fc
-        self.scoring_meth = scoring_meth
         self.norm_type = norm_type
         self.fit_type = fit_type
+        self.scoring_type = scoring_type
+        self.trans_type = trans_type
         self.lfc_shrink = lfc_shrink
         self.model_batch = model_batch
         self.n_threads = n_threads
@@ -399,7 +435,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         X, y = self._validate_data(X, y, dtype=int)
-        self._check_params(X, y)
+        self._check_params(X)
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = ro.NULL
@@ -407,9 +443,10 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             X,
             y,
             sample_meta=sample_meta,
-            lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth,
+            norm_type=self.norm_type,
             fit_type=self.fit_type,
+            scoring_type=self.scoring_type,
+            lfc=np.log2(self.fc),
             lfc_shrink=self.lfc_shrink,
             model_batch=self.model_batch,
             n_threads=self.n_threads,
@@ -442,10 +479,11 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         """
         check_is_fitted(self, "geo_means_")
         memory = check_memory(self.memory)
-        X = memory.cache(deseq2_norm_vst_transform)(
-            X, geo_means=self.geo_means_, disp_func=self.disp_func_
-        )
-        return super().transform(X)
+        if self.trans_type == "vst":
+            Xt = memory.cache(deseq2_norm_vst_transform)(
+                X, geo_means=self.geo_means_, disp_func=self.disp_func_
+            )
+        return super().transform(Xt)
 
     def inverse_transform(self, X, sample_meta=None):
         """
@@ -464,10 +502,7 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
-    def _more_tags(self):
-        return {"requires_positive_X": True}
-
-    def _check_params(self, X, y):
+    def _check_params(self, X):
         if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
@@ -477,6 +512,12 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
+        if self.scoring_type not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_type %s" % self.scoring_type)
+        if self.norm_type not in ("ratio", "poscounts"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.trans_type not in ("vst"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
 
     def _get_support_mask(self):
         check_is_fitted(self, "scores_")
@@ -492,10 +533,13 @@ class DESeq2(ExtendedSelectorMixin, BaseEstimator):
                     mask[self.padjs_ > self.pv] = False
         return mask
 
+    def _more_tags(self):
+        return {"requires_positive_X": True}
 
-class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
+
+class DESeq2ZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
     """DESeq2 ZINB-WaVE differential expression feature selector and
-    normalizer/transformer for zero-inflated RNA-seq count data
+    normalizer/transformer for zero-inflated count data
 
     Parameters
     ----------
@@ -513,10 +557,6 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
     fc : float (default = 1.0)
         lfcShrink absolute fold change minimum threshold.
 
-    scoring_meth : str (default = "pv")
-        Differential expression analysis feature scoring method. Available
-        methods are "pv" or "lfc_pv".
-
     epsilon : float (default = 1e12)
         ZINB-WaVE regularization hyperparameter.
 
@@ -525,6 +565,13 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
 
     fit_type : str (default = "parametric")
         estimateDispersions fitType option.
+
+    scoring_type : str (default = "pv")
+        Differential expression analysis feature scoring method. Available
+        methods are "pv" or "lfc_pv".
+
+    trans_type : str (default = "vst")
+        Transformation method.
 
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and "Batch" column
@@ -560,10 +607,11 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         k="all",
         pv=1,
         fc=1,
-        scoring_meth="pv",
         epsilon=1e12,
         norm_type="poscounts",
         fit_type="parametric",
+        scoring_type="pv",
+        trans_type="vst",
         model_batch=False,
         n_threads=1,
         memory=None,
@@ -571,10 +619,11 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         self.k = k
         self.pv = pv
         self.fc = fc
-        self.scoring_meth = scoring_meth
         self.epsilon = epsilon
         self.norm_type = norm_type
         self.fit_type = fit_type
+        self.scoring_type = scoring_type
+        self.trans_type = trans_type
         self.model_batch = model_batch
         self.n_threads = n_threads
         self.memory = memory
@@ -608,7 +657,7 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
             y,
             sample_meta=sample_meta,
             lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth,
+            scoring_type=self.scoring_type,
             epsilon=self.epsilon,
             fit_type=self.fit_type,
             model_batch=self.model_batch,
@@ -642,10 +691,11 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         """
         check_is_fitted(self, "geo_means_")
         memory = check_memory(self.memory)
-        X = memory.cache(deseq2_norm_vst_transform)(
-            X, geo_means=self.geo_means_, disp_func=self.disp_func_
-        )
-        return super().transform(X)
+        if self.trans_type == "vst":
+            Xt = memory.cache(deseq2_norm_vst_transform)(
+                X, geo_means=self.geo_means_, disp_func=self.disp_func_
+            )
+        return super().transform(Xt)
 
     def inverse_transform(self, X, sample_meta=None):
         """
@@ -664,10 +714,7 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
-    def _more_tags(self):
-        return {"requires_positive_X": True}
-
-    def _check_params(self, X, y):
+    def _check_params(self, X):
         if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
@@ -677,6 +724,12 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
+        if self.scoring_type not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_type %s" % self.scoring_type)
+        if self.norm_type not in ("poscounts"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.trans_type not in ("vst"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
 
     def _get_support_mask(self):
         check_is_fitted(self, "scores_")
@@ -691,6 +744,9 @@ class DESeq2ZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
                 if self.pv < 1:
                     mask[self.padjs_ > self.pv] = False
         return mask
+
+    def _more_tags(self):
+        return {"requires_positive_X": True}
 
 
 class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
@@ -816,17 +872,17 @@ class EdgeRFilterByExpr(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
-    def _more_tags(self):
-        return {"requires_positive_X": True}
-
     def _get_support_mask(self):
         check_is_fitted(self, "_mask")
         return self._mask
 
+    def _more_tags(self):
+        return {"requires_positive_X": True}
 
-class EdgeR(ExtendedSelectorMixin, BaseEstimator):
+
+class EdgeRSelector(ExtendedSelectorMixin, BaseEstimator):
     """edgeR differential expression feature selector and
-    normalizer/transformer for RNA-seq count data
+    normalizer/transformer for count data
 
     Parameters
     ----------
@@ -845,9 +901,16 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         glmTreat absolute fold change minimum threshold. Default value of 1.0
         gives glmQLFTest results.
 
-    scoring_meth : str (default = "pv")
+    norm_type : str (default = "TMM")
+        estimateSizeFactors type option.
+
+    scoring_type : str (default = "pv")
         Differential expression analysis feature scoring method. Available
         methods are "pv" or "lfc_pv".
+
+    trans_type : str (default = "cpm")
+        Transformation method to use on count data after differential
+        expression testing. Available methods are "cpm" and "tpm".
 
     robust : bool (default = True)
         estimateDisp and glmQLFit robust option.
@@ -855,10 +918,6 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and "Batch" column
         exists.
-
-    transform_meth : str (default = "cpm")
-        Transformation method to use on count data after differential
-        expression testing. Available methods are "cpm" and "tpm".
 
     log : bool (default = True)
         Whether to return log2 transformed values.
@@ -894,10 +953,11 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         k="all",
         pv=1,
         fc=1,
-        scoring_meth="pv",
+        norm_type="TMM",
+        scoring_type="pv",
+        trans_type="cpm",
         robust=True,
         model_batch=False,
-        transform_meth="cpm",
         log=True,
         prior_count=2,
         gene_length_col="Length",
@@ -906,10 +966,11 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         self.k = k
         self.pv = pv
         self.fc = fc
-        self.scoring_meth = scoring_meth
+        self.norm_type = norm_type
+        self.scoring_type = scoring_type
+        self.trans_type = trans_type
         self.robust = robust
         self.model_batch = model_batch
-        self.transform_meth = transform_meth
         self.log = log
         self.prior_count = prior_count
         self.gene_length_col = gene_length_col
@@ -937,7 +998,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         X, y = self._validate_data(X, y, dtype=int)
-        self._check_params(X, y)
+        self._check_params(X)
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = ro.NULL
@@ -945,12 +1006,13 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             X,
             y,
             sample_meta=sample_meta,
+            norm_type=self.norm_type,
+            scoring_type=self.scoring_type,
             lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth,
             robust=self.robust,
             model_batch=self.model_batch,
         )
-        self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -976,23 +1038,25 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
-        if self.transform_meth == "cpm":
-            X = memory.cache(edger_tmm_cpm_transform)(
+        if self.trans_type == "cpm":
+            Xt = memory.cache(edger_norm_cpm_transform)(
                 X,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
             )
-        else:
-            X = memory.cache(edger_tmm_tpm_transform)(
+        elif self.trans_type == "tpm":
+            Xt = memory.cache(edger_norm_tpm_transform)(
                 X,
-                feature_meta=feature_meta,
+                feature_meta,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
                 gene_length_col=self.gene_length_col,
             )
-        return super().transform(X)
+        return super().transform(Xt)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
         """
@@ -1016,7 +1080,7 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
     def _more_tags(self):
         return {"requires_positive_X": True}
 
-    def _check_params(self, X, y):
+    def _check_params(self, X):
         if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
@@ -1026,10 +1090,12 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
-        if self.scoring_meth not in ("pv", "lfc_pv"):
-            raise ValueError("invalid scoring_meth %s" % self.scoring_meth)
-        if self.transform_meth not in ("cpm", "tpm"):
-            raise ValueError("invalid transform_meth %s" % self.transform_meth)
+        if self.scoring_type not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_type %s" % self.scoring_type)
+        if self.norm_type not in ("TMM"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.trans_type not in ("cpm", "tpm"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
 
     def _get_support_mask(self):
         check_is_fitted(self, "scores_")
@@ -1046,9 +1112,9 @@ class EdgeR(ExtendedSelectorMixin, BaseEstimator):
         return mask
 
 
-class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
+class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
     """edgeR ZINB-WaVE differential expression feature selector and
-    normalizer/transformer for zero-inflated RNA-seq count data
+    normalizer/transformer for zero-inflated count data
 
     Parameters
     ----------
@@ -1063,12 +1129,19 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         search. When k is also specified returns the intersection of both
         parameter results.
 
-    scoring_meth : str (default = "pv")
+    epsilon : float (default = 1e12)
+        ZINB-WaVE regularization hyperparameter.
+
+    norm_type : str (default = "TMM")
+        estimateSizeFactors type option.
+
+    scoring_type : str (default = "pv")
         Differential expression analysis feature scoring method. Available
         methods are "pv" or "lfc_pv".
 
-    epsilon : float (default = 1e12)
-        ZINB-WaVE regularization hyperparameter.
+    trans_type : str (default = "cpm")
+        Transformation method to use on count data after differential
+        expression testing. Available methods are "cpm" and "tpm".
 
     robust : bool (default = True)
         estimateDisp robust option.
@@ -1076,10 +1149,6 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and "Batch" column
         exists.
-
-    transform_meth : str (default = "cpm")
-        Transformation method to use on count data after differential
-        expression testing. Available methods are "cpm" and "tpm".
 
     log : bool (default = True)
         Whether to return log2 transformed values.
@@ -1119,11 +1188,12 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         self,
         k="all",
         pv=1,
-        scoring_meth="pv",
         epsilon=1e12,
+        norm_type="TMM",
+        scoring_type="pv",
+        trans_type="cpm",
         robust=True,
         model_batch=False,
-        transform_meth="cpm",
         log=True,
         prior_count=2,
         gene_length_col="Length",
@@ -1132,11 +1202,13 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
     ):
         self.k = k
         self.pv = pv
-        self.scoring_meth = scoring_meth
         self.epsilon = epsilon
+        self.norm_type = norm_type
+        self.scoring_type = scoring_type
+        self.trans_type = trans_type
         self.robust = robust
         self.model_batch = model_batch
-        self.transform_meth = transform_meth
+        self.trans_type = trans_type
         self.log = log
         self.prior_count = prior_count
         self.gene_length_col = gene_length_col
@@ -1165,7 +1237,7 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         X, y = self._validate_data(X, y, dtype=int)
-        self._check_params(X, y)
+        self._check_params(X)
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = ro.NULL
@@ -1173,13 +1245,14 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
             X,
             y,
             sample_meta=sample_meta,
-            scoring_meth=self.scoring_meth,
             epsilon=self.epsilon,
+            norm_type=self.norm_type,
+            scoring_type=self.scoring_type,
             robust=self.robust,
             model_batch=self.model_batch,
             n_threads=self.n_threads,
         )
-        self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -1205,23 +1278,25 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
-        if self.transform_meth == "cpm":
-            X = memory.cache(edger_tmm_cpm_transform)(
+        if self.trans_type == "cpm":
+            Xt = memory.cache(edger_norm_cpm_transform)(
                 X,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
             )
-        else:
-            X = memory.cache(edger_tmm_tpm_transform)(
+        elif self.trans_type == "tpm":
+            Xt = memory.cache(edger_norm_tpm_transform)(
                 X,
-                feature_meta=feature_meta,
+                feature_meta,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
                 gene_length_col=self.gene_length_col,
             )
-        return super().transform(X)
+        return super().transform(Xt)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
         """
@@ -1253,10 +1328,12 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
             )
         if not 0 <= self.pv <= 1:
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
-        if self.scoring_meth not in ("pv", "lfc_pv"):
-            raise ValueError("invalid scoring_meth %s" % self.scoring_meth)
-        if self.transform_meth not in ("cpm", "tpm"):
-            raise ValueError("invalid transform_meth %s" % self.transform_meth)
+        if self.scoring_type not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_type %s" % self.scoring_type)
+        if self.norm_type not in ("TMM"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.trans_type not in ("cpm", "tpm"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
 
     def _get_support_mask(self):
         check_is_fitted(self, "scores_")
@@ -1273,9 +1350,9 @@ class EdgeRZINBWaVE(ExtendedSelectorMixin, BaseEstimator):
         return mask
 
 
-class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
+class LimmaVoomSelector(ExtendedSelectorMixin, BaseEstimator):
     """limma-voom differential expression feature selector and
-    normalizer/transformer for RNA-seq count data
+    normalizer/transformer for count data
 
     Parameters
     ----------
@@ -1294,9 +1371,16 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
-    scoring_meth : str (default = "pv")
+    norm_type : str (default = "TMM")
+        estimateSizeFactors type option.
+
+    scoring_type : str (default = "pv")
         Differential expression analysis feature scoring method. Available
         methods are "pv" or "lfc_pv".
+
+    trans_type : str (default = "cpm")
+        Transformation method to use on count data after differential
+        expression testing. Available methods are "cpm" and "tpm".
 
     robust : bool (default = True)
         limma treat/eBayes robust option.
@@ -1308,10 +1392,6 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
     model_dupcor : bool (default = False)
         Model limma duplicateCorrelation if sample_meta passed to fit and Group
         column exists.
-
-    transform_meth : str (default = "cpm")
-        Transformation method to use on count data after differential
-        expression testing. Available methods are "cpm" and "tpm".
 
     log : bool (default = True)
         Whether to return log2 transformed values.
@@ -1347,11 +1427,12 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         k="all",
         pv=1,
         fc=1,
-        scoring_meth="pv",
+        norm_type="TMM",
+        scoring_type="pv",
+        trans_type="cpm",
         robust=True,
         model_batch=False,
         model_dupcor=False,
-        transform_meth="cpm",
         log=True,
         prior_count=2,
         gene_length_col="Length",
@@ -1360,11 +1441,12 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         self.k = k
         self.pv = pv
         self.fc = fc
-        self.scoring_meth = scoring_meth
+        self.norm_type = norm_type
+        self.scoring_type = scoring_type
+        self.trans_type = trans_type
         self.robust = robust
         self.model_batch = model_batch
         self.model_dupcor = model_dupcor
-        self.transform_meth = transform_meth
         self.log = log
         self.prior_count = prior_count
         self.gene_length_col = gene_length_col
@@ -1392,7 +1474,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         X, y = self._validate_data(X, y, dtype=int)
-        self._check_params(X, y)
+        self._check_params(X)
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = ro.NULL
@@ -1400,13 +1482,14 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             X,
             y,
             sample_meta=sample_meta,
+            norm_type=self.norm_type,
+            scoring_type=self.scoring_type,
             lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth,
             robust=self.robust,
             model_batch=self.model_batch,
             model_dupcor=self.model_dupcor,
         )
-        self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -1432,23 +1515,25 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
-        if self.transform_meth == "cpm":
-            X = memory.cache(edger_tmm_cpm_transform)(
+        if self.trans_type == "cpm":
+            Xt = memory.cache(edger_norm_cpm_transform)(
                 X,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
             )
-        else:
-            X = memory.cache(edger_tmm_tpm_transform)(
+        elif self.trans_type == "tpm":
+            Xt = memory.cache(edger_norm_tpm_transform)(
                 X,
-                feature_meta=feature_meta,
+                feature_meta,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
                 gene_length_col=self.gene_length_col,
             )
-        return super().transform(X)
+        return super().transform(Xt)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
         """
@@ -1472,7 +1557,7 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
     def _more_tags(self):
         return {"requires_positive_X": True}
 
-    def _check_params(self, X, y):
+    def _check_params(self, X):
         if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
@@ -1482,10 +1567,12 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
-        if self.scoring_meth not in ("pv", "lfc_pv"):
-            raise ValueError("invalid scoring_meth %s" % self.scoring_meth)
-        if self.transform_meth not in ("cpm", "tpm"):
-            raise ValueError("invalid transform_meth %s" % self.transform_meth)
+        if self.scoring_type not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_type %s" % self.scoring_type)
+        if self.norm_type not in ("TMM"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.trans_type not in ("cpm", "tpm"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
 
     def _get_support_mask(self):
         check_is_fitted(self, "scores_")
@@ -1502,9 +1589,9 @@ class LimmaVoom(ExtendedSelectorMixin, BaseEstimator):
         return mask
 
 
-class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
+class DreamVoomSelector(ExtendedSelectorMixin, BaseEstimator):
     """dream limma-voom differential expression feature selector and
-    normalizer/transformer for RNA-seq count data repeated measures designs
+    normalizer/transformer for count data repeated measures designs
 
     Parameters
     ----------
@@ -1522,9 +1609,16 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
     fc : float (default = 1.0)
         Absolute fold-change minimum threshold.
 
-    scoring_meth : str (default = "pv")
+    norm_type : str (default = "TMM")
+        estimateSizeFactors type option.
+
+    scoring_type : str (default = "pv")
         Differential expression analysis feature scoring method. Available
         methods are "pv" or "lfc_pv".
+
+    trans_type : str (default = "cpm")
+        Transformation method to use on count data after differential
+        expression testing. Available methods are "cpm" and "tpm".
 
     model_batch : bool (default = False)
         Model batch effect if sample_meta passed to fit and "Batch" column
@@ -1534,10 +1628,6 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         Number of dream parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
-
-    transform_meth : str (default = "cpm")
-        Transformation method to use on count data after differential
-        expression testing. Available methods are "cpm" and "tpm".
 
     log : bool (default = True)
         Whether to return log2 transformed values.
@@ -1573,10 +1663,11 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         k="all",
         pv=1,
         fc=1,
-        scoring_meth="pv",
+        norm_type="TMM",
+        scoring_type="pv",
+        trans_type="cpm",
         model_batch=False,
         n_threads=1,
-        transform_meth="cpm",
         log=True,
         prior_count=2,
         gene_length_col="Length",
@@ -1585,10 +1676,11 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         self.k = k
         self.pv = pv
         self.fc = fc
-        self.scoring_meth = scoring_meth
+        self.norm_type = norm_type
+        self.scoring_type = scoring_type
+        self.trans_type = trans_type
         self.model_batch = model_batch
         self.n_threads = n_threads
-        self.transform_meth = transform_meth
         self.log = log
         self.prior_count = prior_count
         self.gene_length_col = gene_length_col
@@ -1616,18 +1708,20 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         X, y = self._validate_data(X, y, dtype=int)
-        self._check_params(X, y)
+        self._check_params(X)
         memory = check_memory(self.memory)
         self.scores_, self.padjs_ = memory.cache(dream_voom_feature_score)(
             X,
             y,
-            sample_meta,
+            sample_meta=sample_meta,
+            norm_type=self.norm_type,
+            scoring_type=self.scoring_type,
             lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth,
+            robust=self.robust,
             model_batch=self.model_batch,
             n_threads=self.n_threads,
         )
-        self.ref_sample_ = memory.cache(edger_tmm_fit)(X)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -1653,23 +1747,25 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if feature_meta is None:
             feature_meta = ro.NULL
-        if self.transform_meth == "cpm":
-            X = memory.cache(edger_tmm_cpm_transform)(
+        if self.trans_type == "cpm":
+            Xt = memory.cache(edger_norm_cpm_transform)(
                 X,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
             )
-        else:
-            X = memory.cache(edger_tmm_tpm_transform)(
+        elif self.trans_type == "tpm":
+            Xt = memory.cache(edger_norm_tpm_transform)(
                 X,
-                feature_meta=feature_meta,
+                feature_meta,
                 ref_sample=self.ref_sample_,
+                norm_type=self.norm_type,
                 log=self.log,
                 prior_count=self.prior_count,
                 gene_length_col=self.gene_length_col,
             )
-        return super().transform(X)
+        return super().transform(Xt)
 
     def inverse_transform(self, X, sample_meta=None, feature_meta=None):
         """
@@ -1703,10 +1799,12 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
-        if self.scoring_meth not in ("pv", "lfc_pv"):
-            raise ValueError("invalid scoring_meth %s" % self.scoring_meth)
-        if self.transform_meth not in ("cpm", "tpm"):
-            raise ValueError("invalid transform_meth %s" % self.transform_meth)
+        if self.scoring_type not in ("pv", "lfc_pv"):
+            raise ValueError("invalid scoring_type %s" % self.scoring_type)
+        if self.norm_type not in ("TMM"):
+            raise ValueError("invalid norm_type %s" % self.norm_type)
+        if self.trans_type not in ("cpm", "tpm"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
 
     def _get_support_mask(self):
         check_is_fitted(self, "scores_")
@@ -1723,7 +1821,7 @@ class DreamVoom(ExtendedSelectorMixin, BaseEstimator):
         return mask
 
 
-class Limma(ExtendedSelectorMixin, BaseEstimator):
+class LimmaSelector(ExtendedSelectorMixin, BaseEstimator):
     """limma differential expression feature selector for gene expression data
 
     Parameters
@@ -1743,7 +1841,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         treat absolute fold change minimum threshold. Default value of 1.0
         gives eBayes results.
 
-    scoring_meth : str (default = "pv")
+    scoring_type : str (default = "pv")
         Differential expression analysis feature scoring method. Available
         methods are "pv" or "lfc_pv".
 
@@ -1776,7 +1874,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         k="all",
         pv=1,
         fc=1,
-        scoring_meth="pv",
+        scoring_type="pv",
         robust=False,
         trend=False,
         model_batch=False,
@@ -1785,7 +1883,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
         self.k = k
         self.pv = pv
         self.fc = fc
-        self.scoring_meth = scoring_meth
+        self.scoring_type = scoring_type
         self.robust = robust
         self.trend = trend
         self.model_batch = model_batch
@@ -1820,7 +1918,7 @@ class Limma(ExtendedSelectorMixin, BaseEstimator):
             y,
             sample_meta=sample_meta,
             lfc=np.log2(self.fc),
-            scoring_meth=self.scoring_meth,
+            scoring_type=self.scoring_type,
             robust=self.robust,
             trend=self.trend,
             model_batch=self.model_batch,

@@ -1,9 +1,9 @@
 # RNA-seq feature selection and scoring functions
 
 deseq2_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", fit_type="parametric",
-    lfc_shrink=TRUE, lfc_shrink_type="apeglm", svalue=FALSE, model_batch=FALSE,
-    n_threads=1
+    X, y, sample_meta=NULL, fit_type="parametric", norm_type="ratio",
+    scoring_type="pv", lfc=0, lfc_shrink=TRUE, lfc_shrink_type="apeglm",
+    svalue=FALSE, model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
     if (n_threads > 1) {
@@ -29,8 +29,8 @@ deseq2_feature_score <- function(
     dds <- DESeqDataSetFromMatrix(counts, colData, design)
     suppressMessages(
         dds <- DESeq(
-            dds, fitType=fit_type, parallel=parallel, BPPARAM=BPPARAM,
-            quiet=TRUE
+            dds, fitType=fit_type, sfType=norm_type, parallel=parallel,
+            BPPARAM=BPPARAM, quiet=TRUE
         )
     )
     if (lfc_shrink) {
@@ -53,7 +53,7 @@ deseq2_feature_score <- function(
         ))
         results$padj[is.na(results$padj)] <- 1
     }
-    if (scoring_meth == "lfc_pv") {
+    if (scoring_type == "lfc_pv") {
         scores <- abs(results$log2FoldChange) * -log10(results$pvalue)
     } else {
         scores <- results$pvalue
@@ -62,8 +62,9 @@ deseq2_feature_score <- function(
 }
 
 deseq2_zinbwave_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", K=0, epsilon=1e12,
-    fit_type="parametric", model_batch=FALSE, n_threads=1
+    X, y, sample_meta=NULL, epsilon=1e12, fit_type="parametric",
+    norm_type="poscounts", scoring_type="pv", lfc=0, model_batch=FALSE,
+    n_threads=1
 ) {
     suppressPackageStartupMessages(library("SummarizedExperiment"))
     suppressPackageStartupMessages(library("zinbwave"))
@@ -95,12 +96,12 @@ deseq2_zinbwave_feature_score <- function(
         SummarizedExperiment(
             assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData,
         ),
-        X=design, K=K, epsilon=epsilon, zeroinflation=TRUE,
+        X=design, K=0, epsilon=epsilon, zeroinflation=TRUE,
         observationalWeights=TRUE, BPPARAM=BPPARAM
     )
     dds <- DESeqDataSet(zinb, design)
     suppressMessages(dds <- DESeq(
-        dds, fitType=fit_type, sfType="poscounts", useT=TRUE, minmu=1e-6,
+        dds, fitType=fit_type, sfType=norm_type, useT=TRUE, minmu=1e-6,
         parallel=parallel, BPPARAM=BPPARAM, quiet=TRUE
     ))
     suppressMessages(results <- as.data.frame(lfcShrink(
@@ -125,7 +126,7 @@ deseq2_zinbwave_feature_score <- function(
         )
         results <- results[match(row.names(counts), row.names(results)), ]
     }
-    if (scoring_meth == "lfc_pv") {
+    if (scoring_type == "lfc_pv") {
         scores <- abs(results$log2FoldChange) * -log10(results$pvalue)
     } else {
         scores <- results$pvalue
@@ -165,11 +166,14 @@ edger_filterbyexpr_mask <- function(
 }
 
 edger_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", robust=TRUE,
-    model_batch=FALSE
+    X, y, sample_meta=NULL, norm_type="TMM", scoring_type="pv", lfc=0,
+    robust=TRUE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
+    if (is.null(row.names(counts))) {
+        row.names(counts) <- seq_len(nrow(counts))
+    }
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -180,19 +184,38 @@ edger_feature_score <- function(
     } else {
         design <- model.matrix(~factor(y))
     }
-    dge <- DGEList(counts=counts)
-    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
-    dge <- estimateDisp(dge, design, robust=robust)
-    fit <- glmQLFit(dge, design, robust=robust)
-    if (lfc == 0) {
-        glt <- glmQLFTest(fit, coef=ncol(design))
-    } else {
-        glt <- glmTreat(fit, coef=ncol(design), lfc=lfc)
-    }
+    suppressMessages(dge <- DGEList(counts=counts, remove.zeros=TRUE))
+    suppressWarnings({
+        dge <- calcNormFactors(dge, method=norm_type)
+        dge <- estimateDisp(dge, design, robust=robust)
+        fit <- glmQLFit(dge, design, robust=robust)
+        if (lfc == 0) {
+            glt <- glmQLFTest(fit, coef=ncol(design))
+        } else {
+            glt <- glmTreat(fit, coef=ncol(design), lfc=lfc)
+        }
+    })
     results <- as.data.frame(topTags(
         glt, n=Inf, adjust.method="BH", sort.by="none"
     ))
-    if (scoring_meth == "lfc_pv") {
+    results$PValue[is.na(results$PValue)] <- 1
+    results$FDR[is.na(results$FDR)] <- 1
+    zero_rownames <- row.names(counts)[rowSums(counts) == 0]
+    zero_rowlen <- length(zero_rownames)
+    if (zero_rowlen > 0) {
+        results <- rbind(
+            results,
+            data.frame(
+                row.names=zero_rownames,
+                logFC=rep(0, zero_rowlen),
+                logCPM=rep(0, zero_rowlen),
+                PValue=rep(1, zero_rowlen),
+                FDR=rep(1, zero_rowlen)
+            )
+        )
+        results <- results[match(row.names(counts), row.names(results)), ]
+    }
+    if (scoring_type == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$PValue)
     } else {
         scores <- results$PValue
@@ -201,8 +224,8 @@ edger_feature_score <- function(
 }
 
 edger_zinbwave_feature_score <- function(
-    X, y, sample_meta=NULL, scoring_meth="pv", K=0, epsilon=1e12, robust=TRUE,
-    model_batch=FALSE, n_threads=1
+    X, y, sample_meta=NULL, epsilon=1e12, norm_type="TMM",
+    scoring_type="pv", robust=TRUE, model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("SummarizedExperiment"))
     suppressPackageStartupMessages(library("zinbwave"))
@@ -236,12 +259,12 @@ edger_zinbwave_feature_score <- function(
                 assays=list(counts=counts[rowSums(counts) > 0, ]),
                 colData=colData
             ),
-            X=design_formula, K=K, epsilon=epsilon, zeroinflation=TRUE,
+            X=design_formula, K=0, epsilon=epsilon, zeroinflation=TRUE,
             observationalWeights=TRUE, BPPARAM=BPPARAM
         )
         design <- model.matrix(design_formula, data=colData)
         dge <- DGEList(counts=assay(zinb, "counts"))
-        dge <- calcNormFactors(dge, method="TMM")
+        dge <- calcNormFactors(dge, method=norm_type)
         dge$weights <- assay(zinb, "weights")
         dge <- estimateDisp(dge, design, robust=robust)
         fit <- glmFit(dge, design)
@@ -270,7 +293,7 @@ edger_zinbwave_feature_score <- function(
         )
         results <- results[match(row.names(counts), row.names(results)), ]
     }
-    if (scoring_meth == "lfc_pv") {
+    if (scoring_type == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$PValue)
     } else {
         scores <- results$PValue
@@ -279,8 +302,8 @@ edger_zinbwave_feature_score <- function(
 }
 
 limma_voom_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", robust=TRUE,
-    model_batch=FALSE, model_dupcor=FALSE
+    X, y, sample_meta=NULL, norm_type="TMM", scoring_type="pv", lfc=0,
+    robust=TRUE, model_batch=FALSE, model_dupcor=FALSE
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
@@ -289,7 +312,7 @@ limma_voom_feature_score <- function(
         row.names(counts) <- seq_len(nrow(counts))
     }
     suppressMessages(dge <- DGEList(counts=counts, remove.zeros=TRUE))
-    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
+    suppressWarnings(dge <- calcNormFactors(dge, method=norm_type))
     if ((model_batch || model_dupcor) && !is.null(sample_meta)) {
         sample_meta$Class <- factor(sample_meta$Class)
         if (model_batch && length(unique(sample_meta$Batch)) > 1) {
@@ -344,7 +367,7 @@ limma_voom_feature_score <- function(
         )
         results <- results[match(row.names(counts), row.names(results)), ]
     }
-    if (scoring_meth == "lfc_pv") {
+    if (scoring_type == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$P.Value)
     } else {
         scores <- results$P.Value
@@ -353,7 +376,8 @@ limma_voom_feature_score <- function(
 }
 
 dream_voom_feature_score <- function(
-    X, y, sample_meta, lfc=0, scoring_meth="pv", model_batch=FALSE, n_threads=1
+    X, y, sample_meta, norm_type="TMM", scoring_type="pv", lfc=0,
+    model_batch=FALSE, n_threads=1
 ) {
     suppressPackageStartupMessages(library("edgeR"))
     suppressPackageStartupMessages(library("limma"))
@@ -365,7 +389,7 @@ dream_voom_feature_score <- function(
     }
     counts <- t(X)
     dge <- DGEList(counts=counts)
-    suppressWarnings(dge <- calcNormFactors(dge, method="TMM"))
+    suppressWarnings(dge <- calcNormFactors(dge, method=norm_type))
     if (model_batch && length(unique(sample_meta$Batch)) > 1) {
         design_formula <- ~Batch + Class + (1|Group)
         sample_meta$Batch <- factor(sample_meta$Batch)
@@ -389,7 +413,7 @@ dream_voom_feature_score <- function(
         fit, coef=ncol(design), lfc=lfc, number=Inf, adjust.method="BH",
         sort.by="none"
     )
-    if (scoring_meth == "lfc_pv") {
+    if (scoring_type == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$P.Value)
     } else {
         scores <- results$P.Value
@@ -398,7 +422,7 @@ dream_voom_feature_score <- function(
 }
 
 limma_feature_score <- function(
-    X, y, sample_meta=NULL, lfc=0, scoring_meth="pv", robust=FALSE, trend=FALSE,
+    X, y, sample_meta=NULL, scoring_type="pv", lfc=0, robust=FALSE, trend=FALSE,
     model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("limma"))
@@ -417,7 +441,7 @@ limma_feature_score <- function(
     results <- topTreat(
         fit, coef=ncol(design), number=Inf, adjust.method="BH", sort.by="none"
     )
-    if (scoring_meth == "lfc_pv") {
+    if (scoring_type == "lfc_pv") {
         scores <- abs(results$logFC) * -log10(results$P.Value)
     } else {
         scores <- results$P.Value

@@ -94,14 +94,18 @@ edger_tmm_ref_column <- function(counts) {
     }
 }
 
-edger_tmm_fit <- function(X) {
+edger_norm_fit <- function(X, type="TMM") {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    if (type == "TMM") {
+        ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    }
     return(ref_sample)
 }
 
-edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
+edger_norm_cpm_transform <- function(
+    X, ref_sample, norm_type="TMM", log=TRUE, prior_count=2
+) {
     suppressPackageStartupMessages(library("edgeR"))
     if (is.data.frame(X)) {
         rnames <- row.names(X)
@@ -113,7 +117,7 @@ edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
     if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts)
         suppressWarnings(dge <- calcNormFactors(
-            dge, method="TMM", refColumn=min(which(ref_sample_mask))
+            dge, method=norm_type, refColumn=min(which(ref_sample_mask))
         ))
         cpms <- cpm(dge, log=log, prior.count=prior_count)
     } else {
@@ -121,7 +125,7 @@ edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
         colnames(counts) <- NULL
         dge <- DGEList(counts=counts)
         suppressWarnings(dge <- calcNormFactors(
-            dge, method="TMM", refColumn=ncol(dge)
+            dge, method=norm_type, refColumn=ncol(dge)
         ))
         cpms <- cpm(dge, log=log, prior.count=prior_count)
         cpms <- cpms[, -ncol(cpms)]
@@ -135,8 +139,8 @@ edger_tmm_cpm_transform <- function(X, ref_sample, log=TRUE, prior_count=2) {
     return(Xt)
 }
 
-edger_tmm_tpm_transform <- function(
-    X, feature_meta, ref_sample, log=TRUE, prior_count=2,
+edger_norm_tpm_transform <- function(
+    X, feature_meta, ref_sample, norm_type="TMM", log=TRUE, prior_count=2,
     gene_length_col="Length"
 ) {
     if (is.null(feature_meta)) stop("feature_meta cannot be NULL")
@@ -150,14 +154,14 @@ edger_tmm_tpm_transform <- function(
     if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts, genes=feature_meta)
         suppressWarnings(dge <- calcNormFactors(
-            dge, method="TMM", refColumn=min(which(ref_sample_mask))
+            dge, method=norm_type, refColumn=min(which(ref_sample_mask))
         ))
     } else {
         counts <- cbind(counts, ref_sample)
         colnames(counts) <- NULL
         dge <- DGEList(counts=counts, genes=feature_meta)
         suppressWarnings(dge <- calcNormFactors(
-            dge, method="TMM", refColumn=ncol(dge)
+            dge, method=norm_type, refColumn=ncol(dge)
         ))
     }
     if (log) {

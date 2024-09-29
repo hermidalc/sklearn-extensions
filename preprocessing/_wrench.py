@@ -59,7 +59,7 @@ def wrench_cpm_transform(
         )
 
 
-class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
+class WrenchNormalizer(ExtendedTransformerMixin, BaseEstimator):
     """Wrench normalization and CPM transform for sparse, under-sampled count data
 
     Parameters
@@ -69,6 +69,9 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
 
     ref_type : str (default = "sw.means")
         Wrench reference vector type.
+
+    trans_type : str (default = "cpm")
+        Transformation method.
 
     z_adj : bool (default = False)
         Whether feature-wise ratios need to be adjusted by hurdle probabilities
@@ -89,27 +92,28 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
 
     Attributes
     ----------
-    nzrows_ : array, shape (n_features, )
+    nzrows_ : array, shape (n_features,)
         Non-zero count feature mask
 
-    qref_ : array, shape (n_nonzero_features, )
+    qref_ : array, shape (n_nonzero_features,)
         Wrench reference vector
 
-    s2_ : array, shape (n_nonzero_features, )
+    s2_ : array, shape (n_nonzero_features,)
         Wrench variance estimates for logged feature-wise counts
 
-    s2thetag_ : array, shape (n_conditions, )
+    s2thetag_ : array, shape (n_conditions,)
 
-    thetag_ : array, shape (n_conditions, )
+    thetag_ : array, shape (n_conditions,)
 
-    pi0_fit_ : R list, shape (n_nonzero_features_, )
-        Wrench hurdle model feature-wise glm fitted objects
+    pi0_fit_ : R/rpy2 list, shape (n_nonzero_features_,)
+        Wrench feature-wise hurdle model glm fitted objects
     """
 
     def __init__(
         self,
         est_type="w.marg.mean",
         ref_type="sw.means",
+        trans_type="cpm",
         z_adj=False,
         log=True,
         prior_count=1,
@@ -117,6 +121,7 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
     ):
         self.est_type = est_type
         self.ref_type = ref_type
+        self.trans_type = trans_type
         self.z_adj = z_adj
         self.log = log
         self.prior_count = prior_count
@@ -136,6 +141,7 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
             Training sample metadata.
         """
         X = self._validate_data(X, dtype=int)
+        self._check_params(X)
         (
             self.nzrows_,
             self.qref_,
@@ -146,8 +152,8 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
         with (
             ro.default_converter + numpy2ri.converter + pandas2ri.converter
         ).context():
-            X_r = ro.conversion.get_conversion().py2rpy(X)
-        self.pi0_fit_ = r_wrench_pi0_fit(X_r, est_type=self.est_type, z_adj=self.z_adj)
+            Xr = ro.conversion.get_conversion().py2rpy(X)
+        self.pi0_fit_ = r_wrench_pi0_fit(Xr, est_type=self.est_type, z_adj=self.z_adj)
         return self
 
     def transform(self, X, sample_meta):
@@ -169,21 +175,22 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
         check_is_fitted(self, "nzrows_")
         X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
-        X = memory.cache(wrench_cpm_transform, ignore=["pi0_fit"])(
-            X,
-            sample_meta,
-            nzrows=self.nzrows_,
-            qref=self.qref_,
-            s2=self.s2_,
-            s2thetag=self.s2thetag_,
-            thetag=self.thetag_,
-            pi0_fit=self.pi0_fit_,
-            est_type=self.est_type,
-            z_adj=self.z_adj,
-            log=self.log,
-            prior_count=self.prior_count,
-        )
-        return X
+        if self.trans_type == "cpm":
+            Xt = memory.cache(wrench_cpm_transform, ignore=["pi0_fit"])(
+                X,
+                sample_meta,
+                nzrows=self.nzrows_,
+                qref=self.qref_,
+                s2=self.s2_,
+                s2thetag=self.s2thetag_,
+                thetag=self.thetag_,
+                pi0_fit=self.pi0_fit_,
+                est_type=self.est_type,
+                z_adj=self.z_adj,
+                log=self.log,
+                prior_count=self.prior_count,
+            )
+        return Xt
 
     def inverse_transform(self, X, sample_meta=None):
         """
@@ -199,6 +206,10 @@ class WrenchCPM(ExtendedTransformerMixin, BaseEstimator):
         Xr : array of shape (n_samples, n_original_features)
         """
         raise NotImplementedError("inverse_transform not implemented.")
+
+    def _check_params(self, X):
+        if self.trans_type not in ("cpm"):
+            raise ValueError("invalid trans_type %s" % self.trans_type)
 
     def _more_tags(self):
         return {"requires_positive_X": True}
