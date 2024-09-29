@@ -344,15 +344,20 @@ class EdgeRNormalizer(ExtendedTransformerMixin, BaseEstimator):
             raise ValueError("invalid norm_type %s" % self.norm_type)
         if self.trans_type not in ("cpm", "tpm"):
             raise ValueError("invalid trans_type %s" % self.trans_type)
-        if X.shape[1] != feature_meta.shape[0]:
-            raise ValueError(
-                "X ({:d}) and feature_meta ({:d}) have "
-                "different feature dimensions".format(X.shape[1], feature_meta.shape[0])
-            )
-        if self.gene_length_col not in feature_meta.columns:
-            raise ValueError(
-                "{} feature_meta column does not exist.".format(self.gene_length_col)
-            )
+        if self.trans_type == "tpm":
+            if X.shape[1] != feature_meta.shape[0]:
+                raise ValueError(
+                    "X ({:d}) and feature_meta ({:d}) have "
+                    "different feature dimensions".format(
+                        X.shape[1], feature_meta.shape[0]
+                    )
+                )
+            if self.gene_length_col not in feature_meta.columns:
+                raise ValueError(
+                    "{} feature_meta column does not exist.".format(
+                        self.gene_length_col
+                    )
+                )
 
     def _more_tags(self):
         return {"requires_positive_X": True}
