@@ -27,12 +27,20 @@ deseq2_feature_score <- function(
         design <- ~Class
     }
     dds <- DESeqDataSetFromMatrix(counts, colData, design)
-    suppressMessages(
+    if (norm_type == "poscounts") {
+        locfunc <- genefilter::shorth
+    } else {
+        locfunc <- stats::median
+    }
+    suppressMessages({
+        dds <- estimateSizeFactors(
+            dds, type=norm_type, locfunc=locfunc, quiet=TRUE
+        )
         dds <- DESeq(
             dds, fitType=fit_type, sfType=norm_type, parallel=parallel,
             BPPARAM=BPPARAM, quiet=TRUE
         )
-    )
+    })
     if (lfc_shrink) {
         suppressMessages(results <- as.data.frame(lfcShrink(
             dds, coef=length(resultsNames(dds)), type=lfc_shrink_type,
@@ -92,18 +100,31 @@ deseq2_zinbwave_feature_score <- function(
         colData <- data.frame(Class=factor(y))
         design <- ~Class
     }
-    zinb <- zinbwave(
-        SummarizedExperiment(
-            assays=list(counts=counts[rowSums(counts) > 0, ]), colData=colData,
-        ),
-        X=design, K=0, epsilon=epsilon, zeroinflation=TRUE,
-        observationalWeights=TRUE, BPPARAM=BPPARAM
-    )
-    dds <- DESeqDataSet(zinb, design)
-    suppressMessages(dds <- DESeq(
-        dds, fitType=fit_type, sfType=norm_type, useT=TRUE, minmu=1e-6,
-        parallel=parallel, BPPARAM=BPPARAM, quiet=TRUE
-    ))
+    suppressWarnings({
+        zinb <- zinbwave(
+            SummarizedExperiment(
+                assays=list(counts=counts[rowSums(counts) > 0, ]),
+                colData=colData,
+            ),
+            X=design, K=0, epsilon=epsilon, zeroinflation=TRUE,
+            observationalWeights=TRUE, BPPARAM=BPPARAM
+        )
+        dds <- DESeqDataSet(zinb, design)
+        if (norm_type == "poscounts") {
+            locfunc <- genefilter::shorth
+        } else {
+            locfunc <- stats::median
+        }
+        suppressMessages({
+            dds <- estimateSizeFactors(
+                dds, type=norm_type, locfunc=locfunc, quiet=TRUE
+            )
+            dds <- DESeq(
+                dds, fitType=fit_type, sfType=norm_type, useT=TRUE,
+                minmu=1e-6, parallel=parallel, BPPARAM=BPPARAM, quiet=TRUE
+            )
+        })
+    })
     suppressMessages(results <- as.data.frame(lfcShrink(
         dds, coef=length(resultsNames(dds)), type="normal", lfcThreshold=lfc,
         parallel=parallel, BPPARAM=BPPARAM, quiet=TRUE

@@ -24,7 +24,7 @@ def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_ba
             X,
             y=y,
             sample_meta=sample_meta,
-            type=norm_type,
+            norm_type=norm_type,
             fit_type=fit_type,
             is_classif=is_classif,
             model_batch=model_batch,
@@ -32,9 +32,11 @@ def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_ba
         return np.array(res["geo_means"], dtype=float), res["disp_func"]
 
 
-def deseq2_norm_vst_transform(X, geo_means, disp_func):
+def deseq2_norm_vst_transform(X, geo_means, disp_func, norm_type):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func)
+        return r_deseq2_norm_vst_transform(
+            X, geo_means=geo_means, disp_func=disp_func, norm_type=norm_type
+        )
 
 
 def edger_norm_cpm_transform(X, ref_sample, norm_type, log, prior_count):
@@ -172,7 +174,10 @@ class DESeq2Normalizer(ExtendedTransformerMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if self.trans_type == "vst":
             Xt = memory.cache(deseq2_norm_vst_transform)(
-                X, geo_means=self.geo_means_, disp_func=self.disp_func_
+                X,
+                geo_means=self.geo_means_,
+                disp_func=self.disp_func_,
+                norm_type=self.norm_type,
             )
         return Xt
 
@@ -272,7 +277,7 @@ class EdgeRNormalizer(ExtendedTransformerMixin, BaseEstimator):
             ro.default_converter + numpy2ri.converter + pandas2ri.converter
         ).context():
             self.ref_sample_ = np.array(
-                r_edger_norm_fit(X, type=self.norm_type), dtype=int
+                r_edger_norm_fit(X, norm_type=self.norm_type), dtype=int
             )
         return self
 

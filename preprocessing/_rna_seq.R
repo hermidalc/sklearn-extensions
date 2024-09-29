@@ -1,7 +1,7 @@
 # RNA-seq transformer functions
 
 deseq2_norm_fit <- function(
-    X, y=NULL, sample_meta=NULL, type="ratio", fit_type="parametric",
+    X, y=NULL, sample_meta=NULL, norm_type="ratio", fit_type="parametric",
     is_classif=TRUE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
@@ -31,18 +31,20 @@ deseq2_norm_fit <- function(
             counts, data.frame(row.names=seq(1, ncol(counts))), ~1
         )
     }
-    if (type == "poscounts") {
+    if (norm_type == "poscounts") {
         locfunc <- genefilter::shorth
     } else {
         locfunc <- stats::median
     }
-    dds <- estimateSizeFactors(dds, type=type, locfunc=locfunc, quiet=TRUE)
-    suppressMessages(
+    suppressMessages({
+        dds <- estimateSizeFactors(
+            dds, type=norm_type, locfunc=locfunc, quiet=TRUE
+        )
         dds <- estimateDispersions(dds, fitType=fit_type, quiet=TRUE)
-    )
-    if (type == "ratio") {
+    })
+    if (norm_type == "ratio") {
         geo_means <- exp(rowMeans(log(counts)))
-    } else if (type == "poscounts") {
+    } else if (norm_type == "poscounts") {
         # adapted from DESeq2::estimateSizeFactors source code
         geoMeanNZ <- function(x) {
             if (all(x == 0)) { 0 }
@@ -53,7 +55,9 @@ deseq2_norm_fit <- function(
     return(list(geo_means=geo_means, disp_func=dispersionFunction(dds)))
 }
 
-deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
+deseq2_norm_vst_transform <- function(
+    X, geo_means, disp_func, norm_type="ratio"
+) {
     suppressPackageStartupMessages(library("DESeq2"))
     if (is.data.frame(X)) {
         rnames <- row.names(X)
@@ -64,8 +68,17 @@ deseq2_norm_vst_transform <- function(X, geo_means, disp_func) {
     dds <- DESeqDataSetFromMatrix(
         counts, data.frame(row.names=seq(1, ncol(counts))), ~1
     )
-    dds <- estimateSizeFactors(dds, geoMeans=geo_means, quiet=TRUE)
-    suppressMessages(dispersionFunction(dds) <- disp_func)
+    if (norm_type == "poscounts") {
+        locfunc <- genefilter::shorth
+    } else {
+        locfunc <- stats::median
+    }
+    suppressMessages({
+        dds <- estimateSizeFactors(
+            dds, geoMeans=geo_means, type=norm_type, locfunc=locfunc, quiet=TRUE
+        )
+        dispersionFunction(dds) <- disp_func
+    })
     vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
     Xt <- t(assay(vsd))
     if (is.data.frame(X)) {
@@ -94,10 +107,10 @@ edger_tmm_ref_column <- function(counts) {
     }
 }
 
-edger_norm_fit <- function(X, type="TMM") {
+edger_norm_fit <- function(X, norm_type="TMM") {
     suppressPackageStartupMessages(library("edgeR"))
     counts <- t(X)
-    if (type == "TMM") {
+    if (norm_type == "TMM") {
         ref_sample <- counts[, edger_tmm_ref_column(counts)]
     }
     return(ref_sample)

@@ -179,7 +179,7 @@ def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_ba
             X,
             y=y,
             sample_meta=sample_meta,
-            type=norm_type,
+            norm_type=norm_type,
             fit_type=fit_type,
             is_classif=is_classif,
             model_batch=model_batch,
@@ -187,14 +187,16 @@ def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_ba
         return np.array(res["geo_means"], dtype=float), res["disp_func"]
 
 
-def deseq2_norm_vst_transform(X, geo_means, disp_func):
+def deseq2_norm_vst_transform(X, geo_means, disp_func, norm_type):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return r_deseq2_norm_vst_transform(X, geo_means=geo_means, disp_func=disp_func)
+        return r_deseq2_norm_vst_transform(
+            X, geo_means=geo_means, disp_func=disp_func, norm_type=norm_type
+        )
 
 
 def edger_norm_fit(X, norm_type):
     with (ro.default_converter + numpy2ri.converter + pandas2ri.converter).context():
-        return np.array(r_edger_norm_fit(X, type=norm_type), dtype=int)
+        return np.array(r_edger_norm_fit(X, norm_type=norm_type), dtype=int)
 
 
 def edger_norm_cpm_transform(X, ref_sample, norm_type, log, prior_count):
@@ -481,7 +483,10 @@ class DESeq2Selector(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if self.trans_type == "vst":
             Xt = memory.cache(deseq2_norm_vst_transform)(
-                X, geo_means=self.geo_means_, disp_func=self.disp_func_
+                X,
+                geo_means=self.geo_means_,
+                disp_func=self.disp_func_,
+                norm_type=self.norm_type,
             )
         return super().transform(Xt)
 
@@ -693,7 +698,10 @@ class DESeq2ZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         memory = check_memory(self.memory)
         if self.trans_type == "vst":
             Xt = memory.cache(deseq2_norm_vst_transform)(
-                X, geo_means=self.geo_means_, disp_func=self.disp_func_
+                X,
+                geo_means=self.geo_means_,
+                disp_func=self.disp_func_,
+                norm_type=self.norm_type,
             )
         return super().transform(Xt)
 
@@ -1012,7 +1020,7 @@ class EdgeRSelector(ExtendedSelectorMixin, BaseEstimator):
             robust=self.robust,
             model_batch=self.model_batch,
         )
-        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, norm_type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -1252,7 +1260,7 @@ class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
             model_batch=self.model_batch,
             n_threads=self.n_threads,
         )
-        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, norm_type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -1489,7 +1497,7 @@ class LimmaVoomSelector(ExtendedSelectorMixin, BaseEstimator):
             model_batch=self.model_batch,
             model_dupcor=self.model_dupcor,
         )
-        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, norm_type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
@@ -1721,7 +1729,7 @@ class DreamVoomSelector(ExtendedSelectorMixin, BaseEstimator):
             model_batch=self.model_batch,
             n_threads=self.n_threads,
         )
-        self.ref_sample_ = memory.cache(edger_norm_fit)(X, type=self.norm_type)
+        self.ref_sample_ = memory.cache(edger_norm_fit)(X, norm_type=self.norm_type)
         return self
 
     def transform(self, X, sample_meta=None, feature_meta=None):
