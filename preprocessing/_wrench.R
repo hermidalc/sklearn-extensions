@@ -1,7 +1,8 @@
 # Adapted from https://github.com/HCBravoLab/Wrench/blob/master/R/wrenchSource.R
-# Wrench normalization for sparse, under-sampled count data
+# ML-compatible Wrench normalization for sparse, under-sampled, zero-inflated
+# count data
 
-.getHurdleFit <- function(mat, pres.abs.mod = TRUE) {
+.getHurdleFit <- function(mat, pres.abs.mod = TRUE, ...) {
     suppressPackageStartupMessages(library(fastglm))
     tau <- colSums(mat)
     design <- model.matrix(~ -1 + log(tau))
@@ -18,7 +19,7 @@
 }
 
 .getHurdle <- function(
-    mat, pi0.fit, pres.abs.mod = TRUE, thresh = FALSE, thresh.val = 1e-8
+    mat, pi0.fit, pres.abs.mod = TRUE, thresh = FALSE, thresh.val = 1e-8, ...
 ) {
     suppressPackageStartupMessages(library(fastglm))
     n <- ncol(mat)
@@ -46,38 +47,23 @@
     pi0
 }
 
-.getThetag <- function(mat, group, qref) {
-    p <- nrow(mat)
-    # group-wise ratios
-    Yg <- vapply(unique(group), function(g) {
-        g_idx <- which(group == g)
-        ng <- sum(group == g)
-        if (ng > 1) {
-            rowSums(mat[, g_idx])
-        } else {
-            mat[, g_idx]
-        }
-    }, FUN.VALUE = numeric(p))
-    qg <- sweep(Yg, 2, colSums(Yg), "/") # weighted estimator
-    rg <- qg / qref
-    lrg <- log(rg)
-    lrg[!is.finite(lrg)] <- NA
-    s2thetag <- colVars(lrg, na.rm = TRUE)
-    thetag <- colMeans(rg)
-    return(list(s2thetag = s2thetag, thetag = thetag, rg = rg))
-}
-
 wrench <- function(
-    mat, condition, qref = NULL, s2 = NULL, s2thetag = NULL, thetag = NULL,
-    pi0.fit = NULL, etype = "w.marg.mean", ebcf = TRUE, z.adj = FALSE,
-    phi.adj = TRUE, detrend = FALSE, ...
+    mat, condition, nzrows = NULL, qref = NULL, s2 = NULL, s2thetag = NULL,
+    thetag = NULL, pi0.fit = NULL, etype = "w.marg.mean", ref.est = "sw.means",
+    ebcf = TRUE, z.adj = FALSE, phi.adj = TRUE, detrend = FALSE, ...
 ) {
+    suppressPackageStartupMessages({
+        library(stats)
+        library(matrixStats)
+    })
     # trim
-    # nzrows <- rowSums(mat) > 0
-    # mat <- mat[nzrows, ]
-    # nzcols <- colSums(mat) > 0
-    # mat <- mat[, nzcols]
-    # condition <- condition[nzcols]
+    if (is.null(nzrows)) {
+        nzrows <- rowSums(mat) > 0
+    }
+    mat <- mat[nzrows, ]
+    nzcols <- colSums(mat) > 0
+    mat <- mat[, nzcols]
+    condition <- condition[nzcols]
 
     # stopifnot(all(rowSums(mat) > 0))
     stopifnot(all(colSums(mat) > 0))
@@ -89,12 +75,14 @@ wrench <- function(
     tots <- colSums(mat)
 
     # feature-wise parameters: hurdle, variance, reference and raw ratios
-    compute.pi0 <- (
-        !is.null(pi0.fit) &
-            !((etype %in% c("mean", "median", "s2.w.mean")) & !z.adj)
-    )
-    if (compute.pi0) {
+    if (!((etype %in% c("mean", "median", "s2.w.mean")) && !z.adj)) {
+        if (is.null(pi0.fit)) {
+            suppressWarnings(pi0.fit <- .getHurdleFit(mat, ...))
+        }
         pi0 <- .getHurdle(mat, pi0.fit, ...)
+    } else {
+        pi0.fit <- NULL
+        pi0 <- NULL
     }
 
     group <- as.character(condition)
@@ -111,7 +99,7 @@ wrench <- function(
 
     # reference
     if (is.null(qref)) {
-        qref <- Wrench:::.getReference(mat, ...)
+        qref <- Wrench:::.getReference(mat, ref.est = ref.est, ...)
     }
 
     # sample-wise ratios
@@ -120,10 +108,23 @@ wrench <- function(
 
     if (ebcf) {
         if (is.null(s2thetag) && is.null(thetag)) {
-            tgres <- .getThetag(mat, group, qref)
-            s2thetag <- tgres$s2thetag
-            thetag <- tgres$thetag
-            # rg <- tgres$rg
+            # group-wise ratios
+            Yg <- vapply(unique(group), function(g) {
+                g_idx <- which(group == g)
+                ng <- sum(group == g)
+                if (ng > 1) {
+                    rowSums(mat[, g_idx])
+                } else {
+                    mat[, g_idx]
+                }
+            }, FUN.VALUE = numeric(p))
+            # weighted estimator
+            qg <- sweep(Yg, 2, colSums(Yg), "/")
+            rg <- qg / qref
+            lrg <- log(rg)
+            lrg[!is.finite(lrg)] <- NA
+            s2thetag <- colVars(lrg, na.rm = TRUE)
+            thetag <- colMeans(rg)
         }
         s2thetag_rep <- design %*% s2thetag
         thetag_rep <- c(design %*% thetag)
@@ -147,7 +148,7 @@ wrench <- function(
         r <- sweep(thetagi, 2, thetagj * thetag_rep, "*")
     }
 
-    # adjustments for marginal, and truncated means
+    # adjustments for marginal and truncated means
     phi2 <- exp(s2)
     radj <- r
     if (z.adj) {
@@ -162,7 +163,7 @@ wrench <- function(
     res$others <- list()
     if (ebcf) {
         res$others <- list(
-            # "rg" = rg,
+            "rg" = rg,
             "thetag" = thetag,
             "thetagi" = thetagi,
             "s2thetag" = s2thetag
@@ -171,6 +172,9 @@ wrench <- function(
     res$others <- c(
         res$others,
         list(
+            "nzrows" = nzrows,
+            "pi0.fit" = pi0.fit,
+            "pi0" = pi0,
             "qref" = qref,
             "design" = design,
             "s2" = s2,
@@ -178,9 +182,6 @@ wrench <- function(
             "radj" = radj
         )
     )
-    if (compute.pi0) {
-        res$others <- c(res$others, list("pi0" = pi0))
-    }
 
     res$ccf <- Wrench:::.estimSummary(
         res,
@@ -200,92 +201,4 @@ wrench <- function(
     res$nf <- res$ccf * tjs
 
     res
-}
-
-wrench_fit <- function(X, sample_meta, ref_type = "sw.means", z_adj = FALSE) {
-    suppressPackageStartupMessages({
-        library(stats)
-        library(matrixStats)
-    })
-    counts <- t(X)
-    nzrows <- rowSums(counts) > 0
-    counts <- counts[nzrows, ]
-    nzcols <- colSums(counts) > 0
-    counts <- counts[, nzcols]
-    group <- as.character(sample_meta$Class)
-    group <- group[nzcols]
-    if (length(unique(group)) == 1) {
-        design <- model.matrix(counts[1, ] ~ 1)
-    } else {
-        design <- model.matrix(~ -1 + group)
-    }
-    suppressWarnings(s2 <- Wrench:::.gets2(counts, design))
-    qref <- Wrench:::.getReference(counts, ref.est = ref_type)
-    tgres <- .getThetag(counts, group, qref)
-    s2thetag <- tgres$s2thetag
-    thetag <- tgres$thetag
-    return(list(
-        nzrows = nzrows, qref = qref, s2 = s2, s2thetag = s2thetag,
-        thetag = thetag
-    ))
-}
-
-wrench_pi0_fit <- function(X, est_type = "w.marg.mean", z_adj = FALSE) {
-    counts <- t(X)
-    nzrows <- rowSums(counts) > 0
-    counts <- counts[nzrows, ]
-    nzcols <- colSums(counts) > 0
-    counts <- counts[, nzcols]
-    pi0_fit <- NULL
-    if (!((est_type %in% c("mean", "median", "s2.w.mean")) && !z_adj)) {
-        suppressWarnings(pi0_fit <- .getHurdleFit(counts))
-    }
-    pi0_fit
-}
-
-wrench_cpm_transform <- function(
-    X, sample_meta, nzrows, qref, s2, s2thetag, thetag, pi0_fit,
-    est_type = "w.marg.mean", z_adj = FALSE, log = TRUE, prior_count = 1
-) {
-    suppressPackageStartupMessages({
-        library(edgeR)
-        library(stats)
-        library(matrixStats)
-    })
-    if (is.data.frame(X)) {
-        rnames <- row.names(X)
-        cnames <- colnames(X)
-    }
-    counts <- t(X)
-    nzrows <- as.logical(nzrows)
-    qref <- as.numeric(qref)
-    s2 <- as.numeric(s2)
-    s2thetag <- as.numeric(s2thetag)
-    thetag <- as.numeric(thetag)
-    if (is.null(colnames(counts))) {
-        colnames(counts) <- paste0("X", seq_len(ncol(counts)))
-    }
-    unf_counts <- counts
-    unf_ccf <- rep(1, ncol(unf_counts))
-    names(unf_ccf) <- colnames(unf_counts)
-    counts <- counts[nzrows, ]
-    nzcols <- colSums(counts) > 0
-    counts <- counts[, nzcols]
-    group <- as.character(sample_meta$Class)
-    group <- group[nzcols]
-    suppressWarnings(W <- wrench(
-        counts,
-        condition = group, qref = qref, s2 = s2, s2thetag = s2thetag,
-        thetag = thetag, pi0.fit = pi0_fit, etype = est_type, z.adj = z_adj,
-    ))
-    unf_ccf[names(W$ccf)] <- W$ccf
-    dge <- DGEList(counts = unf_counts, norm.factors = unf_ccf)
-    cpms <- cpm(dge, log = log, prior.count = prior_count)
-    Xt <- t(cpms)
-    if (is.data.frame(X)) {
-        Xt <- as.data.frame(Xt)
-        row.names(Xt) <- rnames
-        colnames(Xt) <- cnames
-    }
-    return(Xt)
 }
