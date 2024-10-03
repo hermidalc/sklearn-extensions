@@ -65,7 +65,7 @@ deseq2_norm_transform <- function(
         cnames <- colnames(X)
     }
     counts <- t(X)
-    geo_means <- as.numeric(geo_means)
+    geo_means <- as.vector(geo_means)
     dds <- DESeqDataSetFromMatrix(
         counts, data.frame(row.names=seq(1, ncol(counts))), ~1
     )
@@ -110,7 +110,9 @@ deseq2_wrench_fit <- function(
     names(size_factors) <- colnames(counts)
     size_factors[names(W$nf)] <- W$nf
     sample_meta$Class <- factor(sample_meta$Class)
-    dds <- DESeqDataSetFromMatrix(counts, as.data.frame(sample_meta), ~Class)
+    colData <- as.data.frame(sample_meta)
+    design <- ~Class
+    dds <- DESeqDataSetFromMatrix(counts, colData, design)
     sizeFactors(dds) <- size_factors
     suppressMessages(
         dds <- estimateDispersions(dds, fitType=fit_type, quiet=TRUE)
@@ -133,11 +135,11 @@ deseq2_wrench_transform <- function(
         cnames <- colnames(X)
     }
     counts <- t(X)
-    nzrows <- as.logical(nzrows)
-    qref <- as.numeric(qref)
-    s2 <- as.numeric(s2)
-    s2thetag <- as.numeric(s2thetag)
-    thetag <- as.numeric(thetag)
+    nzrows <- as.vector(nzrows)
+    qref <- as.vector(qref)
+    s2 <- as.vector(s2)
+    s2thetag <- as.vector(s2thetag)
+    thetag <- as.vector(thetag)
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
@@ -207,7 +209,7 @@ edger_norm_transform <- function(
         cnames <- colnames(X)
     }
     counts <- t(X)
-    ref_sample <- as.numeric(ref_sample)
+    ref_sample <- as.vector(ref_sample)
     ref_sample_mask <- apply(counts, 2, function(c) all(c == ref_sample))
     if (any(ref_sample_mask)) {
         dge <- DGEList(counts=counts, genes=feature_meta)
@@ -287,11 +289,11 @@ edger_wrench_transform <- function(
         cnames <- colnames(X)
     }
     counts <- t(X)
-    nzrows <- as.logical(nzrows)
-    qref <- as.numeric(qref)
-    s2 <- as.numeric(s2)
-    s2thetag <- as.numeric(s2thetag)
-    thetag <- as.numeric(thetag)
+    nzrows <- as.vector(nzrows)
+    qref <- as.vector(qref)
+    s2 <- as.vector(s2)
+    s2thetag <- as.vector(s2thetag)
+    thetag <- as.vector(thetag)
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }

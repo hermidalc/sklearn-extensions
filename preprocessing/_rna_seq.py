@@ -9,6 +9,7 @@ from sklearn.utils.validation import check_is_fitted, check_memory
 from ..base import ExtendedTransformerMixin
 
 r_base = importr("base")
+
 if "deseq2_norm_fit" not in ro.globalenv:
     r_base.source(os.path.dirname(__file__) + "/_rna_seq.R")
 
