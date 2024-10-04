@@ -9,6 +9,7 @@ deseq2_norm_fit <- function(
     is_classif=TRUE, model_batch=FALSE
 ) {
     suppressPackageStartupMessages(library("DESeq2"))
+    counts <- t(X)
     if (
         model_batch && !is.null(sample_meta) &&
         length(unique(sample_meta$Batch)) > 1
@@ -30,7 +31,16 @@ deseq2_norm_fit <- function(
         colData <- data.frame(row.names=seq(1, ncol(counts)))
         design <- ~1
     }
-    counts <- t(X)
+    if (norm_type == "ratio") {
+        geo_means <- exp(rowMeans(log(counts)))
+    } else if (norm_type == "poscounts") {
+        # adapted from DESeq2::estimateSizeFactors source code
+        geoMeanNZ <- function(x) {
+            if (all(x == 0)) { 0 }
+            else { exp( sum(log(x[x > 0])) / length(x) ) }
+        }
+        geo_means <- apply(counts, 1, geoMeanNZ)
+    }
     dds <- DESeqDataSetFromMatrix(counts, colData, design)
     if (norm_type == "poscounts") {
         locfunc <- genefilter::shorth
@@ -43,16 +53,6 @@ deseq2_norm_fit <- function(
         )
         dds <- estimateDispersions(dds, fitType=fit_type, quiet=TRUE)
     })
-    if (norm_type == "ratio") {
-        geo_means <- exp(rowMeans(log(counts)))
-    } else if (norm_type == "poscounts") {
-        # adapted from DESeq2::estimateSizeFactors source code
-        geoMeanNZ <- function(x) {
-            if (all(x == 0)) { 0 }
-            else { exp( sum(log(x[x > 0])) / length(x) ) }
-        }
-        geo_means <- apply(counts, 1, geoMeanNZ)
-    }
     return(list(geo_means=geo_means, disp_func=dispersionFunction(dds)))
 }
 
