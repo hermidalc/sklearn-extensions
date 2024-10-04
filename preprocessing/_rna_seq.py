@@ -472,7 +472,7 @@ class DESeq2WrenchNormalizer(ExtendedTransformerMixin, BaseEstimator):
         )
         return Xt
 
-    def inverse_transform(self, X, sample_meta=None):
+    def inverse_transform(self, X, sample_meta):
         """
         Parameters
         ----------
@@ -784,6 +784,8 @@ class EdgeRWrenchNormalizer(ExtendedTransformerMixin, BaseEstimator):
         check_is_fitted(self, "nzrows_")
         X = self._validate_data(X, dtype=int, reset=False)
         memory = check_memory(self.memory)
+        if feature_meta is None:
+            feature_meta = ro.NULL
         Xt = memory.cache(edger_wrench_transform, ignore=["pi0_fit"])(
             X,
             sample_meta,
