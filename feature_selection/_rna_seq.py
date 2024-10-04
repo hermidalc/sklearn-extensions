@@ -532,10 +532,10 @@ class CountThreshold(ExtendedSelectorMixin, BaseEstimator):
 
     Parameters
     ----------
-    min_count : int (default = 0)
+    min_count : int (default = 1)
         Minimum feature count threshold.
 
-    min_total_count : int (default = 0)
+    min_total_count : int (default = 1)
         Minimum feature total count threshold.
 
     min_samples : int (default = 1)
@@ -549,8 +549,8 @@ class CountThreshold(ExtendedSelectorMixin, BaseEstimator):
 
     def __init__(
         self,
-        min_count=0,
-        min_total_count=0,
+        min_count=1,
+        min_total_count=1,
         min_samples=1,
         min_prop=0.25,
     ):
