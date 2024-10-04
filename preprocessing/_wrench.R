@@ -68,7 +68,8 @@ wrench <- function(
     # stopifnot(all(rowSums(mat) > 0))
     stopifnot(all(colSums(mat) > 0))
     stopifnot(ncol(mat) == length(condition))
-    stopifnot((nrow(mat) == length(qref)) && (nrow(mat) == length(s2)))
+    if (!is.null(qref)) stopifnot(nrow(mat) == length(qref))
+    if (!is.null(s2)) stopifnot(nrow(mat) == length(s2))
 
     n <- ncol(mat)
     p <- nrow(mat)
@@ -163,7 +164,7 @@ wrench <- function(
     res$others <- list()
     if (ebcf) {
         res$others <- list(
-            "rg" = rg,
+            # "rg" = rg,
             "thetag" = thetag,
             "thetagi" = thetagi,
             "s2thetag" = s2thetag

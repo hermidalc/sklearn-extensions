@@ -1,4 +1,6 @@
 import os
+from math import log2
+
 import numpy as np
 import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
@@ -72,10 +74,10 @@ def deseq2_feature_score(
         n_threads=n_threads,
     )
     return (
-        np.array(res["scores"], dtype=float),
-        np.array(res["padj"], dtype=float),
-        np.array(res["geo_means"], dtype=float),
-        res["disp_func"],
+        np.array(res[res.names.index("scores")], dtype=float),
+        np.array(res[res.names.index("padj")], dtype=float),
+        np.array(res[res.names.index("geo_means")], dtype=float),
+        res[res.names.index("disp_func")],
     )
 
 
@@ -110,15 +112,15 @@ def deseq2_wrench_feature_score(
         n_threads=n_threads,
     )
     return (
-        np.array(res["scores"], dtype=float),
-        np.array(res["padj"], dtype=float),
-        np.array(res["nzrows"], dtype=bool),
-        np.array(res["qref"], dtype=float),
-        np.array(res["s2"], dtype=float),
-        np.array(res["s2thetag"], dtype=float),
-        np.array(res["thetag"], dtype=float),
-        res["pi0_fit"],
-        res["disp_func"],
+        np.array(res[res.names.index("scores")], dtype=float),
+        np.array(res[res.names.index("padj")], dtype=float),
+        np.array(res[res.names.index("nzrows")], dtype=bool),
+        np.array(res[res.names.index("qref")], dtype=float),
+        np.array(res[res.names.index("s2")], dtype=float),
+        np.array(res[res.names.index("s2thetag")], dtype=float),
+        np.array(res[res.names.index("thetag")], dtype=float),
+        res[res.names.index("pi0_fit")],
+        res[res.names.index("disp_func")],
     )
 
 
@@ -153,10 +155,10 @@ def deseq2_zinbwave_feature_score(
         n_threads=n_threads,
     )
     return (
-        np.array(res["scores"], dtype=float),
-        np.array(res["padj"], dtype=float),
-        np.array(res["geo_means"], dtype=float),
-        res["disp_func"],
+        np.array(res[res.names.index("scores")], dtype=float),
+        np.array(res[res.names.index("padj")], dtype=float),
+        np.array(res[res.names.index("geo_means")], dtype=float),
+        res[res.names.index("disp_func")],
     )
 
 
@@ -193,15 +195,15 @@ def deseq2_wrench_zinbwave_feature_score(
         n_threads=n_threads,
     )
     return (
-        np.array(res["scores"], dtype=float),
-        np.array(res["padj"], dtype=float),
-        np.array(res["nzrows"], dtype=bool),
-        np.array(res["qref"], dtype=float),
-        np.array(res["s2"], dtype=float),
-        np.array(res["s2thetag"], dtype=float),
-        np.array(res["thetag"], dtype=float),
-        res["pi0_fit"],
-        res["disp_func"],
+        np.array(res[res.names.index("scores")], dtype=float),
+        np.array(res[res.names.index("padj")], dtype=float),
+        np.array(res[res.names.index("nzrows")], dtype=bool),
+        np.array(res[res.names.index("qref")], dtype=float),
+        np.array(res[res.names.index("s2")], dtype=float),
+        np.array(res[res.names.index("s2thetag")], dtype=float),
+        np.array(res[res.names.index("thetag")], dtype=float),
+        res[res.names.index("pi0_fit")],
+        res[res.names.index("disp_func")],
     )
 
 
@@ -222,7 +224,7 @@ def edger_feature_score(
     return (
         np.array(res["scores"], dtype=float),
         np.array(res["padj"], dtype=float),
-        np.array(res["ref_sample"], dtype=float),
+        np.array(res["ref_sample"], dtype=int),
     )
 
 
@@ -245,14 +247,14 @@ def edger_wrench_feature_score(
         robust=robust,
     )
     return (
-        np.array(res["scores"], dtype=float),
-        np.array(res["padj"], dtype=float),
-        np.array(res["nzrows"], dtype=bool),
-        np.array(res["qref"], dtype=float),
-        np.array(res["s2"], dtype=float),
-        np.array(res["s2thetag"], dtype=float),
-        np.array(res["thetag"], dtype=float),
-        res["pi0_fit"],
+        np.array(res[res.names.index("scores")], dtype=float),
+        np.array(res[res.names.index("padj")], dtype=float),
+        np.array(res[res.names.index("nzrows")], dtype=bool),
+        np.array(res[res.names.index("qref")], dtype=float),
+        np.array(res[res.names.index("s2")], dtype=float),
+        np.array(res[res.names.index("s2thetag")], dtype=float),
+        np.array(res[res.names.index("thetag")], dtype=float),
+        res[res.names.index("pi0_fit")],
     )
 
 
@@ -274,7 +276,7 @@ def edger_zinbwave_feature_score(
     return (
         np.array(res["scores"], dtype=float),
         np.array(res["padj"], dtype=float),
-        np.array(res["ref_sample"], dtype=float),
+        np.array(res["ref_sample"], dtype=int),
     )
 
 
@@ -307,14 +309,14 @@ def edger_wrench_zinbwave_feature_score(
         n_threads=n_threads,
     )
     return (
-        np.array(res["scores"], dtype=float),
-        np.array(res["padj"], dtype=float),
-        np.array(res["nzrows"], dtype=bool),
-        np.array(res["qref"], dtype=float),
-        np.array(res["s2"], dtype=float),
-        np.array(res["s2thetag"], dtype=float),
-        np.array(res["thetag"], dtype=float),
-        res["pi0_fit"],
+        np.array(res[res.names.index("scores")], dtype=float),
+        np.array(res[res.names.index("padj")], dtype=float),
+        np.array(res[res.names.index("nzrows")], dtype=bool),
+        np.array(res[res.names.index("qref")], dtype=float),
+        np.array(res[res.names.index("s2")], dtype=float),
+        np.array(res[res.names.index("s2thetag")], dtype=float),
+        np.array(res[res.names.index("thetag")], dtype=float),
+        res[res.names.index("pi0_fit")],
     )
 
 
@@ -336,7 +338,7 @@ def limma_voom_feature_score(
     return (
         np.array(res["scores"], dtype=float),
         np.array(res["padj"], dtype=float),
-        np.array(res["ref_sample"], dtype=float),
+        np.array(res["ref_sample"], dtype=int),
     )
 
 
@@ -367,14 +369,14 @@ def limma_voom_wrench_feature_score(
         robust=robust,
     )
     return (
-        np.array(res["scores"], dtype=float),
-        np.array(res["padj"], dtype=float),
-        np.array(res["nzrows"], dtype=bool),
-        np.array(res["qref"], dtype=float),
-        np.array(res["s2"], dtype=float),
-        np.array(res["s2thetag"], dtype=float),
-        np.array(res["thetag"], dtype=float),
-        res["pi0_fit"],
+        np.array(res[res.names.index("scores")], dtype=float),
+        np.array(res[res.names.index("padj")], dtype=float),
+        np.array(res[res.names.index("nzrows")], dtype=bool),
+        np.array(res[res.names.index("qref")], dtype=float),
+        np.array(res[res.names.index("s2")], dtype=float),
+        np.array(res[res.names.index("s2thetag")], dtype=float),
+        np.array(res[res.names.index("thetag")], dtype=float),
+        res[res.names.index("pi0_fit")],
     )
 
 
@@ -402,7 +404,7 @@ def dream_voom_feature_score(
     return (
         np.array(res["scores"], dtype=float),
         np.array(res["padj"], dtype=float),
-        np.array(res["ref_sample"], dtype=float),
+        np.array(res["ref_sample"], dtype=int),
     )
 
 
@@ -421,7 +423,7 @@ def limma_feature_score(X, y, sample_meta, score_type, lfc, robust, trend, model
     return (
         np.array(res["scores"], dtype=float),
         np.array(res["padj"], dtype=float),
-        np.array(res["ref_sample"], dtype=float),
+        np.array(res["ref_sample"], dtype=int),
     )
 
 
@@ -668,7 +670,7 @@ class DESeq2Selector(ExtendedSelectorMixin, BaseEstimator):
         exists.
 
     n_threads : int (default = 1)
-        Number of DESeq2 parallel threads. This should be carefully selected
+        Number of parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
@@ -751,7 +753,7 @@ class DESeq2Selector(ExtendedSelectorMixin, BaseEstimator):
             norm_type=self.norm_type,
             fit_type=self.fit_type,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             lfc_shrink=self.lfc_shrink,
             model_batch=self.model_batch,
             n_threads=self.n_threads,
@@ -881,7 +883,7 @@ class DESeq2WrenchSelector(ExtendedSelectorMixin, BaseEstimator):
         Run lfcShrink after differential expression testing.
 
     n_threads : int (default = 1)
-        Number of DESeq2 parallel threads. This should be carefully selected
+        Number of parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
@@ -1133,7 +1135,7 @@ class DESeq2ZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         exists.
 
     n_threads : int (default = 1)
-        Number of DESeq2 parallel threads. This should be carefully selected
+        Number of parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
@@ -1219,7 +1221,7 @@ class DESeq2ZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
             norm_type=self.norm_type,
             fit_type=self.fit_type,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             lfc_shrink=self.lfc_shrink,
             model_batch=self.model_batch,
             n_threads=self.n_threads,
@@ -1352,7 +1354,7 @@ class DESeq2WrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         Run lfcShrink after differential expression testing.
 
     n_threads : int (default = 1)
-        Number of DESeq2 parallel threads. This should be carefully selected
+        Number of parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
@@ -1465,7 +1467,7 @@ class DESeq2WrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
             epsilon=self.epsilon,
             fit_type=self.fit_type,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             lfc_shrink=self.lfc_shrink,
             n_threads=self.n_threads,
         )
@@ -1822,7 +1824,7 @@ class EdgeRSelector(ExtendedSelectorMixin, BaseEstimator):
             sample_meta=sample_meta,
             norm_type=self.norm_type,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             robust=self.robust,
             model_batch=self.model_batch,
         )
@@ -2091,7 +2093,7 @@ class EdgeRWrenchSelector(ExtendedSelectorMixin, BaseEstimator):
             ref_type=self.ref_type,
             z_adj=self.z_adj,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             robust=self.robust,
         )
         return self
@@ -2265,7 +2267,7 @@ class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         transformation method.
 
     n_threads : int (default = 1)
-        Number of ZINB-WaVE parallel threads. This should be carefully selected
+        Number parallel threads. This should be carefully selected
         when using within Grid/RandomizedSearchCV to not oversubscribe CPU
         and memory resources.
 
@@ -2331,7 +2333,9 @@ class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
             shape = (n_samples, n_metadata)
             Training sample metadata.
 
-        feature_meta : ignored
+        feature_meta : pandas.DataFrame, pandas.Series (default = None), \
+            shape = (n_features, n_metadata)
+            Feature metadata for "tpm" transform, otherwise ignored
 
         Returns
         -------
@@ -2411,7 +2415,7 @@ class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
-    def _check_params(self, X, y, feature_meta):
+    def _check_params(self, X, feature_meta):
         if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
@@ -2513,6 +2517,11 @@ class EdgeRWrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         Feature metadata column name holding gene CDS lengths for used in TPM
         transformation method.
 
+    n_threads : int (default = 1)
+        Number parallel threads. This should be carefully selected
+        when using within Grid/RandomizedSearchCV to not oversubscribe CPU
+        and memory resources.
+
     memory : None, str or object with the joblib.Memory interface \
         (default = None)
         Used for internal caching. By default, no caching is done.
@@ -2559,6 +2568,7 @@ class EdgeRWrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         log=True,
         prior_count=1,
         gene_length_col="Length",
+        n_threads=1,
         memory=None,
     ):
         self.k = k
@@ -2573,6 +2583,7 @@ class EdgeRWrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         self.log = log
         self.prior_count = prior_count
         self.gene_length_col = gene_length_col
+        self.n_threads = n_threads
         self.memory = memory
 
     def fit(self, X, y, sample_meta, feature_meta=None):
@@ -2697,8 +2708,6 @@ class EdgeRWrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
             )
         if not 0 <= self.pv <= 1:
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
-        if self.fc < 1:
-            raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
         if self.score_type not in ("pv", "lfc_pv"):
             raise ValueError("invalid score_type %s" % self.score_type)
         if self.est_type not in ("w.marg.mean", "hurdle.w.mean", "s2.w.mean"):
@@ -2878,7 +2887,7 @@ class LimmaVoomSelector(ExtendedSelectorMixin, BaseEstimator):
             sample_meta=sample_meta,
             norm_type=self.norm_type,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             robust=self.robust,
             model_batch=self.model_batch,
             model_dupcor=self.model_dupcor,
@@ -3148,7 +3157,7 @@ class LimmaVoomWrenchSelector(ExtendedSelectorMixin, BaseEstimator):
             ref_type=self.ref_type,
             z_adj=self.z_adj,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             robust=self.robust,
         )
         return self
@@ -3388,7 +3397,7 @@ class DreamVoomSelector(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         X, y = self._validate_data(X, y, dtype=int)
-        self._check_params(X)
+        self._check_params(X, feature_meta)
         memory = check_memory(self.memory)
         self.scores_, self.padjs_, self.ref_sample_ = memory.cache(
             dream_voom_feature_score
@@ -3398,7 +3407,7 @@ class DreamVoomSelector(ExtendedSelectorMixin, BaseEstimator):
             sample_meta=sample_meta,
             norm_type=self.norm_type,
             score_type=self.score_type,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             model_batch=self.model_batch,
             n_threads=self.n_threads,
         )
@@ -3596,7 +3605,7 @@ class LimmaSelector(ExtendedSelectorMixin, BaseEstimator):
             Returns self.
         """
         X, y = self._validate_data(X, y)
-        self._check_params(X, y)
+        self._check_params(X)
         memory = check_memory(self.memory)
         if sample_meta is None:
             sample_meta = ro.NULL
@@ -3604,7 +3613,7 @@ class LimmaSelector(ExtendedSelectorMixin, BaseEstimator):
             X,
             y,
             sample_meta=sample_meta,
-            lfc=np.log2(self.fc),
+            lfc=log2(self.fc),
             score_type=self.score_type,
             robust=self.robust,
             trend=self.trend,
@@ -3646,7 +3655,7 @@ class LimmaSelector(ExtendedSelectorMixin, BaseEstimator):
         """
         raise NotImplementedError("inverse_transform not implemented.")
 
-    def _check_params(self, X, y):
+    def _check_params(self, X):
         if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."

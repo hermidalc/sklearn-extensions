@@ -38,7 +38,10 @@ def deseq2_norm_fit(X, y, sample_meta, norm_type, fit_type, is_classif, model_ba
         is_classif=is_classif,
         model_batch=model_batch,
     )
-    return np.array(res["geo_means"], dtype=float), res["disp_func"]
+    return (
+        np.array(res[res.names.index("geo_means")], dtype=float),
+        res[res.names.index("disp_func")],
+    )
 
 
 def deseq2_norm_transform(X, geo_means, disp_func, norm_type, trans_type):
@@ -61,13 +64,13 @@ def deseq2_wrench_fit(X, sample_meta, est_type, ref_type, z_adj, fit_type):
         fit_type=fit_type,
     )
     return (
-        np.array(res["nzrows"], dtype=bool),
-        np.array(res["qref"], dtype=float),
-        np.array(res["s2"], dtype=float),
-        np.array(res["s2thetag"], dtype=float),
-        np.array(res["thetag"], dtype=float),
-        res["pi0_fit"],
-        res["disp_func"],
+        np.array(res[res.names.index("nzrows")], dtype=bool),
+        np.array(res[res.names.index("qref")], dtype=float),
+        np.array(res[res.names.index("s2")], dtype=float),
+        np.array(res[res.names.index("s2thetag")], dtype=float),
+        np.array(res[res.names.index("thetag")], dtype=float),
+        res[res.names.index("pi0_fit")],
+        res[res.names.index("disp_func")],
     )
 
 
@@ -141,12 +144,12 @@ def edger_wrench_fit(X, sample_meta, est_type, ref_type, z_adj):
         Xr, sample_meta=sample_meta_r, est_type=est_type, ref_type=ref_type, z_adj=z_adj
     )
     return (
-        np.array(res["nzrows"], dtype=bool),
-        np.array(res["qref"], dtype=float),
-        np.array(res["s2"], dtype=float),
-        np.array(res["s2thetag"], dtype=float),
-        np.array(res["thetag"], dtype=float),
-        res["pi0_fit"],
+        np.array(res[res.names.index("nzrows")], dtype=bool),
+        np.array(res[res.names.index("qref")], dtype=float),
+        np.array(res[res.names.index("s2")], dtype=float),
+        np.array(res[res.names.index("s2thetag")], dtype=float),
+        np.array(res[res.names.index("thetag")], dtype=float),
+        res[res.names.index("pi0_fit")],
     )
 
 

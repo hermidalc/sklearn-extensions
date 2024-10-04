@@ -496,7 +496,7 @@ edger_zinbwave_feature_score <- function(
         design <- model.matrix(design_formula, data=colData)
         dge <- estimateDisp(dge, design, robust=robust)
         fit <- glmFit(dge, design)
-        lrt <- glmWeightedF(fit, coef=ncol(design))
+        lrt <- zinbwave::glmWeightedF(fit, coef=ncol(design))
     })
     results <- as.data.frame(topTags(
         lrt, n=Inf, adjust.method="BH", sort.by="none"
@@ -553,7 +553,7 @@ edger_wrench_zinbwave_feature_score <- function(
         design <- model.matrix(design_formula, data=colData)
         dge <- estimateDisp(dge, design, robust=robust)
         fit <- glmFit(dge, design)
-        lrt <- glmWeightedF(fit, coef=ncol(design))
+        lrt <- zinbwave::glmWeightedF(fit, coef=ncol(design))
     })
     results <- as.data.frame(topTags(
         lrt, n=Inf, adjust.method="BH", sort.by="none"
