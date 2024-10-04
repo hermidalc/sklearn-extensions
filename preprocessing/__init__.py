@@ -10,12 +10,18 @@ from ._batch_effect import (
 )
 from ._data import LogTransformer
 from ._nanostring import NanoStringNormalizer, NanoStringDiffNormalizer
-from ._rna_seq import DESeq2Normalizer, EdgeRNormalizer
-from ._wrench import WrenchNormalizer
+from ._rna_seq import (
+    DESeq2Normalizer,
+    DESeq2WrenchNormalizer,
+    EdgeRNormalizer,
+    EdgeRWrenchNormalizer,
+)
 
 __all__ = [
     "DESeq2Normalizer",
+    "DESeq2WrenchNormalizer",
     "EdgeRNormalizer",
+    "EdgeRWrenchNormalizer",
     "LimmaBatchEffectRemover",
     "LogTransformer",
     "NanoStringNormalizer",
