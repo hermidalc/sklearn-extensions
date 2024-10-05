@@ -141,11 +141,12 @@ def deseq2_zinbwave_feature_score(
         Xr = ro.conversion.get_conversion().py2rpy(X)
         yr = ro.conversion.get_conversion().py2rpy(y)
         sample_meta_r = ro.conversion.get_conversion().py2rpy(sample_meta)
+        epsilon_r = ro.conversion.get_conversion().py2rpy(epsilon)
     res = r_deseq2_zinbwave_feature_score(
         Xr,
         yr,
         sample_meta=sample_meta_r,
-        epsilon=epsilon,
+        epsilon=epsilon_r,
         norm_type=norm_type,
         fit_type=fit_type,
         score_type=score_type,
@@ -180,6 +181,7 @@ def deseq2_wrench_zinbwave_feature_score(
         Xr = ro.conversion.get_conversion().py2rpy(X)
         yr = ro.conversion.get_conversion().py2rpy(y)
         sample_meta_r = ro.conversion.get_conversion().py2rpy(sample_meta)
+        epsilon_r = ro.conversion.get_conversion().py2rpy(epsilon)
     res = r_deseq2_wrench_zinbwave_feature_score(
         Xr,
         yr,
@@ -187,7 +189,7 @@ def deseq2_wrench_zinbwave_feature_score(
         est_type=est_type,
         ref_type=ref_type,
         z_adj=z_adj,
-        epsilon=epsilon,
+        epsilon=epsilon_r,
         fit_type=fit_type,
         score_type=score_type,
         lfc=lfc,
@@ -296,6 +298,7 @@ def edger_wrench_zinbwave_feature_score(
         Xr = ro.conversion.get_conversion().py2rpy(X)
         yr = ro.conversion.get_conversion().py2rpy(y)
         sample_meta_r = ro.conversion.get_conversion().py2rpy(sample_meta)
+        epsilon_r = ro.conversion.get_conversion().py2rpy(epsilon)
     res = r_edger_wrench_zinbwave_feature_score(
         Xr,
         yr,
@@ -303,7 +306,7 @@ def edger_wrench_zinbwave_feature_score(
         est_type=est_type,
         ref_type=ref_type,
         z_adj=z_adj,
-        epsilon=epsilon,
+        epsilon=epsilon_r,
         score_type=score_type,
         robust=robust,
         n_threads=n_threads,
