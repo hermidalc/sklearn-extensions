@@ -3,6 +3,7 @@ The :mod:`sklearn.compose._column_transformer` module implements utilities
 to work with heterogeneous data and to apply different transformers to
 different columns.
 """
+
 # Author: Andreas Mueller
 #         Joris Van den Bossche
 #         Leandro Hermida
@@ -663,9 +664,11 @@ class ExtendedColumnTransformer(ExtendedTransformerMixin, ColumnTransformer):
                     message_clsname="ColumnTransformer",
                     message=self._log_message(name, idx, len(transformers)),
                     **{
-                        k: _safe_indexing(v, column, axis=0)
-                        if k == "feature_meta"
-                        else v
+                        k: (
+                            _safe_indexing(v, column, axis=0, allow_str_indexing=True)
+                            if k == "feature_meta"
+                            else v
+                        )
                         for k, v in fit_params.items()
                     },
                 )

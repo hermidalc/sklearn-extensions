@@ -1,6 +1,7 @@
 """
 The :mod:`sklearn.utils` module includes various utilities.
 """
+
 import numbers
 from itertools import compress
 
@@ -119,7 +120,7 @@ def _determine_key_type(key, accept_slice=True):
     raise ValueError(err_msg)
 
 
-def _safe_indexing(X, indices, *, axis=0):
+def _safe_indexing(X, indices, *, axis=0, allow_str_indexing=False):
     """Return rows, items or columns of X using indices.
 
     .. warning::
@@ -133,6 +134,7 @@ def _safe_indexing(X, indices, *, axis=0):
     X : array-like, sparse-matrix, list, pandas.DataFrame, pandas.Series
         Data from which to sample rows, items or columns. `list` are only
         supported when `axis=0`.
+
     indices : bool, int, str, slice, array-like
         - If `axis=0`, boolean and integer array-like, integer slice,
           and scalar integer are supported.
@@ -146,9 +148,13 @@ def _safe_indexing(X, indices, *, axis=0):
               these containers can be one of the following: `int`, 'bool' and
               `str`. However, `str` is only supported when `X` is a dataframe.
               The selected subset will be 2D.
+
     axis : int, default=0
         The axis along which `X` will be subsampled. `axis=0` will select
         rows while `axis=1` will select columns.
+
+    allow_str_indexing : bool, default=False
+        Allow `axis=0` `str` indexing for dataframes.
 
     Returns
     -------
@@ -171,7 +177,11 @@ def _safe_indexing(X, indices, *, axis=0):
 
     indices_dtype = _determine_key_type(indices)
 
-    if axis == 0 and indices_dtype == "str":
+    if (
+        axis == 0
+        and indices_dtype == "str"
+        and (not hasattr(X, "loc") or not allow_str_indexing)
+    ):
         raise ValueError("String indexing is not supported with 'axis=0'")
 
     if axis == 1 and X.ndim != 2:
