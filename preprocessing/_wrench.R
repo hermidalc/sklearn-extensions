@@ -47,12 +47,65 @@
     pi0
 }
 
+.gets2 <- function(
+    mat, design = model.matrix(mat[1, ] ~ 1), ebs2 = TRUE, smoothed = FALSE, ...
+) {
+    p <- nrow(mat)
+    nzrows <- rowSums(mat) > 0
+    mat <- mat[nzrows, ]
+
+    tjs <- colSums(mat)
+    tjs <- tjs / exp(mean(log(tjs)))
+
+    design <- cbind(design, log(tjs))
+    mat <- log(mat)
+    mat[!is.finite(mat)] <- NA
+    fit <- lmFit(mat, design)
+    s <- fit$sigma
+    s[s == 0] <- NA
+
+    mu <- rowMeans(mat, na.rm = TRUE)
+    sqrt.s <- sqrt(s)
+
+    k <- tryCatch(
+        {
+            l <- locfit(sqrt.s ~ mu, family = "gamma")
+            predict(l, mu)^4
+        },
+        error = function(e) {
+            NULL
+        }
+    )
+
+    if (smoothed && !is.null(k)) {
+        s2 <- k
+    } else {
+        s2 <- s^2
+        if (!is.null(k)) {
+            s2[is.na(s2)] <- k[is.na(s2)]
+        } else {
+            s2[is.na(s2)] <- 0
+        }
+        if (ebs2) {
+            s2 <- limma::squeezeVar(
+                s2,
+                df = max(c(1, fit$df.residual), na.rm = TRUE)
+            )$var.post
+        }
+    }
+    s2.tmp <- c(matrix(NA, nrow = p, ncol = 1))
+    s2.tmp[nzrows] <- s2
+    s2.tmp
+}
+
 wrench <- function(
     mat, condition, nzrows = NULL, qref = NULL, s2 = NULL, s2thetag = NULL,
     thetag = NULL, pi0.fit = NULL, etype = "w.marg.mean", ref.est = "sw.means",
     ebcf = TRUE, z.adj = FALSE, phi.adj = TRUE, detrend = FALSE, ...
 ) {
     suppressPackageStartupMessages({
+        library(limma)
+        library(locfit)
         library(stats)
         library(matrixStats)
     })
@@ -95,7 +148,7 @@ wrench <- function(
 
     # variances
     if (is.null(s2)) {
-        s2 <- Wrench:::.gets2(mat, design, ...)
+        s2 <- .gets2(mat, design, ...)
     }
 
     # reference
