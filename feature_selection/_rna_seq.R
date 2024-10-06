@@ -106,6 +106,7 @@ deseq2_wrench_feature_score <- function(
     size_factors <- rep(1, ncol(counts))
     names(size_factors) <- colnames(counts)
     size_factors[names(W$nf)] <- W$nf
+    size_factors[is.na(size_factors)] <- 1
     colData <- data.frame(Class=factor(y))
     design <- ~Class
     dds <- DESeqDataSetFromMatrix(counts, colData, design)
@@ -262,6 +263,7 @@ deseq2_wrench_zinbwave_feature_score <- function(
     size_factors <- rep(1, ncol(counts))
     names(size_factors) <- colnames(counts)
     size_factors[names(W$nf)] <- W$nf
+    size_factors[is.na(size_factors)] <- 1
     colData <- data.frame(Class=factor(y))
     design <- ~Class
     if (n_threads > 1) {
@@ -427,6 +429,7 @@ edger_wrench_feature_score <- function(
     norm_factors <- rep(1, ncol(counts))
     names(norm_factors) <- colnames(counts)
     norm_factors[names(W$ccf)] <- W$ccf
+    norm_factors[is.na(norm_factors)] <- 1
     design <- model.matrix(~factor(y))
     dge <- DGEList(counts=counts, norm.factors=norm_factors)
     suppressWarnings({
@@ -531,6 +534,7 @@ edger_wrench_zinbwave_feature_score <- function(
     norm_factors <- rep(1, ncol(counts))
     names(norm_factors) <- colnames(counts)
     norm_factors[names(W$ccf)] <- W$ccf
+    norm_factors[is.na(norm_factors)] <- 1
     colData <- data.frame(Class=factor(y))
     design_formula <- ~Class
     if (n_threads > 1) {
@@ -650,6 +654,7 @@ limma_voom_wrench_feature_score <- function(
     norm_factors <- rep(1, ncol(counts))
     names(norm_factors) <- colnames(counts)
     norm_factors[names(W$ccf)] <- W$ccf
+    norm_factors[is.na(norm_factors)] <- 1
     design <- model.matrix(~factor(y))
     dge <- DGEList(counts=counts, norm.factors=norm_factors)
     suppressWarnings({

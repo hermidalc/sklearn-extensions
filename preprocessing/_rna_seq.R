@@ -109,6 +109,7 @@ deseq2_wrench_fit <- function(
     size_factors <- rep(1, ncol(counts))
     names(size_factors) <- colnames(counts)
     size_factors[names(W$nf)] <- W$nf
+    size_factors[is.na(size_factors)] <- 1
     sample_meta$Class <- factor(sample_meta$Class)
     colData <- as.data.frame(sample_meta)
     design <- ~Class
@@ -152,6 +153,7 @@ deseq2_wrench_transform <- function(
     size_factors <- rep(1, ncol(counts))
     names(size_factors) <- colnames(counts)
     size_factors[names(W$nf)] <- W$nf
+    size_factors[is.na(size_factors)] <- 1
     dds <- DESeqDataSetFromMatrix(
         counts, data.frame(row.names=seq(1, ncol(counts))), ~1
     )
@@ -306,6 +308,7 @@ edger_wrench_transform <- function(
     norm_factors <- rep(1, ncol(counts))
     names(norm_factors) <- colnames(counts)
     norm_factors[names(W$ccf)] <- W$ccf
+    norm_factors[is.na(norm_factors)] <- 1
     dge <- DGEList(counts=counts, genes=feature_meta, norm.factors=norm_factors)
     if (trans_type == "cpm") {
         tmat <- cpm(dge, log=log, prior.count=prior_count)
