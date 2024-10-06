@@ -102,7 +102,7 @@ deseq2_wrench_fit <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- sample_meta$Class
+    condition <- as.vector(sample_meta$Class)
     suppressWarnings(W <- wrench(
         counts, condition, etype=est_type, ref.est=ref_type, z.adj=z_adj
     ))
@@ -144,7 +144,7 @@ deseq2_wrench_transform <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- sample_meta$Class
+    condition <- as.vector(sample_meta$Class)
     suppressWarnings(W <- wrench(
         counts, condition,
         nzrows=nzrows, qref=qref, s2=s2, s2thetag=s2thetag, thetag=thetag,
@@ -269,7 +269,7 @@ edger_wrench_fit <- function(
     X, sample_meta, est_type="w.marg.mean", ref_type="sw.means", z_adj=FALSE
 ) {
     counts <- t(X)
-    condition <- sample_meta$Class
+    condition <- as.vector(sample_meta$Class)
     suppressWarnings(W <- wrench(
         counts, condition, etype=est_type, ref.est=ref_type, z.adj=z_adj
     ))
@@ -299,7 +299,7 @@ edger_wrench_transform <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- sample_meta$Class
+    condition <- as.vector(sample_meta$Class)
     suppressWarnings(W <- wrench(
         counts, condition,
         nzrows=nzrows, qref=qref, s2=s2, s2thetag=s2thetag, thetag=thetag,
