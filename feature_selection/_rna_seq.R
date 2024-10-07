@@ -280,11 +280,16 @@ deseq2_wrench_zinbwave_feature_score <- function(
             observationalWeights=TRUE, BPPARAM=BPPARAM
         )
         dds <- DESeqDataSet(zinb, design)
-        sizeFactors(dds) <- size_factors
+        # use poscounts normalization for DGE feature scoring here but Wrench
+        # for downstream normalization
+        # sizeFactors(dds) <- size_factors
         suppressMessages({
+            dds <- estimateSizeFactors(
+                dds, type="poscounts", locfunc=genefilter::shorth, quiet=TRUE
+            )
             dds <- DESeq(
-                dds, fitType=fit_type, useT=TRUE, minmu=1e-6, parallel=parallel,
-                BPPARAM=BPPARAM, quiet=TRUE
+                dds, fitType=fit_type, sfType="poscounts", useT=TRUE,
+                minmu=1e-6, parallel=parallel, BPPARAM=BPPARAM, quiet=TRUE
             )
         })
     })
@@ -550,9 +555,13 @@ edger_wrench_zinbwave_feature_score <- function(
             X=design_formula, K=0, epsilon=epsilon, zeroinflation=TRUE,
             observationalWeights=TRUE, BPPARAM=BPPARAM
         )
-        dge <- DGEList(
-            counts=assay(zinb, "counts"), norm.factors=norm_factors
-        )
+        # use TMM normalization for DGE feature scoring here but Wrench
+        # for downstream normalization
+        # dge <- DGEList(
+        #     counts=assay(zinb, "counts"), norm.factors=norm_factors
+        # )
+        dge <- DGEList(counts=assay(zinb, "counts"))
+        dge <- calcNormFactors(dge, method="TMM")
         dge$weights <- assay(zinb, "weights")
         design <- model.matrix(design_formula, data=colData)
         dge <- estimateDisp(dge, design, robust=robust)
