@@ -99,7 +99,8 @@ deseq2_wrench_feature_score <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- as.vector(y)
+    # condition <- as.vector(y)
+    condition <- rep(1, ncol(counts))
     suppressWarnings(W <- wrench(
         counts, condition, etype=est_type, ref.est=ref_type, z.adj=z_adj
     ))
@@ -256,7 +257,8 @@ deseq2_wrench_zinbwave_feature_score <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- as.vector(y)
+    # condition <- as.vector(y)
+    condition <- rep(1, ncol(counts))
     suppressWarnings(W <- wrench(
         counts, condition, etype=est_type, ref.est=ref_type, z.adj=z_adj
     ))
@@ -427,7 +429,8 @@ edger_wrench_feature_score <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- as.vector(y)
+    # condition <- as.vector(y)
+    condition <- rep(1, ncol(counts))
     suppressWarnings(W <- wrench(
         counts, condition, etype=est_type, ref.est=ref_type, z.adj=z_adj
     ))
@@ -532,7 +535,8 @@ edger_wrench_zinbwave_feature_score <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- as.vector(y)
+    # condition <- as.vector(y)
+    condition <- rep(1, ncol(counts))
     suppressWarnings(W <- wrench(
         counts, condition, etype=est_type, ref.est=ref_type, z.adj=z_adj
     ))
@@ -656,7 +660,8 @@ limma_voom_wrench_feature_score <- function(
     if (is.null(colnames(counts))) {
         colnames(counts) <- paste0("X", seq_len(ncol(counts)))
     }
-    condition <- as.vector(y)
+    # condition <- as.vector(y)
+    condition <- rep(1, ncol(counts))
     suppressWarnings(W <- wrench(
         counts, condition, etype=est_type, ref.est=ref_type, z.adj=z_adj
     ))
