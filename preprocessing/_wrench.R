@@ -109,7 +109,7 @@
             })
         )
     } else if (ref.est == "sw.means") {
-        qmat <- sweep(mat, 2, colSums(mat), "/")
+        qmat <- sweep(mat, 2, tau, "/")
         qref <- rowMeans(qmat)
     } else {
         stop("Unknown reference type.")
@@ -146,7 +146,7 @@ wrench <- function(
 
     n <- ncol(mat)
     p <- nrow(mat)
-    tots <- colSums(mat)
+    tau <- colSums(mat)
 
     # feature-wise parameters: hurdle, variance, reference and raw ratios
     if (!((etype %in% c("mean", "median", "s2.w.mean")) && !z.adj)) {
@@ -177,7 +177,7 @@ wrench <- function(
     }
 
     # sample-wise ratios
-    qmat <- sweep(mat, 2, colSums(mat), "/")
+    qmat <- sweep(mat, 2, tau, "/")
     r <- qmat / qref
 
     if (ebcf) {
@@ -265,7 +265,7 @@ wrench <- function(
 
     if (detrend) {
         res$others$ccf0 <- res$ccf
-        detrended <- Wrench:::.detrend.ccf(res$ccf, tots, condition)
+        detrended <- Wrench:::.detrend.ccf(res$ccf, tau, condition)
         res$others$ccf.detr.un <- detrended$ccf.detr.un
         res$ccf <- detrended$ccf.detr
     }
