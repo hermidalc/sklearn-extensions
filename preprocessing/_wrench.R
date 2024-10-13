@@ -101,10 +101,7 @@
     if (ref.est == "logistic") {
         qref <- 1 - plogis(
             apply(mat, 1, function(x) {
-                fastglm(
-                    1, cbind(tau - x, x),
-                    family = binomial()
-                )$coefficients
+                glm(cbind(tau - x, x) ~ 1, family = binomial())$coefficients
             })
         )
     } else if (ref.est == "sw.means") {
