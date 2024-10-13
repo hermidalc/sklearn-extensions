@@ -3,7 +3,6 @@
 # count data
 
 .getHurdleFit <- function(mat, pres.abs.mod = TRUE, ...) {
-    suppressPackageStartupMessages(library(fastglm))
     tau <- colSums(mat)
     design <- model.matrix(~ -1 + log(tau))
     if (pres.abs.mod) {
@@ -21,7 +20,6 @@
 .getHurdle <- function(
     mat, pi0.fit, pres.abs.mod = TRUE, thresh = FALSE, thresh.val = 1e-8, ...
 ) {
-    suppressPackageStartupMessages(library(fastglm))
     n <- ncol(mat)
     tau <- colSums(mat)
     newdata <- as.matrix(data.frame(LogTau = log(tau)))
@@ -98,12 +96,33 @@
     s2.tmp
 }
 
+.getReference <- function(mat, ref.est = "sw.means", ...) {
+    tau <- colSums(mat)
+    if (ref.est == "logistic") {
+        qref <- 1 - plogis(
+            apply(mat, 1, function(x) {
+                fastglm(
+                    1, cbind(tau - x, x),
+                    family = binomial()
+                )$coefficients
+            })
+        )
+    } else if (ref.est == "sw.means") {
+        qmat <- sweep(mat, 2, colSums(mat), "/")
+        qref <- rowMeans(qmat)
+    } else {
+        stop("Unknown reference type.")
+    }
+    qref
+}
+
 wrench <- function(
     mat, condition, nzrows = NULL, qref = NULL, s2 = NULL, s2thetag = NULL,
     thetag = NULL, pi0.fit = NULL, etype = "w.marg.mean", ref.est = "sw.means",
     ebcf = TRUE, z.adj = FALSE, phi.adj = TRUE, detrend = FALSE, ...
 ) {
     suppressPackageStartupMessages({
+        library(fastglm)
         library(limma)
         library(locfit)
         library(stats)
@@ -153,7 +172,7 @@ wrench <- function(
 
     # reference
     if (is.null(qref)) {
-        qref <- Wrench:::.getReference(mat, ref.est = ref.est, ...)
+        qref <- .getReference(mat, ref.est = ref.est, ...)
     }
 
     # sample-wise ratios
