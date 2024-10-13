@@ -99,7 +99,7 @@
 .getReference <- function(mat, ref.est = "sw.means", ...) {
     tau <- colSums(mat)
     if (ref.est == "logistic") {
-        design <- model.matrix(~ 1)
+        design <- model.matrix(~ 1, data=data.frame(tau))
         qref <- 1 - plogis(
             apply(mat, 1, function(x) {
                 fastglm(
