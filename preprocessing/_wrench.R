@@ -99,9 +99,13 @@
 .getReference <- function(mat, ref.est = "sw.means", ...) {
     tau <- colSums(mat)
     if (ref.est == "logistic") {
+        design <- model.matrix(~ 1)
         qref <- 1 - plogis(
             apply(mat, 1, function(x) {
-                glm(cbind(tau - x, x) ~ 1, family = binomial())$coefficients
+                fastglm(
+                    design, cbind(tau - x, x),
+                    family = binomial()
+                )$coefficients
             })
         )
     } else if (ref.est == "sw.means") {
