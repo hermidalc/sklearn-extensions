@@ -6,7 +6,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.packages import importr
 from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_is_fitted, check_memory
+from sklearn.utils.validation import check_is_fitted, check_memory, _num_features
 
 from ._base import ExtendedSelectorMixin
 
@@ -806,9 +806,10 @@ class DESeq2Selector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X):
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
@@ -1056,15 +1057,16 @@ class DESeq2WrenchSelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, sample_meta):
-        if sample_meta is None:
-            raise ValueError("sample_meta is required")
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
             )
+        if sample_meta is None:
+            raise ValueError("sample_meta is required")
         if not 0 <= self.pv <= 1:
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
@@ -1278,9 +1280,10 @@ class DESeq2ZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X):
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
@@ -1535,15 +1538,16 @@ class DESeq2WrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, sample_meta):
-        if sample_meta is None:
-            raise ValueError("sample_meta is required")
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
             )
+        if sample_meta is None:
+            raise ValueError("sample_meta is required")
         if not 0 <= self.pv <= 1:
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
@@ -1895,9 +1899,10 @@ class EdgeRSelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, feature_meta):
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
@@ -1915,11 +1920,11 @@ class EdgeRSelector(ExtendedSelectorMixin, BaseEstimator):
         if self.trans_type == "tpm":
             if feature_meta is None:
                 raise ValueError("feature_meta required for tpm")
-            if X.shape[1] != feature_meta.shape[0]:
+            if n_features != feature_meta.shape[0]:
                 raise ValueError(
                     "X ({:d}) and feature_meta ({:d}) have "
                     "different feature dimensions".format(
-                        X.shape[1], feature_meta.shape[0]
+                        n_features, feature_meta.shape[0]
                     )
                 )
             if self.gene_length_col not in feature_meta.columns:
@@ -2175,15 +2180,16 @@ class EdgeRWrenchSelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, sample_meta, feature_meta):
-        if sample_meta is None:
-            raise ValueError("sample_meta is required")
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
             )
+        if sample_meta is None:
+            raise ValueError("sample_meta is required")
         if not 0 <= self.pv <= 1:
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
@@ -2199,11 +2205,11 @@ class EdgeRWrenchSelector(ExtendedSelectorMixin, BaseEstimator):
         if self.trans_type == "tpm":
             if feature_meta is None:
                 raise ValueError("feature_meta required for tpm")
-            if X.shape[1] != feature_meta.shape[0]:
+            if n_features != feature_meta.shape[0]:
                 raise ValueError(
                     "X ({:d}) and feature_meta ({:d}) have "
                     "different feature dimensions".format(
-                        X.shape[1], feature_meta.shape[0]
+                        n_features, feature_meta.shape[0]
                     )
                 )
             if self.gene_length_col not in feature_meta.columns:
@@ -2431,9 +2437,10 @@ class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, feature_meta):
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
@@ -2449,11 +2456,11 @@ class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         if self.trans_type == "tpm":
             if feature_meta is None:
                 raise ValueError("feature_meta required for tpm")
-            if X.shape[1] != feature_meta.shape[0]:
+            if n_features != feature_meta.shape[0]:
                 raise ValueError(
                     "X ({:d}) and feature_meta ({:d}) have "
                     "different feature dimensions".format(
-                        X.shape[1], feature_meta.shape[0]
+                        n_features, feature_meta.shape[0]
                     )
                 )
             if self.gene_length_col not in feature_meta.columns:
@@ -2716,15 +2723,16 @@ class EdgeRWrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, sample_meta, feature_meta):
-        if sample_meta is None:
-            raise ValueError("sample_meta is required")
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
             )
+        if sample_meta is None:
+            raise ValueError("sample_meta is required")
         if not 0 <= self.pv <= 1:
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.score_type not in ("pv", "lfc_pv"):
@@ -2738,11 +2746,11 @@ class EdgeRWrenchZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
         if self.trans_type == "tpm":
             if feature_meta is None:
                 raise ValueError("feature_meta required for tpm")
-            if X.shape[1] != feature_meta.shape[0]:
+            if n_features != feature_meta.shape[0]:
                 raise ValueError(
                     "X ({:d}) and feature_meta ({:d}) have "
                     "different feature dimensions".format(
-                        X.shape[1], feature_meta.shape[0]
+                        n_features, feature_meta.shape[0]
                     )
                 )
             if self.gene_length_col not in feature_meta.columns:
@@ -2967,9 +2975,10 @@ class LimmaVoomSelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, feature_meta):
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
@@ -2987,11 +2996,11 @@ class LimmaVoomSelector(ExtendedSelectorMixin, BaseEstimator):
         if self.trans_type == "tpm":
             if feature_meta is None:
                 raise ValueError("feature_meta required for tpm")
-            if X.shape[1] != feature_meta.shape[0]:
+            if n_features != feature_meta.shape[0]:
                 raise ValueError(
                     "X ({:d}) and feature_meta ({:d}) have "
                     "different feature dimensions".format(
-                        X.shape[1], feature_meta.shape[0]
+                        n_features, feature_meta.shape[0]
                     )
                 )
             if self.gene_length_col not in feature_meta.columns:
@@ -3245,15 +3254,16 @@ class LimmaVoomWrenchSelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, sample_meta, feature_meta):
-        if sample_meta is None:
-            raise ValueError("sample_meta is required")
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
             )
+        if sample_meta is None:
+            raise ValueError("sample_meta is required")
         if not 0 <= self.pv <= 1:
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.fc < 1:
@@ -3269,11 +3279,11 @@ class LimmaVoomWrenchSelector(ExtendedSelectorMixin, BaseEstimator):
         if self.trans_type == "tpm":
             if feature_meta is None:
                 raise ValueError("feature_meta required for tpm")
-            if X.shape[1] != feature_meta.shape[0]:
+            if n_features != feature_meta.shape[0]:
                 raise ValueError(
                     "X ({:d}) and feature_meta ({:d}) have "
                     "different feature dimensions".format(
-                        X.shape[1], feature_meta.shape[0]
+                        n_features, feature_meta.shape[0]
                     )
                 )
             if self.gene_length_col not in feature_meta.columns:
@@ -3490,9 +3500,10 @@ class DreamVoomSelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, feature_meta):
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k
@@ -3510,11 +3521,11 @@ class DreamVoomSelector(ExtendedSelectorMixin, BaseEstimator):
         if self.trans_type == "tpm":
             if feature_meta is None:
                 raise ValueError("feature_meta required for tpm")
-            if X.shape[1] != feature_meta.shape[0]:
+            if n_features != feature_meta.shape[0]:
                 raise ValueError(
                     "X ({:d}) and feature_meta ({:d}) have "
                     "different feature dimensions".format(
-                        X.shape[1], feature_meta.shape[0]
+                        n_features, feature_meta.shape[0]
                     )
                 )
             if self.gene_length_col not in feature_meta.columns:
@@ -3681,9 +3692,10 @@ class LimmaSelector(ExtendedSelectorMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X):
-        if self.k > X.shape[1]:
+        n_features = _num_features(X)
+        if self.k > n_features:
             self.k = "all"
-        if not (self.k == "all" or 0 <= self.k <= X.shape[1]):
+        if not (self.k == "all" or 0 <= self.k <= n_features):
             raise ValueError(
                 "k should be 0 <= k <= n_features; got %r."
                 "Use k='all' to return all features." % self.k

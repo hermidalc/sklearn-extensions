@@ -291,9 +291,10 @@ class SelectFromModel(MetaEstimatorMixin, ExtendedSelectorMixin, BaseEstimator):
         return mask
 
     def _check_max_features(self, X):
+        n_features = _num_features(X)
+        if self.max_features > n_features:
+            self.max_features = None
         if self.max_features is not None:
-            n_features = _num_features(X)
-
             if isinstance(self.max_features, numbers.Integral):
                 check_scalar(
                     self.max_features,
