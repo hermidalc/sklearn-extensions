@@ -397,7 +397,11 @@ edger_feature_score <- function(
         design <- model.matrix(~factor(y))
     }
     counts <- t(X)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    if (norm_type == "TMM") {
+        ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    } else if (norm_type == "TMMwsp") {
+        ref_sample <- counts[, which.max(colSums(sqrt(counts)))]
+    }
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method=norm_type)
     dge <- estimateDisp(dge, design, robust=robust)
@@ -487,7 +491,11 @@ edger_zinbwave_feature_score <- function(
         design_formula <- ~Class
     }
     counts <- t(X)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    if (norm_type == "TMM") {
+        ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    } else if (norm_type == "TMMwsp") {
+        ref_sample <- counts[, which.max(colSums(sqrt(counts)))]
+    }
     if (n_threads > 1) {
         BPPARAM <- BiocParallel::MulticoreParam(workers=n_threads)
         parallel <- TRUE
@@ -600,7 +608,11 @@ limma_voom_feature_score <- function(
     })
     counts <- t(X)
     dge <- DGEList(counts=counts)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    if (norm_type == "TMM") {
+        ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    } else if (norm_type == "TMMwsp") {
+        ref_sample <- counts[, which.max(colSums(sqrt(counts)))]
+    }
     dge <- calcNormFactors(dge, method=norm_type)
     if ((model_batch || model_dupcor) && !is.null(sample_meta)) {
         sample_meta$Class <- factor(sample_meta$Class)
@@ -713,7 +725,11 @@ dream_voom_feature_score <- function(
         BPPARAM <- BiocParallel::SerialParam()
     }
     counts <- t(X)
-    ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    if (norm_type == "TMM") {
+        ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    } else if (norm_type == "TMMwsp") {
+        ref_sample <- counts[, which.max(colSums(sqrt(counts)))]
+    }
     dge <- DGEList(counts=counts)
     dge <- calcNormFactors(dge, method=norm_type)
     invisible(capture.output(

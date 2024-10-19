@@ -199,6 +199,8 @@ edger_norm_fit <- function(X, norm_type="TMM") {
     counts <- t(X)
     if (norm_type == "TMM") {
         ref_sample <- counts[, edger_tmm_ref_column(counts)]
+    } else if (norm_type == "TMMwsp") {
+        ref_sample <- counts[, which.max(colSums(sqrt(counts)))]
     }
     return(list(ref_sample=ref_sample))
 }

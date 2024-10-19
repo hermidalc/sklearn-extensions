@@ -623,7 +623,7 @@ class EdgeRNormalizer(ExtendedTransformerMixin, BaseEstimator):
         raise NotImplementedError("inverse_transform not implemented.")
 
     def _check_params(self, X, feature_meta):
-        if self.norm_type not in ("TMM"):
+        if self.norm_type not in ("TMM", "TMMwsp"):
             raise ValueError("invalid norm_type %s" % self.norm_type)
         if self.trans_type not in ("cpm", "tpm"):
             raise ValueError("invalid trans_type %s" % self.trans_type)

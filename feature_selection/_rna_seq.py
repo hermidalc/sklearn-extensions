@@ -1913,7 +1913,7 @@ class EdgeRSelector(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
         if self.score_type not in ("pv", "lfc_pv"):
             raise ValueError("invalid score_type %s" % self.score_type)
-        if self.norm_type not in ("TMM"):
+        if self.norm_type not in ("TMM", "TMMwsp"):
             raise ValueError("invalid norm_type %s" % self.norm_type)
         if self.trans_type not in ("cpm", "tpm"):
             raise ValueError("invalid trans_type %s" % self.trans_type)
@@ -2449,7 +2449,7 @@ class EdgeRZINBWaVESelector(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("pv should be 0 <= pv <= 1; got %r." % self.pv)
         if self.score_type not in ("pv", "lfc_pv"):
             raise ValueError("invalid score_type %s" % self.score_type)
-        if self.norm_type not in ("TMM"):
+        if self.norm_type not in ("TMM", "TMMwsp"):
             raise ValueError("invalid norm_type %s" % self.norm_type)
         if self.trans_type not in ("cpm", "tpm"):
             raise ValueError("invalid trans_type %s" % self.trans_type)
@@ -2989,7 +2989,7 @@ class LimmaVoomSelector(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
         if self.score_type not in ("pv", "lfc_pv"):
             raise ValueError("invalid score_type %s" % self.score_type)
-        if self.norm_type not in ("TMM"):
+        if self.norm_type not in ("TMM", "TMMwsp"):
             raise ValueError("invalid norm_type %s" % self.norm_type)
         if self.trans_type not in ("cpm", "tpm"):
             raise ValueError("invalid trans_type %s" % self.trans_type)
@@ -3514,7 +3514,7 @@ class DreamVoomSelector(ExtendedSelectorMixin, BaseEstimator):
             raise ValueError("fold change threshold should be >= 1; got %r." % self.fc)
         if self.score_type not in ("pv", "lfc_pv"):
             raise ValueError("invalid score_type %s" % self.score_type)
-        if self.norm_type not in ("TMM"):
+        if self.norm_type not in ("TMM", "TMMwsp"):
             raise ValueError("invalid norm_type %s" % self.norm_type)
         if self.trans_type not in ("cpm", "tpm"):
             raise ValueError("invalid trans_type %s" % self.trans_type)
