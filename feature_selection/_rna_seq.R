@@ -567,13 +567,13 @@ edger_wrench_zinbwave_feature_score <- function(
             X=design_formula, K=0, epsilon=epsilon, zeroinflation=TRUE,
             observationalWeights=TRUE, BPPARAM=BPPARAM
         )
-        # use TMM normalization for DGE feature scoring here but Wrench
+        # use TMMwsp normalization for DGE feature scoring here but Wrench
         # for downstream normalization
         # dge <- DGEList(
         #     counts=assay(zinb, "counts"), norm.factors=norm_factors
         # )
         dge <- DGEList(counts=assay(zinb, "counts"))
-        dge <- calcNormFactors(dge, method="TMM")
+        dge <- calcNormFactors(dge, method="TMMwsp")
         dge$weights <- assay(zinb, "weights")
         design <- model.matrix(design_formula, data=colData)
         dge <- estimateDisp(dge, design, robust=robust)
